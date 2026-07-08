@@ -1,0 +1,21 @@
+// Slider de proyectos (3 tarjetas visibles, autoplay).
+#ao-app .ao-slider { --vis: 3; --gap: clamp(14px, 1.6vw, 22px); width: 100%; }
+#ao-app .ao-slider-viewport { overflow: hidden; width: 100%; }
+#ao-app .ao-slider-track { display: flex; gap: var(--gap); will-change: transform; }
+#ao-app .ao-slide-card { position: relative; flex: 0 0 calc((100% - (var(--vis) - 1) * var(--gap)) / var(--vis)); height: clamp(300px, 46vh, 540px); border-radius: 16px; overflow: hidden; background: #101012; box-shadow: var(--sh-lg); color: #f4f1ea; text-decoration: none; display: block; transition: box-shadow .5s ease; }
+#ao-app .ao-slide-card:hover { box-shadow: var(--sh-xl); }
+#ao-app .ao-slide-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .8s cubic-bezier(.16, 1, .3, 1); }
+#ao-app .ao-slide-card:hover img { transform: scale(1.06); }
+#ao-app .ao-slide-grad { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8, 8, 9, .02) 34%, rgba(8, 8, 9, .5) 72%, rgba(8, 8, 9, .92) 100%); }
+#ao-app .ao-slide-cap { position: absolute; left: 0; right: 0; bottom: 0; padding: clamp(16px, 1.4vw, 26px); display: flex; flex-direction: column; gap: 6px; }
+#ao-app .ao-slide-cap span { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .16em; color: rgba(244, 241, 234, .74); }
+#ao-app .ao-slide-cap h3 { margin: 0; font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(1.1rem, 1.5vw, 1.6rem); line-height: 1.02; letter-spacing: -.01em; }
+#ao-app .ao-slider-ui { display: flex; align-items: center; justify-content: center; gap: 22px; margin-top: clamp(26px, 4vh, 44px); }
+#ao-app .ao-slider-btn { width: 48px; height: 48px; flex: none; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--fg); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: border-color .3s, color .3s, transform .3s; }
+#ao-app .ao-slider-btn:hover { border-color: var(--accent); color: var(--accent); transform: scale(1.06); }
+#ao-app .ao-slider-btn svg { width: 18px; height: 18px; }
+#ao-app .ao-slider-dots { display: flex; align-items: center; gap: 9px; }
+#ao-app .ao-slider-dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 20px; background: var(--line); cursor: pointer; transition: width .35s cubic-bezier(.16, 1, .3, 1), background .35s ease; }
+#ao-app .ao-slider-dot[data-active="1"] { background: var(--accent); width: 26px; }
+@media (max-width: 900px) { #ao-app .ao-slider { --vis: 2; } }
+@media (max-width: 600px) { #ao-app .ao-slider { --vis: 1; } }

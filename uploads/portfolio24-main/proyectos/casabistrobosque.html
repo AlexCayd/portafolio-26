@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Portafolio de Alexander Oliva — Caso Casa Bistro Bosque: ordering para residentes del edificio" />
+    <meta name="keywords" content="UX, UI, e-commerce restaurante, ordering web, Alexander Oliva, desarrollo web, PHP, MySQL" />
+    <meta name="author" content="Alexander Oliva" />
+    <meta http-equiv="Content-Language" content="es" />
+    <title>Alexander Oliva | Casa Bistro Bosque</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="proyectos.css" />
+    <link rel="icon" href="../img/logo/Icono.png" />
+</head>
+<body class="fade">
+    <header class="headerproyecto">
+        <a href="../index.html" class="headerproyecto__back">
+            <img src="flechaHorizontal.png" alt="Flecha atrás" class="headerproyecto__flecha" />
+            <p class="headerproyecto__backtxt">Volver al portafolio</p>
+        </a>
+
+        <p class="headerproyecto__tag headerproyecto__tag--year">Casa Bistro Bosque | 2025</p>
+    </header>
+
+    <main class="principalproyecto">
+        <div class="principalproyecto__gridmain contenedor">
+            <div class="principalproyecto__tags">
+                <p class="principalproyecto__tag">UX/UI</p>
+                <p class="principalproyecto__tag">Delivery</p>
+                <p class="principalproyecto__tag">E-commerce</p>
+                <p class="principalproyecto__tag">Restaurante</p>
+            </div>
+
+            <h1 class="principalproyecto__titulo">Casa Bistro Bosque</h1>
+            <p class="principalproyecto__descripcion">
+                Rediseño y desarrollo de un sistema web para que los residentes de un edificio pidan comida
+                del restaurante con menú, carrito, y panel interno para cocina.
+            </p>
+
+            <div class="proyectoprincipal__informacion">
+                <div class="proyectoprincipal__dato">
+                    <p class="proyectoprincipal__label">Proyecto</p>
+                    <p class="proyectoprincipal__data">Casa Bistro Bosque</p>
+                </div>
+
+                <div class="proyectoprincipal__dato">
+                    <p class="proyectoprincipal__label">Duración</p>
+                    <p class="proyectoprincipal__data">4 semanas</p>
+                </div>
+
+                <div class="proyectoprincipal__dato">
+                    <p class="proyectoprincipal__label">Año</p>
+                    <p class="proyectoprincipal__data">2025</p>
+                </div>
+
+                <div class="proyectoprincipal__dato">
+                    <p class="proyectoprincipal__label">Rol</p>
+                    <p class="proyectoprincipal__data">Software Developer, UX/UI Designer</p>
+                </div>
+            </div>
+
+            <div class="proyectoprincipal__btns">
+                <a href="https://casabistrobosque.com/" target="_blank" rel="noopener noreferrer" class="proyectoprincipal__verproyecto">
+                    <img src="../proyectos/verproyecto.svg" alt="Ver proyecto" class="proyectoprincipal__icono" />
+                    Ver proyecto
+                </a>
+
+                <a href="https://github.com/AlexCayd/CasaBistroBosque" target="_blank" rel="noopener noreferrer" class="proyectoprincipal__codigo">
+                    <img src="../proyectos/codigo.svg" alt="Ver código" class="proyectoprincipal__icono" />
+                    Código
+                </a>
+            </div>
+        </div>
+
+        <a href="https://casabistrobosque.com/" target="_blank" rel="noopener noreferrer" class="proyecto__principalportada">
+            <img src="../img/proyectos/casabistrobosque/casabistrobosque.png" alt="Casa Bistro Bosque" class="proyecto__principalimg" />
+        </a>
+    </main>
+
+    <section class="reto">
+        <div class="retogrid contenedor">
+            <div class="reto__seccion">
+                <p class="reto__head">Overview</p>
+                <p class="reto__txt">
+                    Implementamos un canal de pedidos en la web para residentes del edificio,
+                    con identificación por departamento, menú y flujo de compra optimizado para todos los dispositivos.
+                </p>
+            </div>
+
+            <div class="reto__seccion">
+                <p class="reto__head">Desafío</p>
+                <p class="reto__txt">
+                    Centralizar pedidos (antes vía llamadas), minimizar errores en cocina y optimización en entregas; controlar disponibilidad por horario y stock.
+                </p>
+            </div>
+
+            <div class="reto__seccion">
+                <p class="reto__head">Solución</p>
+                <p class="reto__txt">
+                    Arquitectura de información clara, menú completo, carrito persistente,
+                    panel de cocina con estados de orden, y actualización en tiempo real para nuevos pedidos.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="proceso contenedor">
+        <h2 class="proceso__titulo">Del bosque a la puerta: proceso de producto</h2>
+        <p class="proceso__subtitulo">
+            Descubrimiento, definición, diseño temático, desarrollo e integración operativa del restaurante.
+        </p>
+
+        <div class="proceso__pasos">
+            <div class="paso">
+                <img src="../proyectos/cbb/icons/descubrimiento.svg" alt="Icono" class="paso__icono" />
+                <h3 class="paso__titulo">Descubrimiento & Research</h3>
+                <p class="paso__descripcion">
+                    Entrevistas cortas con residentes y staff, mapeo de procesos de cocina y entrega,
+                    definición de KPIs (tiempo de preparación, tasa de conversión, errores por pedido).
+                </p>
+                <div class="paso__tags">
+                    <span class="paso__tag">Entrevistas</span>
+                    <span class="paso__tag">Journey Map</span>
+                </div>
+            </div>
+
+            <div class="paso">
+                <img src="../proyectos/cbb/icons/ia.svg" alt="Icono" class="paso__icono" />
+                <h3 class="paso__titulo">Arquitectura & Flujos</h3>
+                <p class="paso__descripcion">
+                    Estructura del menú por categorías, flujo de login por departamento,
+                    carrito, selección de horario, confirmación y seguimiento de pedido.
+                </p>
+                <div class="paso__tags">
+                    <span class="paso__tag">User Flows</span>
+                    <span class="paso__tag">IA</span>
+                </div>
+            </div>
+
+            <div class="paso">
+                <img src="../proyectos/cbb/icons/ui.svg" alt="Icono" class="paso__icono" />
+                <h3 class="paso__titulo">UI temática “Bosque”</h3>
+                <p class="paso__descripcion">
+                    Paleta verde/tierras, texturas sutiles, tarjetas de platillos con fotos y badges (veg, spicy, chef),
+                    accesibilidad y microinteracciones.
+                </p>
+                <div class="paso__tags">
+                    <span class="paso__tag">Design System</span>
+                    <span class="paso__tag">Accesibilidad</span>
+                </div>
+            </div>
+
+            <div class="paso">
+                <img src="../proyectos/cbb/icons/dev.svg" alt="Icono" class="paso__icono" />
+                <h3 class="paso__titulo">Desarrollo & Integraciones</h3>
+                <p class="paso__descripcion">
+                    Front (HTML, CSS, JS), backend en PHP con MySQL, sesiones por depto,
+                    control de horarios/stock, y pasarela de pago [Clip/Stripe]/contraentrega.
+                </p>
+                <div class="paso__tags">
+                    <span class="paso__tag">PHP</span>
+                    <span class="paso__tag">MySQL</span>
+                </div>
+            </div>
+
+            <div class="paso">
+                <img src="../proyectos/cbb/icons/qa.svg" alt="Icono" class="paso__icono" />
+                <h3 class="paso__titulo">QA, Cocina & Lanzamiento</h3>
+                <p class="paso__descripcion">
+                    Testing en móviles, pruebas en cocina con panel de órdenes (Pendiente/En preparación/Listo/Entregado),
+                    handoff operativo y métricas post-lanzamiento.
+                </p>
+                <div class="paso__tags">
+                    <span class="paso__tag">QA</span>
+                    <span class="paso__tag">Analytics</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="tecnologias">
+        <div class="contenedor">
+            <h3 class="tecnologias__titulo">TECNOLOGÍAS UTILIZADAS</h3>
+            <div class="tecnologias__lista">
+                <span class="tecnologias__tag">User Experience</span>
+                <span class="tecnologias__tag">Design Thinking</span>
+                <span class="tecnologias__tag">HTML</span>
+                <span class="tecnologias__tag">CSS</span>
+                <span class="tecnologias__tag">SweetAlert</span>
+                <span class="tecnologias__tag">JavaScript</span>
+                <span class="tecnologias__tag">Google Suite</span>
+                <span class="tecnologias__tag">Panel Administración</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="imagenes contenedor">
+        <img src="../img/proyectos/casabistrobosque/casabistrobosque.png" alt="Casa Bistro Bosque" class="imagenes__img" />
+        <img src="../img/proyectos/casabistrobosque/casabistrobosque1.png" alt="Casa Bistro Bosque" class="imagenes__img" />
+        <img src="../img/proyectos/casabistrobosque/casabistrobosque2.png" alt="Casa Bistro Bosque" class="imagenes__img" />
+        <img src="../img/proyectos/casabistrobosque/casabistrobosque3.png" alt="Casa Bistro Bosque" class="imagenes__img" />
+        <img src="../img/proyectos/casabistrobosque/casabistrobosque4.png" alt="Casa Bistro Bosque" class="imagenes__img" />
+        <img src="../img/proyectos/casabistrobosque/casabistrobosque5.png" alt="Casa Bistro Bosque" class="imagenes__img" />
+        <img src="../img/proyectos/casabistrobosque/casabistrobosque6.png" alt="Casa Bistro Bosque" class="imagenes__img" />
+    </section>
+
+    <nav class="proyectosnav contenedor">
+        <a href="paideia.html" class="proyectosnav__link proyectosnav__link--anterior">
+            <span class="proyectosnav__flecha">←</span>
+            <div>
+                <p class="proyectosnav__label">Anterior</p>
+                <p class="proyectosnav__titulo">Paideia Nova</p>
+            </div>
+        </a>
+
+        <a href="alfonsorodriguez.html" class="proyectosnav__link proyectosnav__link--siguiente">
+            <div>
+                <p class="proyectosnav__label">Siguiente</p>
+                <p class="proyectosnav__titulo">Alfonso Rodríguez</p>
+            </div>
+            <span class="proyectosnav__flecha">→</span>
+        </a>
+    </nav>
+
+    <script src="proyectos.js"></script>
+    <script src="casabistrobosque.js"></script>
+</body>
+</html>

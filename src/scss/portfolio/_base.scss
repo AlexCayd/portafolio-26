@@ -1,0 +1,12 @@
+// Reset mínimo, fondo base y animaciones globales del sitio.
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { background: #0b0b0c; }
+
+::selection { background: #ff0a24; color: #fff; }
+
+@keyframes ao-spin { to { transform: rotate(360deg); } }
+@keyframes ao-marquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
+@keyframes ao-cue { 0%, 100% { transform: translateY(0); opacity: .4; } 50% { transform: translateY(8px); opacity: 1; } }
+
+#ao-app ::-webkit-scrollbar { width: 0; height: 0; }

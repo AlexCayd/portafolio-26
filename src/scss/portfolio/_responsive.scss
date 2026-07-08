@@ -1,0 +1,8 @@
+// Ajustes responsive del layout (perfil y bloque de reconocimiento).
+@media (max-width: 768px) {
+  #ao-app .ao-core-grid { grid-template-columns: 1fr !important; }
+  #ao-app .ao-ct-poster { min-height: clamp(440px, 90vh, 600px) !important; }
+  #ao-app .ao-ct-medal { width: 74px !important; height: 74px !important; }
+  #ao-app .ao-ct-plaque { padding: 11px 16px !important; top: clamp(14px, 4vw, 20px) !important; bottom: auto !important; }
+  #ao-app .ao-ct-content { max-width: 100% !important; }
+}
