@@ -9,54 +9,66 @@ use MVC\Router;
 class AuthController {
     public static function login(Router $router) {
 
+        // Si ya hay sesión activa, ir directo al panel
+        if(estaAutenticado()) {
+            header('Location: /admin');
+            exit;
+        }
+
         $alertas = [];
 
         if($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
+
             $usuario = new Usuario($_POST);
 
             $alertas = $usuario->validarLogin();
-            
+
             if(empty($alertas)) {
-                // Verificar quel el usuario exista
-                $usuario = Usuario::where('email', $usuario->email);
-                if(!$usuario || !$usuario->confirmado ) {
-                    Usuario::setAlerta('error', 'El Usuario No Existe o no esta confirmado');
+                // Verificar que el usuario exista (login por nombre de usuario)
+                $usuarioDB = Usuario::where('usuario', $usuario->usuario);
+
+                if(!$usuarioDB || !$usuarioDB->confirmado ) {
+                    Usuario::setAlerta('error', 'El usuario no existe o no está confirmado');
                 } else {
-                    // El Usuario existe
-                    if( password_verify($_POST['password'], $usuario->password) ) {
-                        
+                    // El usuario existe
+                    if( password_verify($_POST['password'], $usuarioDB->password) ) {
+
                         // Iniciar la sesión
-                        session_start();    
-                        $_SESSION['id'] = $usuario->id;
-                        $_SESSION['nombre'] = $usuario->nombre;
-                        $_SESSION['apellido'] = $usuario->apellido;
-                        $_SESSION['email'] = $usuario->email;
-                        $_SESSION['admin'] = $usuario->admin ?? null;
-                        
+                        iniciarSesion();
+                        $_SESSION['id']       = $usuarioDB->id;
+                        $_SESSION['usuario']  = $usuarioDB->usuario;
+                        $_SESSION['nombre']   = $usuarioDB->nombre;
+                        $_SESSION['apellido'] = $usuarioDB->apellido;
+                        $_SESSION['email']    = $usuarioDB->email;
+                        $_SESSION['admin']    = $usuarioDB->admin ?? null;
+
+                        header('Location: /admin');
+                        exit;
+
                     } else {
-                        Usuario::setAlerta('error', 'Password Incorrecto');
+                        Usuario::setAlerta('error', 'Password incorrecto');
                     }
                 }
             }
         }
 
         $alertas = Usuario::getAlertas();
-        
-        // Render a la vista 
+
+        // Render a la vista
         $router->render('auth/login', [
             'titulo' => 'Iniciar Sesión',
             'alertas' => $alertas
-        ]);
+        ], 'auth-layout');
     }
 
     public static function logout() {
         if($_SERVER['REQUEST_METHOD'] === 'POST') {
-            session_start();
+            iniciarSesion();
             $_SESSION = [];
-            header('Location: /');
+            session_destroy();
         }
-       
+        header('Location: /');
+        exit;
     }
 
     public static function registro(Router $router) {

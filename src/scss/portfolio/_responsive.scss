@@ -5,4 +5,19 @@
   #ao-app .ao-ct-medal { width: 74px !important; height: 74px !important; }
   #ao-app .ao-ct-plaque { padding: 11px 16px !important; top: clamp(14px, 4vw, 20px) !important; bottom: auto !important; }
   #ao-app .ao-ct-content { max-width: 100% !important; }
+
+  // Bloque "+25,000": alinear a la izquierda cuando la fila se apila
+  #ao-app .ao-count-block { text-align: left !important; }
+}
+
+// Fase 9 — cursor personalizado solo en dispositivos con puntero fino
+@media (hover: none), (pointer: coarse) {
+  .ao-cursor-el { display: none !important; }
+}
+
+// Fase 9 — pulido móvil general del landing
+@media (max-width: 600px) {
+  #ao-app .ao-svc { width: 86vw !important; }
+  // El scroll horizontal de servicios ya cae a apilado (JS), damos aire
+  #ao-app #ao-exp-track { padding: 0 20px !important; }
 }

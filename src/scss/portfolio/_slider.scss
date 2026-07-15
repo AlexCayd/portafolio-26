@@ -18,4 +18,4 @@
 #ao-app .ao-slider-dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 20px; background: var(--line); cursor: pointer; transition: width .35s cubic-bezier(.16, 1, .3, 1), background .35s ease; }
 #ao-app .ao-slider-dot[data-active="1"] { background: var(--accent); width: 26px; }
 @media (max-width: 900px) { #ao-app .ao-slider { --vis: 2; } }
-@media (max-width: 600px) { #ao-app .ao-slider { --vis: 1; } }
+@media (max-width: 600px) { #ao-app .ao-slider { --vis: 1; } #ao-app .ao-slide-card { height: auto; aspect-ratio: 16 / 10; } }

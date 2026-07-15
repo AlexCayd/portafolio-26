@@ -112,8 +112,12 @@
     if (!window.matchMedia || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
     var dot = document.getElementById('ao-cursor'), ring = document.getElementById('ao-ring'), label = document.getElementById('ao-ring-label');
     if (!dot || !ring) return;
-    var mx = innerWidth/2, my = innerHeight/2, rx = mx, ry = my;
-    onWin('mousemove', function(e){ mx = e.clientX; my = e.clientY; dot.style.transform = 'translate('+mx+'px,'+my+'px) translate(-50%,-50%)'; });
+    var mx = innerWidth/2, my = innerHeight/2, rx = mx, ry = my, shown = false;
+    onWin('mousemove', function(e){
+      mx = e.clientX; my = e.clientY;
+      dot.style.transform = 'translate('+mx+'px,'+my+'px) translate(-50%,-50%)';
+      if (!shown){ shown = true; dot.style.opacity = '1'; ring.style.opacity = '1'; }  // evita el flash en la esquina
+    });
     (function loop(){
       if (gen !== GEN) return;
       rx += (mx-rx)*0.16; ry += (my-ry)*0.16;
@@ -425,8 +429,7 @@
 
   /* ---------- GSAP REVEALS ---------- */
   function initReveals(app, reduced){
-    var lines = app.querySelectorAll('#ao-top .ao-line');
-    if (lines.length) gsap.fromTo(lines, { yPercent:110 }, { yPercent:0, duration:1.1, ease:'expo.out', stagger:0.08, delay:0.15 });
+    // El revelado por letras del hero lo maneja anime.js (ver landing). Aquí solo el subtítulo.
     var sub = document.getElementById('ao-hero-sub');
     if (sub && !reduced && !sub.querySelector('.ao-w')){
       var words = sub.textContent.trim().split(/\s+/);
@@ -460,7 +463,11 @@
       ease: 'none', immediateRender: false,
       scrollTrigger: { trigger:'#ao-expertise', start:'top top', end:function(){ return '+=' + getDist(); }, scrub:0.6, pin:pin, pinSpacing:true, anticipatePin:1, invalidateOnRefresh:true, refreshPriority:1 }
     });
+    // Recalcular el pin cuando todo esté medido (fuentes, imágenes, load) — evita que
+    // el scroll horizontal de servicios no arranque por dimensiones tempranas.
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ ScrollTrigger.refresh(); });
+    onWin('load', function(){ ScrollTrigger.refresh(); });
+    var expRt; onWin('resize', function(){ clearTimeout(expRt); expRt = setTimeout(function(){ ScrollTrigger.refresh(); }, 200); });
   }
 
   /* ---------- PROJECTS: 3-up auto slider ---------- */
@@ -470,25 +477,18 @@
     var dotsW  = document.getElementById('ao-slider-dots');
     if (!slider || !track || !dotsW) return;
 
-    var projects = [
-      { img:'colegio-bilbao',     title:'Colegio Bilbao',     year:'2026' },
-      { img:'casa-pestalozzi',    title:'Casa Pestalozzi',    year:'2026' },
-      { img:'eptos-uno',          title:'Eptos Uno',          year:'2026' },
-      { img:'casa-bistro-bosque', title:'Casa Bistro Bosque', year:'2024' },
-      { img:'freseando',          title:'Freseando',          year:'2026' },
-      { img:'alfonso-rodriguez',  title:'Alfonso Rodríguez',  year:'2023' },
-      { img:'tonico-vittale',     title:'Tonico Vittale',     year:'2025' },
-      { img:'silver-society',     title:'Silver Society',     year:'2024' },
-      { img:'saga-fiscal',        title:'Saga Fiscal',        year:'2025' }
-    ];
+    /* Proyectos administrados desde /admin (window.AO_PROJECTS). Sin datos = sin slider. */
+    var projects = (Array.isArray(window.AO_PROJECTS) && window.AO_PROJECTS.length) ? window.AO_PROJECTS : [];
     var BASE = '/build/img/proyectos/portadas/';
     var n = projects.length;
+    if (!n) { slider.style.display = 'none'; return; }   // sección dinámica: nada que mostrar
     var EASE = 'transform .85s cubic-bezier(.16,1,.3,1)';
     var DELAY = 3000;
 
     function cardHTML(p){
-      return '<a class="ao-slide-card" href="#ao-projects" data-cursor data-cursor-label="Ver proyecto" aria-label="'+p.title+'">' +
-               '<img src="'+BASE+p.img+'.png" alt="Portada del proyecto '+p.title+'" loading="lazy">' +
+      var href = p.slug ? '/proyecto/'+p.slug : (p.id ? '/proyecto?id='+p.id : '#ao-projects');
+      return '<a class="ao-slide-card" data-vt-cover href="'+href+'" data-cursor data-cursor-label="Ver proyecto" aria-label="'+p.title+'">' +
+               '<img data-vt-img src="'+BASE+p.img+'" alt="Portada del proyecto '+p.title+'" decoding="async">' +
                '<div class="ao-slide-grad"></div>' +
                '<div class="ao-slide-cap"><span>'+p.year+'</span><h3>'+p.title+'</h3></div>' +
              '</a>';
@@ -564,8 +564,13 @@
     });
 
     var rt;
-    function onResize(){ clearTimeout(rt); rt = setTimeout(function(){ build(); }, 180); }
+    // En móvil, mostrar/ocultar la barra de direcciones dispara 'resize' constantemente.
+    // Solo reconstruimos si cambia el número de tarjetas visibles; si no, reaplicamos el offset
+    // (evita que las tarjetas "parpadeen" o se queden mal cargadas).
+    function onResize(){ clearTimeout(rt); rt = setTimeout(function(){ if (visCount() !== vis) build(); else apply(false); }, 200); }
     addEventListener('resize', onResize);
+    addEventListener('orientationchange', function(){ clearTimeout(rt); rt = setTimeout(build, 260); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ apply(false); });
 
     build();
     start();
@@ -710,6 +715,17 @@
   function run(){
     var intro = document.getElementById('ao-intro');
     if (!intro) return;
+
+    /* La cortina de entrada solo se juega en la 1ª visita de la sesión.
+       Al volver al home desde otra página, se retira al instante (las
+       transiciones entre páginas las maneja View Transitions). */
+    try {
+      if (sessionStorage.getItem('ao-intro-seen')) {
+        if (intro.parentNode) intro.parentNode.removeChild(intro);
+        return;
+      }
+      sessionStorage.setItem('ao-intro-seen', '1');
+    } catch(e){}
 
     var countEl = document.getElementById('ao-intro-count');
     var bar     = document.getElementById('ao-intro-bar');

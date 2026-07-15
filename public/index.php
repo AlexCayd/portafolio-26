@@ -18,14 +18,29 @@ $router = new Router();
 // URLs amigables (SEO): pre-check antes del router de coincidencia exacta
 $ao_path = $_SERVER['PATH_INFO'] ?? '/';
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // /blog/categoria/<slug>  →  listado por categoría
-    if (preg_match('#^/blog/categoria/([a-z0-9-]+)$#', $ao_path, $ao_m)) {
+    // Sitemap dinámico (SEO)
+    if ($ao_path === '/sitemap.xml') {
+        PortfolioController::sitemap();
+        exit;
+    }
+    // Compatibilidad: /blog… (antiguo) → 301 a /tekhne…
+    if ($ao_path === '/blog' || strpos($ao_path, '/blog/') === 0) {
+        header('Location: ' . preg_replace('#^/blog#', '/tekhne', $ao_path), true, 301);
+        exit;
+    }
+    // /tekhne/recomendaciones  →  todas las 10/10
+    if ($ao_path === '/tekhne/recomendaciones') {
+        PortfolioController::recomendaciones($router);
+        exit;
+    }
+    // /tekhne/categoria/<slug>  →  listado por categoría
+    if (preg_match('#^/tekhne/categoria/([a-z0-9-]+)$#', $ao_path, $ao_m)) {
         $_GET['cat'] = $ao_m[1];
         PortfolioController::categoria($router);
         exit;
     }
-    // /blog/<slug>  →  artículo público
-    if (preg_match('#^/blog/([a-z0-9-]+)$#', $ao_path, $ao_m) && !in_array($ao_m[1], ['entrada', 'categoria'], true)) {
+    // /tekhne/<slug>  →  artículo público
+    if (preg_match('#^/tekhne/([a-z0-9-]+)$#', $ao_path, $ao_m) && !in_array($ao_m[1], ['entrada', 'categoria', 'recomendaciones'], true)) {
         $_GET['slug'] = $ao_m[1];
         PortfolioController::articulo($router);
         exit;
@@ -41,8 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 // ------------------------------------------------------------ Sitio público
 $router->get('/', [PortfolioController::class, 'index']);
 $router->get('/proyecto', [PortfolioController::class, 'proyecto']);
-$router->get('/blog', [PortfolioController::class, 'blog']);
-$router->get('/blog/entrada', [PortfolioController::class, 'articulo']);
+$router->get('/tekhne', [PortfolioController::class, 'blog']);
+$router->get('/tekhne/entrada', [PortfolioController::class, 'articulo']);
 
 // ------------------------------------------------------------ Autenticación
 $router->get('/login',  [AuthController::class, 'login']);
@@ -62,6 +77,7 @@ $router->post('/admin/proyectos/eliminar',[AdminController::class, 'proyectoElim
 $router->post('/admin/proyectos/orden',   [AdminController::class, 'proyectosOrden']);
 $router->post('/admin/proyectos/imagen/subir',    [AdminController::class, 'proyectoImagenSubir']);
 $router->post('/admin/proyectos/imagen/eliminar', [AdminController::class, 'proyectoImagenEliminar']);
+$router->post('/admin/proyectos/imagen/orden',    [AdminController::class, 'proyectoImagenOrden']);
 
 // Servicios
 $router->get('/admin/servicios',          [AdminController::class, 'servicios']);

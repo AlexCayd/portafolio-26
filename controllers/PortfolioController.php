@@ -3,66 +3,36 @@
 namespace Controllers;
 
 use MVC\Router;
+use Model\Proyecto;
+use Model\ProyectoImagen;
+use Model\Servicio;
+use Model\Credencial;
+use Model\Blog;
+use Model\Libro;
+use Model\Pelicula;
+use Model\Visita;
 
 class PortfolioController
 {
     public static function index(Router $router)
     {
-        // --- Servicios (sección "Del problema al producto") ---
-        $servicios = [
-            [
-                'num'   => '01',
-                'titulo'=> 'Desarrollo de software',
-                'desc'  => 'HTML, CSS y JavaScript. Llevo el diseño hasta el producto vivo y funcional, del prototipo al código en producción.',
-                'tags'  => ['Front-end', 'Responsive', 'Animación'],
-            ],
-            [
-                'num'   => '02',
-                'titulo'=> 'UX/UI Design',
-                'desc'  => 'Interfaces claras, jerárquicas y accesibles. Diseño pensado en personas reales, no en suposiciones.',
-                'tags'  => ['Design Systems', 'Accesibilidad', 'Figma'],
-            ],
-            [
-                'num'   => '03',
-                'titulo'=> 'Estrategia digital',
-                'desc'  => 'Contenido, posicionamiento y decisiones de producto con visión de negocio y comunicación.',
-                'tags'  => ['Contenido', 'Marca', 'Producto'],
-            ],
-            [
-                'num'   => '04',
-                'titulo'=> 'Automatizaciones',
-                'desc'  => 'Flujos que ahorran horas: integro herramientas y proceso tareas repetitivas para que el trabajo se haga solo.',
-                'tags'  => ['Workflows', 'Integraciones', 'APIs'],
-            ],
-            [
-                'num'   => '05',
-                'titulo'=> 'SEO',
-                'desc'  => 'Posicionamiento orgánico con base técnica: estructura, contenido y rendimiento para que te encuentren.',
-                'tags'  => ['SEO técnico', 'Contenido', 'Analítica'],
-            ],
-        ];
+        Visita::registrarHoy();
+        Visita::registrarPagina('/', 'Inicio');
 
-        // --- Credenciales (sección "La curiosidad, certificada") ---
-        // 'radius' aplica esquinas redondeadas al logo (formatos .jpg con fondo).
-        // 'extra' es una línea adicional opcional antes del nombre de la institución.
-        $credenciales = [
-            ['logo' => 'google.png',            'alt' => 'Google',                     'radius' => false, 'fecha' => '2024 · 2022', 'titulo' => 'UX Design Professional Certificate',   'extra' => '+ IT Support Professional Certificate — ', 'inst' => 'Google'],
-            ['logo' => 'meta.jpg',              'alt' => 'Meta',                       'radius' => true,  'fecha' => '2025',        'titulo' => 'Principles of UX/UI Design',           'extra' => '', 'inst' => 'Meta'],
-            ['logo' => 'universityoflondon.png','alt' => 'University of London',        'radius' => false, 'fecha' => '2025',        'titulo' => 'Responsive Web Design',                'extra' => '', 'inst' => 'University of London'],
-            ['logo' => 'adobe.jpg',             'alt' => 'Adobe',                      'radius' => true,  'fecha' => '2025',        'titulo' => 'Design Fundamentals with AI',          'extra' => '', 'inst' => 'Adobe'],
-            ['logo' => 'stanford.jpg',          'alt' => 'Stanford University',        'radius' => true,  'fecha' => '2025',        'titulo' => 'The AI Awakening: Economy &amp; Society','extra' => '', 'inst' => 'Stanford University'],
-            ['logo' => 'IBM.png',               'alt' => 'IBM',                        'radius' => false, 'fecha' => '2024',        'titulo' => 'Generative AI Essentials',             'extra' => '', 'inst' => 'IBM'],
-            ['logo' => 'politecnico.png',       'alt' => 'Politecnico di Milano',      'radius' => false, 'fecha' => '2025',        'titulo' => 'Ethics of AI',                         'extra' => '', 'inst' => 'Politecnico di Milano'],
-            ['logo' => 'upenn.jpg',             'alt' => 'University of Pennsylvania', 'radius' => true,  'fecha' => '2025',        'titulo' => 'Philosophy of Science',                'extra' => '', 'inst' => 'University of Pennsylvania'],
-            ['logo' => 'mindshop.png',          'alt' => 'Mindshop',                   'radius' => false, 'fecha' => '2025 · 2023', 'titulo' => 'History of Philosophy: Ethics',        'extra' => '+ Ancient Greek Philosophy — ', 'inst' => 'Mindshop'],
-        ];
+        // --- Contenido administrable desde /admin (MySQL) ---
+        $servicios    = Servicio::ordenados();
+        $credenciales = Credencial::ordenados();
+        $proyectos    = Proyecto::ordenados();
 
-        // --- Instituciones (marquee) ---
-        $instituciones = [
-            'Google', 'Meta', 'Stanford University', 'IBM', 'University of London',
-            'Adobe', 'Politecnico di Milano', 'University of Pennsylvania',
-            'University of Oxford', 'Universidad Anáhuac', 'UNAM', 'Mindshop',
-        ];
+        // Proyectos para el slider (inyectados como JSON en la vista)
+        $proyectosJs = array_map(function($p) {
+            return ['id' => $p->id, 'slug' => $p->slug, 'img' => $p->img, 'title' => $p->titulo, 'year' => $p->anio];
+        }, $proyectos);
+
+        // --- Instituciones (marquee): derivadas de las credenciales, únicas y en orden ---
+        $instituciones = array_values(array_unique(array_filter(array_map(
+            fn($c) => trim((string) $c->institucion), $credenciales
+        ))));
 
         // --- Cursos (docencia) ---
         $cursos = [
@@ -86,38 +56,159 @@ class PortfolioController
             ],
         ];
 
-        // --- Blog ---
-        $posts = [
-            [
-                'cover'     => 'repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 2px,transparent 2px 15px),linear-gradient(135deg,var(--accent) 0%,#1a0207 55%,#0b0b0c 100%)',
-                'categoria' => 'PROCESO',
-                'fecha'     => 'JUN · 6 MIN',
-                'titulo'    => 'Priorizar features sin morir en el intento',
-                'desc'      => 'Un marco simple para decidir qué construir primero cuando todo parece urgente y el roadmap crece más rápido que el equipo.',
-            ],
-            [
-                'cover'     => 'radial-gradient(rgba(255,255,255,.14) 1px,transparent 1.6px) 0 0/17px 17px,radial-gradient(130% 130% at 24% 18%,var(--accent) 0%,#1a0207 52%,#0b0b0c 100%)',
-                'categoria' => 'INVESTIGACIÓN',
-                'fecha'     => 'MAY · 8 MIN',
-                'titulo'    => '5 señales de que tu research está sesgado',
-                'desc'      => 'Preguntas que inducen la respuesta, muestras cómodas y conclusiones que ya tenías antes de empezar. Cómo detectarlas a tiempo.',
-            ],
-            [
-                'cover'     => 'repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 13px),linear-gradient(115deg,#0b0b0c 18%,#1a0207 55%,var(--accent) 100%)',
-                'categoria' => 'CÓDIGO',
-                'fecha'     => 'ABR · 5 MIN',
-                'titulo'    => 'Del Figma al navegador sin perder el alma',
-                'desc'      => 'Handoff, tokens y las decisiones que hacen que el producto vivo se sienta igual de cuidado que el prototipo.',
-            ],
-        ];
+        // --- Blog: los 3 primeros publicados por orden (se eligen con drag en /admin/blog) ---
+        $posts = array_slice(Blog::publicados(), 0, 3);
 
         $router->render('portfolio/index', [
             'titulo'        => 'Alexander Oliva — Desarrollador de Software & Diseñador UX/UI en CDMX',
             'servicios'     => $servicios,
             'credenciales'  => $credenciales,
+            'proyectosJs'   => $proyectosJs,
             'instituciones' => $instituciones,
             'cursos'        => $cursos,
             'posts'         => $posts,
         ], 'portfolio-layout');
+    }
+
+    // Página interna de un proyecto: /proyecto?id=<id>
+    public static function proyecto(Router $router)
+    {
+        $slug = trim($_GET['slug'] ?? '');
+        $id   = (int) ($_GET['id'] ?? 0);
+        $proyecto = $slug !== '' ? Proyecto::porSlug($slug) : ($id ? Proyecto::find($id) : null);
+        if (!$proyecto) { header('Location: /'); exit; }
+
+        Visita::registrarPagina('/proyecto/' . $proyecto->slug, $proyecto->titulo);
+
+        $router->render('proyecto/index', [
+            'titulo'   => $proyecto->titulo . ' — Alexander Oliva',
+            'metaDescripcion' => mb_substr(strip_tags($proyecto->descripcion), 0, 160),
+            'ogImagen' => '/build/img/proyectos/portadas/' . $proyecto->img,
+            'canonical' => 'https://alexanderoliva.com/proyecto/' . $proyecto->slug,
+            'proyecto' => $proyecto,
+            'galeria'  => ProyectoImagen::porProyecto((int) $proyecto->id),
+        ], 'portfolio-layout');
+    }
+
+    // Home público del blog: /blog
+    public static function blog(Router $router)
+    {
+        Visita::registrarPagina('/tekhne', 'Tékhne');
+
+        $publicados = Blog::publicados();
+        // Separar los cuentos en su propia sección
+        $cuentos = array_values(array_filter($publicados, fn($p) => generarSlug($p->categoria) === 'cuentos'));
+        $articulos = array_values(array_filter($publicados, fn($p) => generarSlug($p->categoria) !== 'cuentos'));
+
+        $router->render('blog/index', [
+            'titulo' => 'Tékhne — La publicación de Alexander Oliva',
+            'metaDescripcion' => 'Tékhne: tecnología, cultura, libros, cine y cuentos. La publicación de Alexander Oliva sobre las ideas que conectan disciplinas.',
+            'canonical' => 'https://alexanderoliva.com/tekhne',
+            'posts'  => $articulos,
+            'cuentos' => $cuentos,
+            'categorias' => Blog::CATEGORIAS,
+            'seleccion' => Pelicula::perfectas(),
+        ], 'portfolio-layout');
+    }
+
+    // Todas las recomendaciones (10/10): /blog/recomendaciones
+    public static function recomendaciones(Router $router)
+    {
+        Visita::registrarPagina('/tekhne/recomendaciones', 'Recomendaciones — Tékhne');
+        $router->render('blog/recomendaciones', [
+            'titulo' => 'Para ver más tarde — Tékhne · Alexander Oliva',
+            'metaDescripcion' => 'Mi selección de cine y series con calificación perfecta 10/10.',
+            'canonical' => 'https://alexanderoliva.com/tekhne/recomendaciones',
+            'seleccion' => Pelicula::perfectas(),
+        ], 'portfolio-layout');
+    }
+
+    // Artículo público del blog: /blog/<slug> (o ?id=)
+    public static function articulo(Router $router)
+    {
+        $slug = trim($_GET['slug'] ?? '');
+        $id   = (int) ($_GET['id'] ?? 0);
+        $post = $slug !== '' ? Blog::porSlug($slug) : ($id ? Blog::find($id) : null);
+        if (!$post || $post->estado !== 'publicado') { header('Location: /tekhne'); exit; }
+
+        Blog::registrarVisita((int) $post->id);   // contador de visitas del artículo
+        Visita::registrarPagina('/tekhne/' . ($post->slug ?: $post->id), $post->titulo);
+
+        // Recurso asociado (libro / película) si existe
+        $ref = null;
+        if ($post->ref_tipo === 'libro' && $post->ref_id) {
+            $ref = Libro::find((int) $post->ref_id);
+        } elseif ($post->ref_tipo === 'pelicula' && $post->ref_id) {
+            $ref = Pelicula::find((int) $post->ref_id);
+        }
+
+        $router->render('blog/articulo', [
+            'titulo' => $post->titulo . ' — Tékhne · Alexander Oliva',
+            'metaDescripcion' => $post->descripcion,
+            'ogTitulo' => $post->titulo,
+            'ogImagen' => $post->cover_img ? '/build/img/blog/' . $post->cover_img : '/build/img/profile.png',
+            'ogTipo'   => 'article',
+            'ogFecha'  => $post->fecha_pub ?: null,
+            'canonical' => 'https://alexanderoliva.com/tekhne/' . ($post->slug ?: $post->id),
+            'post'   => $post,
+            'ref'    => $ref,
+        ], 'portfolio-layout');
+    }
+
+    // Listado del blog por categoría: /blog/categoria/<slug>
+    public static function categoria(Router $router)
+    {
+        $catSlug = trim($_GET['cat'] ?? '');
+        $posts = Blog::publicadosPorCategoria($catSlug);
+        // Nombre legible: tomar el de la primera entrada o el slug capitalizado
+        $nombre = !empty($posts) ? $posts[0]->categoria : ucfirst(str_replace('-', ' ', $catSlug));
+
+        Visita::registrarPagina('/tekhne/categoria/' . $catSlug, $nombre . ' — Tékhne');
+
+        $router->render('blog/categoria', [
+            'titulo' => $nombre . ' — Tékhne · Alexander Oliva',
+            'metaDescripcion' => 'Artículos de la categoría ' . $nombre . ' en Tékhne, la publicación de Alexander Oliva.',
+            'canonical' => 'https://alexanderoliva.com/tekhne/categoria/' . $catSlug,
+            'categoriaNombre' => $nombre,
+            'categoriaSlug' => $catSlug,
+            'categorias' => Blog::CATEGORIAS,
+            'posts' => $posts,
+        ], 'portfolio-layout');
+    }
+
+    // Sitemap dinámico: /sitemap.xml
+    public static function sitemap()
+    {
+        $base = 'https://alexanderoliva.com';
+        $urls = [
+            ['loc' => $base . '/',                        'freq' => 'weekly',  'prio' => '1.0'],
+            ['loc' => $base . '/tekhne',                  'freq' => 'weekly',  'prio' => '0.8'],
+            ['loc' => $base . '/tekhne/recomendaciones',  'freq' => 'monthly', 'prio' => '0.5'],
+        ];
+        foreach (Proyecto::ordenados() as $p) {
+            $urls[] = ['loc' => $base . '/proyecto/' . $p->slug, 'freq' => 'yearly', 'prio' => '0.7'];
+        }
+        foreach (Blog::CATEGORIAS as $cat) {
+            $urls[] = ['loc' => $base . '/tekhne/categoria/' . generarSlug($cat), 'freq' => 'weekly', 'prio' => '0.5'];
+        }
+        foreach (Blog::publicados() as $post) {
+            $urls[] = [
+                'loc'     => $base . '/tekhne/' . ($post->slug ?: $post->id),
+                'freq'    => 'monthly',
+                'prio'    => '0.6',
+                'lastmod' => $post->fecha_pub ?: null,
+            ];
+        }
+
+        header('Content-Type: application/xml; charset=utf-8');
+        echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        foreach ($urls as $u) {
+            echo "  <url>\n    <loc>" . htmlspecialchars($u['loc']) . "</loc>\n";
+            if (!empty($u['lastmod'])) echo "    <lastmod>" . htmlspecialchars($u['lastmod']) . "</lastmod>\n";
+            echo "    <changefreq>" . $u['freq'] . "</changefreq>\n    <priority>" . $u['prio'] . "</priority>\n  </url>\n";
+        }
+        echo '</urlset>';
+        exit;
     }
 }

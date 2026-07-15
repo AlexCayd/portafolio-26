@@ -71,14 +71,20 @@ class ActiveRecord {
         return $atributos;
     }
 
-    // Sanitizar los datos antes de guardarlos en la BD
+    // Sanitizar los datos antes de guardarlos en la BD.
+    // Conserva los NULL (para no romper columnas numéricas/DATE en modo estricto).
     public function sanitizarAtributos() {
         $atributos = $this->atributos();
         $sanitizado = [];
         foreach($atributos as $key => $value ) {
-            $sanitizado[$key] = self::$db->escape_string($value);
+            $sanitizado[$key] = is_null($value) ? null : self::$db->escape_string($value);
         }
         return $sanitizado;
+    }
+
+    // Convierte un valor sanitizado en literal SQL ('valor' o NULL)
+    private static function sqlValor($value) : string {
+        return is_null($value) ? 'NULL' : "'" . $value . "'";
     }
 
     // Sincroniza BD con Objetos en memoria
@@ -110,23 +116,33 @@ class ActiveRecord {
         return $resultado;
     }
 
+    // Reordena registros (columna `orden`) según el arreglo de ids recibido
+    public static function reordenar(array $ids) : void {
+        $pos = 1;
+        foreach ($ids as $id) {
+            $id = (int) $id;
+            self::$db->query("UPDATE " . static::$tabla . " SET orden = {$pos} WHERE id = {$id}");
+            $pos++;
+        }
+    }
+
     // Busca un registro por su id
     public static function find($id) {
-        $query = "SELECT * FROM " . static::$tabla  ." WHERE id = ${id}";
+        $query = "SELECT * FROM " . static::$tabla  ." WHERE id = {$id}";
         $resultado = self::consultarSQL($query);
         return array_shift( $resultado ) ;
     }
 
     // Obtener Registros con cierta cantidad
     public static function get($limite) {
-        $query = "SELECT * FROM " . static::$tabla . " LIMIT ${limite} ORDER BY id DESC" ;
+        $query = "SELECT * FROM " . static::$tabla . " LIMIT {$limite} ORDER BY id DESC" ;
         $resultado = self::consultarSQL($query);
         return array_shift( $resultado ) ;
     }
 
     // Busqueda Where con Columna 
     public static function where($columna, $valor) {
-        $query = "SELECT * FROM " . static::$tabla . " WHERE ${columna} = '${valor}'";
+        $query = "SELECT * FROM " . static::$tabla . " WHERE {$columna} = '{$valor}'";
         $resultado = self::consultarSQL($query);
         return array_shift( $resultado ) ;
     }
@@ -136,12 +152,13 @@ class ActiveRecord {
         // Sanitizar los datos
         $atributos = $this->sanitizarAtributos();
 
-        // Insertar en la base de datos
+        // Insertar en la base de datos (NULL literal donde corresponda)
+        $valores = array_map([self::class, 'sqlValor'], array_values($atributos));
         $query = " INSERT INTO " . static::$tabla . " ( ";
         $query .= join(', ', array_keys($atributos));
-        $query .= " ) VALUES (' "; 
-        $query .= join("', '", array_values($atributos));
-        $query .= " ') ";
+        $query .= " ) VALUES (";
+        $query .= join(", ", $valores);
+        $query .= ") ";
 
         // debuguear($query); // Descomentar si no te funciona algo
 
@@ -158,10 +175,10 @@ class ActiveRecord {
         // Sanitizar los datos
         $atributos = $this->sanitizarAtributos();
 
-        // Iterar para ir agregando cada campo de la BD
+        // Iterar para ir agregando cada campo de la BD (NULL literal donde corresponda)
         $valores = [];
         foreach($atributos as $key => $value) {
-            $valores[] = "{$key}='{$value}'";
+            $valores[] = "{$key}=" . self::sqlValor($value);
         }
 
         // Consulta SQL

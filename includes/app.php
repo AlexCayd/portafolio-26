@@ -8,6 +8,9 @@ require __DIR__ . '/../vendor/autoload.php';
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->safeLoad();
 
+// Zona horaria del sitio (evita el desfase de fecha del servidor, p. ej. en el masthead de Tékhne)
+date_default_timezone_set('America/Mexico_City');
+
 require 'funciones.php';
 require 'database.php';
 
