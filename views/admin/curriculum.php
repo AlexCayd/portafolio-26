@@ -13,6 +13,8 @@
         <span><span class="sw sw-bloqueada"></span> Bloqueada</span>
     </div>
 
+    <p class="curr-hint"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg> Desliza horizontalmente para ver todos los semestres.</p>
+
     <div class="curr-scroll">
         <div class="curr-grid">
             <?php foreach ($grupos as $sem => $materias) : ?>

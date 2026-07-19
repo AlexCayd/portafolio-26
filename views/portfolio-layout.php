@@ -7,7 +7,7 @@
 <?php
 $ao_dominio = 'https://alexanderoliva.com';
 $ao_desc = $metaDescripcion ?? 'Alexander Oliva, desarrollador de software y diseñador UX/UI en Ciudad de México. Construyo productos digitales de punta a punta: del código a la experiencia, con criterio humano.';
-$ao_ogTitulo = $ogTitulo ?? ($titulo ?? 'Alexander Oliva — Desarrollador de Software & Diseñador UX/UI');
+$ao_ogTitulo = $ogTitulo ?? ($titulo ?? 'Alexander Oliva - Desarrollador de Software & Diseñador UX/UI');
 $ao_ogImg = $ogImagen ?? '/build/img/profile.png';
 // Las imágenes OG deben ser URL absolutas para redes sociales
 if (strpos($ao_ogImg, '/') === 0) { $ao_ogImg = $ao_dominio . $ao_ogImg; }
@@ -15,7 +15,7 @@ $ao_canonical = $canonical ?? 'https://alexanderoliva.com/';
 $ao_ogTipo = $ogTipo ?? 'website';
 ?>
 <!-- SEO primario -->
-<title><?php echo $titulo ?? 'Alexander Oliva — Desarrollador de Software & Diseñador UX/UI en CDMX'; ?></title>
+<title><?php echo $titulo ?? 'Alexander Oliva - Desarrollador de Software & Diseñador UX/UI en CDMX'; ?></title>
 <meta name="description" content="<?php echo htmlspecialchars($ao_desc); ?>">
 <meta name="keywords" content="Alexander Oliva, desarrollador de software, diseñador UX/UI, diseño de interfaces, desarrollo web, product designer, front-end, portafolio, CDMX">
 <meta name="author" content="Alexander Oliva">

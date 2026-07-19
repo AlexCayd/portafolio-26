@@ -6,7 +6,7 @@
 </div>
 
 <div class="placeholder">
-    <div class="emoji"><?php echo $emoji; ?></div>
+    <div class="emoji"><?php echo icono('documento'); ?></div>
     <h2>Módulo en construcción</h2>
     <p>El módulo de <strong><?php echo s(strtolower($titulo)); ?></strong> ya está creado y listo para conectarse. Aún no tiene funcionalidad.</p>
 </div>

@@ -1,15 +1,3 @@
--- =====================================================================
---  DML — Datos de ejemplo del portafolio Alexander Oliva
---  Uso:  mysql -u root alexander_oliva < database/dml.sql
---  (Ejecutar DESPUÉS de ddl.sql)
--- =====================================================================
-
-USE alexander_oliva;
-
--- ---------------------------------------------------------------------
---  Usuario administrador — usuario: alex  password: 987654321
--- ---------------------------------------------------------------------
--- PIN de 6 dígitos: 000000
 INSERT INTO usuarios (usuario, nombre, apellido, email, password, admin, confirmado) VALUES
 ('alex', 'Alexander', 'Oliva', 'alexcayd@gmail.com',
  '$2y$12$BILzYC15G.oP1RPDlbzErutMfczwhvCEfYjAGn17UsVI3AIsU8Rd6', 1, 1);

@@ -15,9 +15,36 @@
   .ao-cursor-el { display: none !important; }
 }
 
-// Fase 9 — pulido móvil general del landing
+// ---------------------------------------------------------------------------
+// Servicios: cuando el scroll horizontal cae a apilado (<768px, fallback JS),
+// el pin ya no aporta alto → la sección quedaba pegada a sus vecinas. Le damos
+// padding vertical propio y hacemos que las tarjetas llenen el ancho.
+@media (max-width: 767px) {
+  #ao-app #ao-expertise { padding: clamp(64px, 10vh, 110px) 0; }
+  #ao-app #ao-exp-pin { height: auto !important; overflow: visible !important; align-items: stretch !important; display: block !important; }
+  #ao-app #ao-exp-track { flex-wrap: wrap !important; gap: clamp(20px, 4vh, 32px) !important; padding: 0 clamp(20px, 5vw, 32px) !important; }
+  #ao-app #ao-exp-track > div:first-child,
+  #ao-app .ao-svc { width: 100% !important; }
+}
+
+// Fase 9 / 11 — pulido móvil general del landing
 @media (max-width: 600px) {
-  #ao-app .ao-svc { width: 86vw !important; }
-  // El scroll horizontal de servicios ya cae a apilado (JS), damos aire
-  #ao-app #ao-exp-track { padding: 0 20px !important; }
+  #ao-app .ao-svc { width: 100% !important; }
+
+  // Corazón de Tierra: el texto alineado a la derecha se lee mal en pantallas
+  // estrechas → a la izquierda y a todo el ancho.
+  #ao-app .ao-ct-content { text-align: left !important; padding: clamp(20px, 6vw, 28px) !important; }
+  #ao-app .ao-ct-content p { margin-left: 0 !important; }
+
+  // Perfil: tarjetas de universidades con más respiro
+  #ao-app .ao-core-grid [data-reveal-stagger] { gap: 14px !important; }
+}
+
+// Fase 11 — teléfonos pequeños
+@media (max-width: 430px) {
+  // Perfil: apilar las dos universidades para que respiren
+  #ao-app .ao-core-grid [data-reveal-stagger] { grid-template-columns: 1fr !important; }
+
+  // CTA del hero a todo el ancho (mejor área táctil)
+  #ao-app #ao-top .ao-cta { width: 100%; justify-content: center; }
 }

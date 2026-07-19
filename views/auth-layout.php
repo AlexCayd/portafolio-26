@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?php echo $titulo ?? 'Alexander Oliva'; ?> — Alexander Oliva</title>
+<title><?php echo $titulo ?? 'Alexander Oliva'; ?> - Alexander Oliva</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="/build/img/profile.png">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">

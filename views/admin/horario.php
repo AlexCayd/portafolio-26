@@ -23,7 +23,7 @@ usort($resumenMaterias, function ($a, $b) {
 
 <div class="horario-toolbar">
     <button class="btn btn--sm" id="btn-expandir">⤢ Expandir</button>
-    <button class="btn btn--sm btn--primary" id="btn-pdf">⬇ Exportar PDF</button>
+    <button class="btn btn--sm btn--primary" id="btn-pdf"><?php echo icono('descargar'); ?> Exportar PDF</button>
 </div>
 
 <!-- Barra de asignación (no se incluye en el PDF) -->

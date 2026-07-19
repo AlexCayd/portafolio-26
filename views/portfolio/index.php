@@ -414,7 +414,10 @@
         <a class="ao-social" href="https://www.linkedin.com/in/alexander-oliva-contreras-8a1244211/" target="_blank" data-cursor data-cursor-label="CONECTAR" data-magnetic style="color:var(--fg);text-decoration:none;transition:color .3s;">LinkedIn</a>
         <a class="ao-social" href="https://www.instagram.com/abstrkto/" target="_blank" data-cursor data-cursor-label="SEGUIR" data-magnetic style="color:var(--fg);text-decoration:none;transition:color .3s;">Instagram</a>
       </div>
-      <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--muted);">© ALEXANDER OLIVA</span>
+      <div style="display:flex;align-items:center;gap:clamp(14px,3vw,26px);flex-wrap:wrap;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--muted);">
+        <a class="ao-social" href="/login" data-cursor style="color:var(--muted);text-decoration:none;transition:color .3s;">ACCESO</a>
+        <span>© ALEXANDER OLIVA</span>
+      </div>
     </div>
   </footer>
 

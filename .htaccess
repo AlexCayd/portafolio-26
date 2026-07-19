@@ -1,0 +1,24 @@
+# =====================================================================
+#  .htaccess de RAÍZ — usar SOLO si el DocumentRoot del dominio apunta a
+#  la raíz del proyecto (no a /public).
+#
+#  Reenvía todas las peticiones a /public (donde vive el front-controller)
+#  y bloquea el acceso web a las carpetas internas del proyecto.
+#
+#  Lo ideal sigue siendo apuntar el DocumentRoot del dominio a /public;
+#  si algún día lo haces, este archivo queda fuera del DocumentRoot y se
+#  ignora sin causar problemas.
+# =====================================================================
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1) Bloquear acceso web directo a carpetas y archivos internos
+    #    (con el DocumentRoot en la raíz, quedarían expuestos: .env, dumps, etc.)
+    RewriteRule ^(includes|models|controllers|classes|database|src|views|vendor|node_modules)(/|$) - [F,L]
+    RewriteRule (^|/)\.(env|git) - [F,L]
+
+    # 2) Reenviar todo lo demás a /public con un redirect interno absoluto.
+    #    La condición evita el bucle infinito una vez ya está en /public.
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ /public/$1 [L]
+</IfModule>

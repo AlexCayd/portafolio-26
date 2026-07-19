@@ -60,7 +60,7 @@ class PortfolioController
         $posts = array_slice(Blog::publicados(), 0, 3);
 
         $router->render('portfolio/index', [
-            'titulo'        => 'Alexander Oliva — Desarrollador de Software & Diseñador UX/UI en CDMX',
+            'titulo'        => 'Alexander Oliva - Desarrollador de Software & Diseñador UX/UI en CDMX',
             'servicios'     => $servicios,
             'credenciales'  => $credenciales,
             'proyectosJs'   => $proyectosJs,
@@ -81,7 +81,7 @@ class PortfolioController
         Visita::registrarPagina('/proyecto/' . $proyecto->slug, $proyecto->titulo);
 
         $router->render('proyecto/index', [
-            'titulo'   => $proyecto->titulo . ' — Alexander Oliva',
+            'titulo'   => $proyecto->titulo . ' - Alexander Oliva',
             'metaDescripcion' => mb_substr(strip_tags($proyecto->descripcion), 0, 160),
             'ogImagen' => '/build/img/proyectos/portadas/' . $proyecto->img,
             'canonical' => 'https://alexanderoliva.com/proyecto/' . $proyecto->slug,
@@ -101,7 +101,7 @@ class PortfolioController
         $articulos = array_values(array_filter($publicados, fn($p) => generarSlug($p->categoria) !== 'cuentos'));
 
         $router->render('blog/index', [
-            'titulo' => 'Tékhne — La publicación de Alexander Oliva',
+            'titulo' => 'Tékhne - La publicación de Alexander Oliva',
             'metaDescripcion' => 'Tékhne: tecnología, cultura, libros, cine y cuentos. La publicación de Alexander Oliva sobre las ideas que conectan disciplinas.',
             'canonical' => 'https://alexanderoliva.com/tekhne',
             'posts'  => $articulos,
@@ -114,9 +114,9 @@ class PortfolioController
     // Todas las recomendaciones (10/10): /blog/recomendaciones
     public static function recomendaciones(Router $router)
     {
-        Visita::registrarPagina('/tekhne/recomendaciones', 'Recomendaciones — Tékhne');
+        Visita::registrarPagina('/tekhne/recomendaciones', 'Recomendaciones - Tékhne');
         $router->render('blog/recomendaciones', [
-            'titulo' => 'Para ver más tarde — Tékhne · Alexander Oliva',
+            'titulo' => 'Para ver más tarde - Tékhne · Alexander Oliva',
             'metaDescripcion' => 'Mi selección de cine y series con calificación perfecta 10/10.',
             'canonical' => 'https://alexanderoliva.com/tekhne/recomendaciones',
             'seleccion' => Pelicula::perfectas(),
@@ -143,7 +143,7 @@ class PortfolioController
         }
 
         $router->render('blog/articulo', [
-            'titulo' => $post->titulo . ' — Tékhne · Alexander Oliva',
+            'titulo' => $post->titulo . ' - Tékhne · Alexander Oliva',
             'metaDescripcion' => $post->descripcion,
             'ogTitulo' => $post->titulo,
             'ogImagen' => $post->cover_img ? '/build/img/blog/' . $post->cover_img : '/build/img/profile.png',
@@ -163,10 +163,10 @@ class PortfolioController
         // Nombre legible: tomar el de la primera entrada o el slug capitalizado
         $nombre = !empty($posts) ? $posts[0]->categoria : ucfirst(str_replace('-', ' ', $catSlug));
 
-        Visita::registrarPagina('/tekhne/categoria/' . $catSlug, $nombre . ' — Tékhne');
+        Visita::registrarPagina('/tekhne/categoria/' . $catSlug, $nombre . ' - Tékhne');
 
         $router->render('blog/categoria', [
-            'titulo' => $nombre . ' — Tékhne · Alexander Oliva',
+            'titulo' => $nombre . ' - Tékhne · Alexander Oliva',
             'metaDescripcion' => 'Artículos de la categoría ' . $nombre . ' en Tékhne, la publicación de Alexander Oliva.',
             'canonical' => 'https://alexanderoliva.com/tekhne/categoria/' . $catSlug,
             'categoriaNombre' => $nombre,

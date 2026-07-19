@@ -36,7 +36,7 @@
         <?php if ($existe) : ?>
             <iframe class="cv-preview" src="/build/pdf/cv.pdf#toolbar=0" title="CV actual"></iframe>
         <?php else : ?>
-            <div class="placeholder" style="padding:60px 20px"><div class="emoji">📄</div><p>Sin CV para previsualizar.</p></div>
+            <div class="placeholder" style="padding:60px 20px"><div class="emoji"><?php echo icono('documento'); ?></div><p>Sin CV para previsualizar.</p></div>
         <?php endif; ?>
     </div>
 </div>
