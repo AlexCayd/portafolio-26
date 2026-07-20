@@ -17,11 +17,19 @@ class PatrimonioSnapshot extends ActiveRecord {
         $this->neto  = $args['neto']  ?? 0;
     }
 
-    // Guarda/actualiza el snapshot del mes actual con el neto vigente
+    // Guarda/actualiza el snapshot del mes actual (fechado al último día del mes)
+    // con el neto vigente. Como se actualiza en cada visita, al cierre del mes
+    // el punto histórico refleja el patrimonio neto de fin de mes.
     public static function registrarMes(float $neto) : void {
+        $finMes  = date('Y-m-t');
         $primero = date('Y-m-01');
+        $sigMes  = date('Y-m-01', strtotime('first day of next month'));
         $neto = self::$db->escape_string((string) $neto);
-        self::$db->query("INSERT INTO " . static::$tabla . " (fecha, neto) VALUES ('{$primero}', '{$neto}')
+        // Limpia snapshots previos del mes en curso que no sean el de fin de mes
+        // (compatibilidad con el esquema anterior fechado al día 1).
+        self::$db->query("DELETE FROM " . static::$tabla . "
+                          WHERE fecha >= '{$primero}' AND fecha < '{$sigMes}' AND fecha <> '{$finMes}'");
+        self::$db->query("INSERT INTO " . static::$tabla . " (fecha, neto) VALUES ('{$finMes}', '{$neto}')
                           ON DUPLICATE KEY UPDATE neto = '{$neto}'");
     }
 

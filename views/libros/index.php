@@ -41,6 +41,7 @@
                         <div class="row" style="margin-top:10px">
                             <button class="btn btn--sm btn--primary btn-guardar">Guardar</button>
                             <button class="btn btn--sm btn--ghost btn-cancelar">Cancelar</button>
+                            <button type="button" class="btn btn--sm btn--danger btn-eliminar" data-titulo="<?php echo s($l->titulo); ?>" style="margin-left:auto">Eliminar</button>
                         </div>
                     </div>
                     <span class="check"><?php echo icono('ok'); ?></span>
@@ -80,11 +81,13 @@
                             <div class="star-rating star-rating--lg" data-max="5" data-input="#lr-<?php echo $l->id; ?>"></div>
                         </div>
                         <input type="hidden" class="leido-star-input" id="lr-<?php echo $l->id; ?>" value="<?php echo (float)$l->estrellas; ?>">
+                        <label class="campo-mini" style="margin-top:8px"><span>Fecha de lectura</span><input type="date" class="edit-fechaleido" value="<?php echo s($l->fecha_leido ?? ''); ?>"></label>
                         <textarea class="edit-opinion" placeholder="Tu opinión..." style="width:100%;margin-top:8px;background:var(--surface-2);border:1px solid var(--line-2);color:var(--text);border-radius:10px;padding:11px;font:inherit;font-size:.9rem;min-height:70px;"><?php echo s($l->comentario); ?></textarea>
                         <div class="row" style="margin-top:8px">
                             <button class="btn btn--sm btn--primary btn-guardar">Guardar</button>
                             <button class="btn btn--sm btn--ghost btn-cancelar">Cancelar</button>
                             <button type="button" class="btn btn--sm btn--ghost btn-rependiente" style="margin-left:auto">↩ A pendientes</button>
+                            <button type="button" class="btn btn--sm btn--danger btn-eliminar" data-titulo="<?php echo s($l->titulo); ?>">Eliminar</button>
                         </div>
                     </div>
                 </li>
@@ -177,6 +180,7 @@
             e.stopPropagation();
             var data = { id: libro.dataset.id, titulo: libro.querySelector('.edit-titulo').value, autor: libro.querySelector('.edit-autor').value };
             var af = libro.querySelector('.edit-alfinal'); if (af && af.checked) data.al_final = 1;
+            var fl = libro.querySelector('.edit-fechaleido'); if (fl) data.fecha_leido = fl.value;
             post('/admin/libros/editar', data, function () {
                 var sv = libro.querySelector('.leido-star-input');
                 if (sv) post('/admin/libros/resenar', { id: libro.dataset.id, estrellas: sv.value, comentario: libro.querySelector('.edit-opinion').value }, function () { location.reload(); });
@@ -189,6 +193,18 @@
         if (rp) rp.addEventListener('click', function (e) {
             e.stopPropagation();
             post('/admin/libros/estado', { id: libro.dataset.id }, function () { location.reload(); });
+        });
+        var el = libro.querySelector('.btn-eliminar');
+        if (el) el.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var titulo = el.dataset.titulo || '';
+            confirmar('Se eliminará este libro de forma permanente. Escribe su título para confirmar.', titulo).then(function (v) {
+                if (!v) return;
+                var f = document.createElement('form');
+                f.method = 'POST'; f.action = '/admin/libros/eliminar';
+                f.innerHTML = '<input type="hidden" name="id" value="' + libro.dataset.id + '">';
+                document.body.appendChild(f); f.submit();
+            });
         });
     });
 })();

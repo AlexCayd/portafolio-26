@@ -5,7 +5,7 @@ namespace Model;
 class Libro extends ActiveRecord {
 
     protected static $tabla = 'libros';
-    protected static $columnasDB = ['id', 'titulo', 'autor', 'estado', 'completado', 'posicion', 'estrellas', 'comentario'];
+    protected static $columnasDB = ['id', 'titulo', 'autor', 'estado', 'completado', 'posicion', 'estrellas', 'comentario', 'fecha_leido'];
 
     public $id;
     public $titulo;
@@ -15,16 +15,27 @@ class Libro extends ActiveRecord {
     public $posicion;
     public $estrellas;
     public $comentario;
+    public $fecha_leido;
 
     public function __construct($args = []) {
-        $this->id         = $args['id']         ?? null;
-        $this->titulo     = $args['titulo']     ?? '';
-        $this->autor      = $args['autor']      ?? '';
-        $this->estado     = $args['estado']     ?? 'pendiente';
-        $this->completado = $args['completado'] ?? 0;
-        $this->posicion   = $args['posicion']   ?? 0;
-        $this->estrellas  = $args['estrellas']  ?? null;
-        $this->comentario = $args['comentario'] ?? null;
+        $this->id          = $args['id']          ?? null;
+        $this->titulo      = $args['titulo']      ?? '';
+        $this->autor       = $args['autor']       ?? '';
+        $this->estado      = $args['estado']      ?? 'pendiente';
+        $this->completado  = $args['completado']  ?? 0;
+        $this->posicion    = $args['posicion']    ?? 0;
+        $this->estrellas   = $args['estrellas']   ?? null;
+        $this->comentario  = $args['comentario']  ?? null;
+        $this->fecha_leido = $args['fecha_leido'] ?? null;
+    }
+
+    // Cuenta libros marcados como leídos con fecha_leido dentro de [$desde, $hasta]
+    public static function contarPorRango(string $desde, string $hasta) : int {
+        $desde = self::$db->escape_string($desde);
+        $hasta = self::$db->escape_string($hasta);
+        $r = self::$db->query("SELECT COUNT(*) AS c FROM " . static::$tabla . "
+                               WHERE estado = 'leido' AND fecha_leido BETWEEN '{$desde}' AND '{$hasta}'")->fetch_assoc();
+        return (int) $r['c'];
     }
 
     // Pendientes ordenados por posición de lectura
@@ -60,6 +71,7 @@ class Libro extends ActiveRecord {
             $primero = $pendientes[0] ?? null;
             if (!$primero || (int) $primero->completado !== 1) break;
             $primero->estado = 'leido';
+            if (empty($primero->fecha_leido)) $primero->fecha_leido = date('Y-m-d');   // fecha de lectura por defecto
             $primero->guardar();
             $promovidos[] = $primero;
         }

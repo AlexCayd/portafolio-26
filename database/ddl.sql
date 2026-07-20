@@ -108,6 +108,7 @@ CREATE TABLE libros (
     posicion    INT          NOT NULL DEFAULT 0,
     estrellas   DECIMAL(2,1) NULL,
     comentario  TEXT         NULL,
+    fecha_leido DATE         NULL,
     creado      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
@@ -242,6 +243,18 @@ CREATE TABLE horario_bloques (
     hora_inicio TIME NOT NULL,
     hora_fin    TIME NOT NULL,
     CONSTRAINT fk_bloque_materia FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Criterios de evaluación por materia (simulador de calificaciones)
+DROP TABLE IF EXISTS materia_criterios;
+CREATE TABLE materia_criterios (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    materia_id  INT           NOT NULL,
+    nombre      VARCHAR(120)  NOT NULL DEFAULT '',
+    peso        DECIMAL(5,2)  NOT NULL DEFAULT 0,
+    calificacion DECIMAL(4,2) NOT NULL DEFAULT 0,
+    orden       INT           NOT NULL DEFAULT 0,
+    CONSTRAINT fk_criterio_materia FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------

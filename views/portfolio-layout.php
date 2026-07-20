@@ -67,7 +67,13 @@ $ao_ogTipo = $ogTipo ?? 'website';
 <!-- Fuentes -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://api.fontshare.com/v2/css?f[]=clash-display@500,600,700&display=swap" rel="stylesheet">
+<!-- Clash Display autoalojada (no depende de la red: funciona en local y offline) -->
+<link rel="preload" as="font" type="font/woff2" href="/build/fonts/ClashDisplay-Bold.woff2" crossorigin>
+<style>
+@font-face { font-family: 'Clash Display'; src: url('/build/fonts/ClashDisplay-Medium.woff2') format('woff2');   font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Clash Display'; src: url('/build/fonts/ClashDisplay-Semibold.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Clash Display'; src: url('/build/fonts/ClashDisplay-Bold.woff2') format('woff2');     font-weight: 700; font-style: normal; font-display: swap; }
+</style>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
 <!-- Librerías de animación (CDN) -->
@@ -115,6 +121,19 @@ $ao_ogTipo = $ogTipo ?? 'website';
             if (document.readyState === 'complete') salir(); else window.addEventListener('load', salir);
         }
     })();
+    // bfcache: al retroceder, el navegador restaura la página tal como quedó (con el
+    // telón puesto y el contenido tapado). Hay que retirarlo a mano.
+    window.addEventListener('pageshow', function (e) {
+        if (!e.persisted) return;
+        var fx = document.getElementById('ao-pagefx');
+        if (fx) {
+            fx.classList.remove('on');
+            Array.prototype.forEach.call(fx.querySelectorAll('.ao-fx-panel'), function (p) {
+                p.style.transform = 'scaleY(0)'; p.style.transformOrigin = 'top';
+            });
+        }
+        try { sessionStorage.removeItem('ao-nav'); } catch (er) {}
+    });
     // Salida: intercepta enlaces internos y barre con las franjas antes de navegar.
     document.addEventListener('click', function (e) {
         if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;

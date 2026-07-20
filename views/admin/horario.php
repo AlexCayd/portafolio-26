@@ -17,13 +17,18 @@ usort($resumenMaterias, function ($a, $b) {
 <div class="admin-head">
     <div>
         <h1>Horario</h1>
-        <p>Cuadrícula semanal. Total de créditos: <strong><?php echo rtrim(rtrim(number_format($totalCreditos, 1), '0'), '.'); ?></strong>. Click en una materia para ver su detalle.</p>
+        <p>Cuadrícula semanal. Click en una materia para ver su detalle.</p>
+    </div>
+    <div class="creditos-kpi" title="Total de créditos inscritos">
+        <span class="creditos-kpi-num"><?php echo rtrim(rtrim(number_format($totalCreditos, 1), '0'), '.'); ?></span>
+        <span class="creditos-kpi-lbl">créditos<br>totales</span>
     </div>
 </div>
 
 <div class="horario-toolbar">
     <button class="btn btn--sm" id="btn-expandir">⤢ Expandir</button>
     <button class="btn btn--sm btn--primary" id="btn-pdf"><?php echo icono('descargar'); ?> Exportar PDF</button>
+    <button class="btn btn--sm" id="btn-jpg"><?php echo icono('descargar'); ?> Exportar JPG</button>
 </div>
 
 <!-- Barra de asignación (no se incluye en el PDF) -->
@@ -122,6 +127,108 @@ usort($resumenMaterias, function ($a, $b) {
     </form>
 </div>
 
+<!-- Simulador de calificaciones -->
+<div class="card sim-card" id="sim-notas" style="margin-top:22px">
+    <div class="card-head">
+        <div><h2 style="margin:0">Simulador de calificaciones</h2><span class="mini-s" style="color:var(--muted)">Nota de cada materia = Σ(peso% × calificación). El promedio global pondera por créditos.</span></div>
+        <div class="sim-global"><span class="sim-global-lbl">Promedio ponderado</span><b class="sim-global-num" id="sim-prom">—</b></div>
+    </div>
+
+    <?php if (empty($resumenMaterias)) : ?>
+        <p style="color:var(--muted)">Agrega materias para simular sus calificaciones.</p>
+    <?php else : ?>
+        <div class="sim-grid">
+            <?php foreach ($resumenMaterias as $m) : $crs = $criterios[(int) $m->id] ?? []; ?>
+                <div class="sim-materia" data-id="<?php echo $m->id; ?>" data-creditos="<?php echo (float) $m->creditos; ?>" style="--m-color:<?php echo s($m->color); ?>">
+                    <div class="sim-materia-head">
+                        <span class="sim-mat-nombre"><?php echo s($m->nombre); ?></span>
+                        <span class="sim-mat-cr"><?php echo rtrim(rtrim(number_format((float) $m->creditos, 1), '0'), '.'); ?> cr</span>
+                        <span class="sim-mat-nota" data-nota>—</span>
+                    </div>
+                    <form method="POST" action="/admin/horario/criterios/guardar" class="sim-form">
+                        <input type="hidden" name="materia_id" value="<?php echo $m->id; ?>">
+                        <div class="sim-rows">
+                            <div class="sim-row sim-row--head"><span>Criterio</span><span>Peso %</span><span>Calif.</span><span></span></div>
+                            <?php foreach ($crs as $c) : ?>
+                                <div class="sim-row">
+                                    <input type="text" name="nombre[]" value="<?php echo s($c->nombre); ?>" placeholder="Ej. Examen 1">
+                                    <input type="number" name="peso[]" class="sim-peso" step="0.01" min="0" value="<?php echo rtrim(rtrim(number_format((float) $c->peso, 2), '0'), '.'); ?>">
+                                    <input type="number" name="calificacion[]" class="sim-calif" step="0.01" min="0" value="<?php echo rtrim(rtrim(number_format((float) $c->calificacion, 2), '0'), '.'); ?>">
+                                    <button type="button" class="sim-del" title="Quitar">&times;</button>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="sim-actions">
+                            <button type="button" class="btn btn--sm sim-add">＋ Criterio</button>
+                            <span class="sim-peso-total">Σ peso: <b>0</b>%</span>
+                            <button class="btn btn--sm btn--primary">Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
+
+<script>
+// ---- Simulador de calificaciones (cálculo en vivo + ponderado por créditos) ----
+(function () {
+    var cont = document.getElementById('sim-notas');
+    if (!cont) return;
+
+    function rowTemplate() {
+        var d = document.createElement('div');
+        d.className = 'sim-row';
+        d.innerHTML = '<input type="text" name="nombre[]" placeholder="Ej. Examen 1">' +
+            '<input type="number" name="peso[]" class="sim-peso" step="0.01" min="0" value="">' +
+            '<input type="number" name="calificacion[]" class="sim-calif" step="0.01" min="0" value="">' +
+            '<button type="button" class="sim-del" title="Quitar">&times;</button>';
+        return d;
+    }
+
+    function calcMateria(mat) {
+        var rows = mat.querySelectorAll('.sim-rows .sim-row:not(.sim-row--head)');
+        var nota = 0, pesoTot = 0, hay = false;
+        rows.forEach(function (r) {
+            var peso = parseFloat(r.querySelector('.sim-peso').value) || 0;
+            var cal  = parseFloat(r.querySelector('.sim-calif').value) || 0;
+            if (peso > 0) { nota += (peso / 100) * cal; pesoTot += peso; hay = true; }
+        });
+        var notaEl = mat.querySelector('[data-nota]');
+        notaEl.textContent = hay ? nota.toFixed(2) : '—';
+        notaEl.classList.toggle('is-alta', hay && nota >= 8);
+        notaEl.classList.toggle('is-media', hay && nota >= 6 && nota < 8);
+        notaEl.classList.toggle('is-baja', hay && nota < 6);
+        var pt = mat.querySelector('.sim-peso-total b');
+        if (pt) { pt.textContent = (Math.round(pesoTot * 100) / 100); pt.parentNode.classList.toggle('is-warn', pesoTot > 0 && Math.abs(pesoTot - 100) > 0.01); }
+        return { nota: nota, creditos: parseFloat(mat.dataset.creditos) || 0, hay: hay };
+    }
+
+    function calcGlobal() {
+        var suma = 0, cred = 0;
+        cont.querySelectorAll('.sim-materia').forEach(function (mat) {
+            var r = calcMateria(mat);
+            if (r.hay && r.creditos > 0) { suma += r.nota * r.creditos; cred += r.creditos; }
+        });
+        document.getElementById('sim-prom').textContent = cred > 0 ? (suma / cred).toFixed(2) : '—';
+    }
+
+    cont.addEventListener('input', function (e) {
+        if (e.target.classList.contains('sim-peso') || e.target.classList.contains('sim-calif')) calcGlobal();
+    });
+    cont.addEventListener('click', function (e) {
+        if (e.target.classList.contains('sim-add')) {
+            var mat = e.target.closest('.sim-materia');
+            mat.querySelector('.sim-rows').appendChild(rowTemplate());
+        } else if (e.target.classList.contains('sim-del')) {
+            e.target.closest('.sim-row').remove();
+            calcGlobal();
+        }
+    });
+    calcGlobal();
+})();
+</script>
+
 <script>
 (function () {
     // ---- Asignar bloques: grilla interactiva ----
@@ -214,21 +321,41 @@ usort($resumenMaterias, function ($a, $b) {
     pop.addEventListener('click', function (e) { e.stopPropagation(); });
     document.addEventListener('click', function () { pop.classList.remove('show'); });
 
-    // Exportar PDF (captura completa, ajustada a la página)
-    document.getElementById('btn-pdf').addEventListener('click', function () {
-        if (typeof html2canvas === 'undefined' || !window.jspdf) { toast('Cargando librerías…'); return; }
+    // ---- Exportar la cuadrícula (captura completa) ----
+    // Rasteriza #horario-capture expandido y entrega el canvas al callback.
+    function capturarHorario(cb) {
+        if (typeof html2canvas === 'undefined') { toast('Cargando librerías…'); return; }
         var el = document.getElementById('horario-capture');
         var prevOv = el.style.overflow, prevW = el.style.width;
         el.style.overflow = 'visible'; el.style.width = el.scrollWidth + 'px';
-        html2canvas(el, { backgroundColor: '#0a0a0b', scale: 2, width: el.scrollWidth, height: el.scrollHeight, windowWidth: el.scrollWidth, windowHeight: el.scrollHeight }).then(function (canvas) {
-            el.style.overflow = prevOv; el.style.width = prevW;
+        function restaurar() { el.style.overflow = prevOv; el.style.width = prevW; }
+        html2canvas(el, { backgroundColor: '#0a0a0b', scale: 2, width: el.scrollWidth, height: el.scrollHeight, windowWidth: el.scrollWidth, windowHeight: el.scrollHeight })
+            .then(function (canvas) { restaurar(); cb(canvas); })
+            .catch(function () { restaurar(); toast('No se pudo generar la imagen', 'eliminado'); });
+    }
+
+    // PDF (ajustado a una página A4 horizontal)
+    document.getElementById('btn-pdf').addEventListener('click', function () {
+        if (!window.jspdf) { toast('Cargando librerías…'); return; }
+        capturarHorario(function (canvas) {
             var pdf = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
             var pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
             var ratio = Math.min((pw - 40) / canvas.width, (ph - 40) / canvas.height);
             var w = canvas.width * ratio, h = canvas.height * ratio;
             pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (pw - w) / 2, (ph - h) / 2, w, h);
             pdf.save('horario.pdf'); toast('PDF descargado');
-        }).catch(function () { el.style.overflow = prevOv; el.style.width = prevW; });
+        });
+    });
+
+    // JPG (imagen a resolución completa)
+    document.getElementById('btn-jpg').addEventListener('click', function () {
+        capturarHorario(function (canvas) {
+            var a = document.createElement('a');
+            a.href = canvas.toDataURL('image/jpeg', 0.95);
+            a.download = 'horario.jpg';
+            document.body.appendChild(a); a.click(); a.remove();
+            toast('JPG descargado');
+        });
     });
 })();
 </script>

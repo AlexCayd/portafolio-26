@@ -13,7 +13,46 @@
     <div class="kpi k-orange"><div class="kpi-label">Duración promedio</div><div class="kpi-value"><?php echo $stats['duracionProm']; ?></div><div class="kpi-sub">minutos</div></div>
 </div>
 
+<?php if (!empty($ultimos)) : ?>
 <div class="card">
+    <div class="card-head"><h2 class="h2-ico"><?php echo icono('film'); ?> Últimos registros <span class="mini-s" style="color:var(--muted)">— los 10 más recientes</span></h2></div>
+    <div class="pel-tira">
+        <?php foreach ($ultimos as $p) : $n = (float) $p->nota; $cls = $n >= 8 ? 'nota-alta' : ($n >= 5 ? 'nota-media' : 'nota-baja'); ?>
+            <a class="pel-tira-item" href="/admin/peliculas/gestionar?id=<?php echo $p->id; ?>" title="Editar <?php echo s($p->titulo); ?>">
+                <div class="pel-tira-poster">
+                    <?php if (!empty($p->poster)) : ?><img src="/build/img/peliculas/<?php echo s($p->poster); ?>" alt="" loading="lazy">
+                    <?php else : ?><div class="poster-ph"><?php echo icono('film'); ?></div><?php endif; ?>
+                    <span class="nota-badge <?php echo $cls; ?> pel-tira-nota"><?php echo number_format($n, 0); ?></span>
+                </div>
+                <span class="pel-tira-titulo"><?php echo s($p->titulo); ?></span>
+            </a>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<div class="card">
+    <div class="card-head"><h2 class="h2-ico"><?php echo icono('estrella'); ?> Mejor puntuados de <?php echo $anioActual; ?> <span class="mini-s" style="color:var(--muted)">— top 10 del año</span></h2></div>
+    <?php if (!empty($topAnio)) : ?>
+        <div class="pel-tira">
+            <?php foreach ($topAnio as $i => $p) : $n = (float) $p->nota; $cls = $n >= 8 ? 'nota-alta' : ($n >= 5 ? 'nota-media' : 'nota-baja'); ?>
+                <a class="pel-tira-item" href="/admin/peliculas/gestionar?id=<?php echo $p->id; ?>" title="Editar <?php echo s($p->titulo); ?>">
+                    <div class="pel-tira-poster">
+                        <?php if (!empty($p->poster)) : ?><img src="/build/img/peliculas/<?php echo s($p->poster); ?>" alt="" loading="lazy">
+                        <?php else : ?><div class="poster-ph"><?php echo icono('film'); ?></div><?php endif; ?>
+                        <span class="pel-tira-rank">#<?php echo $i + 1; ?></span>
+                        <span class="nota-badge <?php echo $cls; ?> pel-tira-nota"><?php echo number_format($n, 0); ?></span>
+                    </div>
+                    <span class="pel-tira-titulo"><?php echo s($p->titulo); ?></span>
+                </a>
+            <?php endforeach; ?>
+        </div>
+    <?php else : ?>
+        <p style="color:var(--muted)">Aún no hay títulos registrados en <?php echo $anioActual; ?>.</p>
+    <?php endif; ?>
+</div>
+
+<div class="card" style="margin-top:22px">
     <div class="card-head">
         <h2 class="h2-ico"><?php echo icono('estrella'); ?> Selección del Autor <span class="mini-s" style="color:var(--muted)">— mis 10/10 (<?php echo count($stats['watchlist']); ?>)</span></h2>
         <?php if (count($stats['watchlist']) > 5) : ?><a href="/admin/peliculas/watchlist" class="btn btn--sm">Ver completa →</a><?php endif; ?>

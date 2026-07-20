@@ -51,6 +51,35 @@ function fin_bloque($titulo, $tipo, $items, $campo, $total) { ?>
     <?php fin_bloque('Deudas', 'deuda', $deudas, 'nombre', $totDeudas); ?>
 </div>
 
+<!-- Planificador del pago del próximo mes (simulador what-if) -->
+<div class="card plan-card" style="margin-top:22px">
+    <div class="card-head">
+        <div><h2 style="margin:0">Planificador del próximo mes</h2><span class="mini-s" style="color:var(--muted)">Simula el pago del mes que viene: resta en una cuenta y recalcula Activos y patrimonio.</span></div>
+    </div>
+    <?php if (empty($activos)) : ?>
+        <p style="color:var(--muted)">Agrega al menos un activo para planificar.</p>
+    <?php else : ?>
+        <div class="plan-grid">
+            <label class="campo"><span>Cuenta de la que sale el pago</span>
+                <select id="plan-cuenta" class="plan-select">
+                    <?php foreach ($activos as $a) : ?>
+                        <option value="<?php echo $a->id; ?>" data-monto="<?php echo (float) $a->monto; ?>"<?php echo strcasecmp(trim($a->nombre), 'Nu') === 0 ? ' selected' : ''; ?>><?php echo s($a->nombre); ?> — $<?php echo number_format((float) $a->monto, 2); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <label class="campo"><span>Monto a pagar</span>
+                <div class="input-money"><span class="im-sign">$</span><input type="number" step="0.01" min="0" id="plan-monto" placeholder="0.00"></div>
+            </label>
+        </div>
+        <div class="plan-preview" id="plan-preview">
+            <div class="plan-res"><span class="plan-res-lbl">Saldo de <b id="plan-cuenta-nom">—</b> tras el pago</span><span class="plan-res-val" id="plan-saldo">—</span></div>
+            <div class="plan-res"><span class="plan-res-lbl">Nuevo total de Activos</span><span class="plan-res-val" id="plan-activos">—</span></div>
+            <div class="plan-res plan-res--neto"><span class="plan-res-lbl">Patrimonio neto proyectado</span><span class="plan-res-val" id="plan-neto">—</span></div>
+        </div>
+        <p class="mini-s" id="plan-warn" style="color:var(--c-amber);margin:10px 0 0;display:none">El pago supera el saldo de esta cuenta.</p>
+    <?php endif; ?>
+</div>
+
 <div class="chart-grid" style="margin-top:22px">
     <div class="chart-box span-12"><h3>Patrimonio neto a lo largo del tiempo</h3><p class="chart-sub">Últimos 12 meses</p><canvas id="chartNeto"></canvas></div>
     <div class="chart-box span-6"><h3>Distribución de activos</h3><p class="chart-sub">Peso de cada activo</p><canvas id="chartActivos"></canvas></div>
@@ -92,6 +121,36 @@ function fin_bloque($titulo, $tipo, $items, $campo, $total) { ?>
     });
     document.getElementById('fin-m-cancel').addEventListener('click', function () { m.classList.remove('is-open'); });
     m.addEventListener('click', function (e) { if (e.target === m) m.classList.remove('is-open'); });
+})();
+</script>
+
+<script>
+// Planificador del próximo mes (simulador what-if, client-side)
+(function () {
+    var sel = document.getElementById('plan-cuenta'), monto = document.getElementById('plan-monto');
+    if (!sel || !monto) return;
+    var totActivos = <?php echo (float) $totActivos; ?>;
+    var neto       = <?php echo (float) $neto; ?>;
+    var fmt = function (n) { return '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+
+    function calc() {
+        var opt = sel.options[sel.selectedIndex];
+        var saldoCuenta = parseFloat(opt.dataset.monto) || 0;
+        var pago = parseFloat(monto.value) || 0;
+        document.getElementById('plan-cuenta-nom').textContent = opt.textContent.split(' — ')[0];
+        var nuevoSaldo = saldoCuenta - pago;
+        document.getElementById('plan-saldo').textContent = fmt(nuevoSaldo);
+        document.getElementById('plan-saldo').classList.toggle('is-neg', nuevoSaldo < 0);
+        document.getElementById('plan-activos').textContent = fmt(totActivos - pago);
+        var nuevoNeto = neto - pago;
+        var netoEl = document.getElementById('plan-neto');
+        netoEl.textContent = fmt(nuevoNeto);
+        netoEl.classList.toggle('is-neg', nuevoNeto < 0);
+        document.getElementById('plan-warn').style.display = (pago > saldoCuenta && pago > 0) ? 'block' : 'none';
+    }
+    sel.addEventListener('change', calc);
+    monto.addEventListener('input', calc);
+    calc();
 })();
 </script>
 

@@ -26,7 +26,7 @@
             <div class="form-grid">
                 <div class="campo full autocomplete" data-autocomplete data-endpoint="/admin/buscar?tipo=pelicula" data-onpick="pelPick">
                     <span>Título <small style="color:var(--muted-2)">— escribe para buscar un título existente; al elegirlo se carga su ficha</small></span>
-                    <input type="text" name="titulo" class="ac-input" value="<?php echo s($editando->titulo ?? ''); ?>" placeholder="Interstellar…" autocomplete="off" required>
+                    <input type="text" name="titulo" class="ac-input" value="<?php echo s($editando->titulo ?? ''); ?>" autocomplete="off" required>
                     <div class="ac-results"></div>
                 </div>
                 <div class="campo full">
@@ -45,7 +45,7 @@
                 </label>
                 <div class="campo autocomplete" data-autocomplete data-endpoint="/admin/buscar?tipo=autor" data-onpick="autorPick">
                     <span>Director / Creador</span>
-                    <input type="text" name="autor" class="ac-input" value="<?php echo s($editando->autor ?? ''); ?>" placeholder="Christopher Nolan" autocomplete="off">
+                    <input type="text" name="autor" class="ac-input" value="<?php echo s($editando->autor ?? ''); ?>" autocomplete="off">
                     <div class="ac-results"></div>
                 </div>
                 <label class="campo">
@@ -54,11 +54,11 @@
                 </label>
                 <label class="campo">
                     <span>Año</span>
-                    <input type="number" name="anio" value="<?php echo s($editando->anio ?? ''); ?>" placeholder="2025">
+                    <input type="number" name="anio" min="0" step="1" value="<?php echo s($editando->anio ?? ''); ?>" placeholder="<?php echo date('Y'); ?>">
                 </label>
                 <label class="campo">
                     <span>Duración (min)</span>
-                    <input type="number" name="duracion" value="<?php echo s($editando->duracion ?? ''); ?>">
+                    <input type="number" name="duracion" min="0" step="1" value="<?php echo s($editando->duracion ?? ''); ?>">
                 </label>
                 <div class="campo full">
                     <span style="text-align:center">Nota</span>

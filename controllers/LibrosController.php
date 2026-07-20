@@ -50,6 +50,7 @@ class LibrosController
             if ($libro->estado === 'leido') {
                 $libro->estado = 'pendiente';
                 $libro->completado = 0;
+                $libro->fecha_leido = null;   // al volver a pendientes se limpia la fecha de lectura
                 $libro->guardar();
                 return ['ok' => true, 'accion' => 'pendiente'];
             }
@@ -81,6 +82,9 @@ class LibrosController
             if (!$libro) return ['ok' => false];
             $libro->titulo = trim($_POST['titulo'] ?? $libro->titulo);
             $libro->autor  = trim($_POST['autor'] ?? $libro->autor);
+            if (array_key_exists('fecha_leido', $_POST)) {
+                $libro->fecha_leido = trim($_POST['fecha_leido']) !== '' ? $_POST['fecha_leido'] : null;
+            }
             if (!empty($_POST['al_final'])) $libro->posicion = Libro::maxPosicion() + 1;
             $libro->guardar();
             return ['ok' => true];
@@ -110,7 +114,7 @@ class LibrosController
         protegerAdmin();
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['id'])) {
             $libro = Libro::find((int) $_POST['id']);
-            if ($libro) $libro->eliminar();
+            if ($libro) { $libro->eliminar(); flash('Libro eliminado', 'eliminado'); }
         }
         header('Location: /admin/libros'); exit;
     }

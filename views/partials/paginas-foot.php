@@ -9,13 +9,22 @@
         if (!els.length) return;
         els.forEach(function (el) {
             el.removeAttribute('data-shown');
-            el.style.opacity = '0'; el.style.transform = 'translateY(26px)'; el.style.willChange = 'opacity, transform';
+            el.style.opacity = '0'; el.style.transform = 'translateY(30px) scale(.98)';
+            // El blur se maneja con transición CSS aparte (anime.js no interpola bien blur()).
+            el.style.filter = 'blur(7px)'; el.style.transition = 'filter .8s cubic-bezier(.16,1,.3,1)';
+            el.style.willChange = 'opacity, transform, filter';
         });
+        function clearFx(el) { el.style.filter = ''; el.style.willChange = 'auto'; }
         function show(el, i) {
             if (el.getAttribute('data-shown')) return;
             el.setAttribute('data-shown', '1');
-            if (window.anime) anime({ targets: el, opacity: [0, 1], translateY: [26, 0], duration: 720, delay: (i || 0) * 65, easing: 'cubicBezier(.16,1,.3,1)' });
-            else { el.style.transition = 'opacity .6s ease, transform .6s ease'; el.style.opacity = '1'; el.style.transform = 'none'; }
+            el.style.filter = 'blur(0px)';                       // dispara la transición CSS del blur
+            if (window.anime) anime({
+                targets: el, opacity: [0, 1], translateY: [30, 0], scale: [.98, 1],
+                duration: 820, delay: (i || 0) * 80, easing: 'cubicBezier(.16,1,.3,1)',
+                complete: function () { clearFx(el); }
+            });
+            else { el.style.transition += ', opacity .6s ease, transform .6s ease'; el.style.opacity = '1'; el.style.transform = 'none'; clearFx(el); }
         }
         if ('IntersectionObserver' in window) {
             var io = new IntersectionObserver(function (entries) {
@@ -24,7 +33,7 @@
             els.forEach(function (el) { io.observe(el); });
         } else { els.forEach(show); }
         setTimeout(function () {
-            els.forEach(function (el) { if (!el.getAttribute('data-shown')) { el.setAttribute('data-shown', '1'); el.style.opacity = '1'; el.style.transform = 'none'; } });
+            els.forEach(function (el) { if (!el.getAttribute('data-shown')) { el.setAttribute('data-shown', '1'); el.style.opacity = '1'; el.style.transform = 'none'; clearFx(el); } });
         }, 1600);
     }
 
@@ -38,7 +47,15 @@
     }
     window.addEventListener('scroll', updateProgress, { passive: true });
     window.addEventListener('resize', updateProgress);
-    window.addEventListener('load', function () { reveal(); updateProgress(); });
+    function boot() {
+        reveal(); updateProgress();
+        if (window.ScrollTrigger) ScrollTrigger.refresh();
+    }
+    if (document.readyState === 'complete') boot();
+    else window.addEventListener('load', boot);
+    // bfcache: al retroceder no se dispara 'load', así que el contenido se quedaría
+    // invisible (opacity 0 del reveal). Se vuelve a lanzar al restaurar la página.
+    window.addEventListener('pageshow', function (e) { if (e.persisted) boot(); });
 
     // ---- Lightbox de galería (imágenes horizontales) -------------------
     var imgs = [].slice.call(document.querySelectorAll('[data-lightbox] img'));

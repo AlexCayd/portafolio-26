@@ -39,8 +39,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         PortfolioController::categoria($router);
         exit;
     }
+    // /tekhne/peliculas  →  catálogo público de películas y series
+    if ($ao_path === '/tekhne/peliculas') {
+        PortfolioController::peliculas($router);
+        exit;
+    }
+    // /tekhne/pelicula/<slug>  →  ficha pública de película/serie
+    if (preg_match('#^/tekhne/pelicula/([a-z0-9-]+)$#', $ao_path, $ao_m)) {
+        $_GET['slug'] = $ao_m[1];
+        PortfolioController::pelicula($router);
+        exit;
+    }
     // /tekhne/<slug>  →  artículo público
-    if (preg_match('#^/tekhne/([a-z0-9-]+)$#', $ao_path, $ao_m) && !in_array($ao_m[1], ['entrada', 'categoria', 'recomendaciones'], true)) {
+    if (preg_match('#^/tekhne/([a-z0-9-]+)$#', $ao_path, $ao_m) && !in_array($ao_m[1], ['entrada', 'categoria', 'recomendaciones', 'pelicula', 'peliculas'], true)) {
         $_GET['slug'] = $ao_m[1];
         PortfolioController::articulo($router);
         exit;
@@ -141,6 +152,7 @@ $router->post('/admin/horario/materia/guardar', [HorarioController::class, 'guar
 $router->post('/admin/horario/materia/eliminar',[HorarioController::class, 'eliminarMateria']);
 $router->post('/admin/horario/bloque/guardar',  [HorarioController::class, 'guardarBloque']);
 $router->post('/admin/horario/bloque/eliminar', [HorarioController::class, 'eliminarBloque']);
+$router->post('/admin/horario/criterios/guardar', [HorarioController::class, 'guardarCriterios']);
 
 // Mapas curriculares
 $router->get('/admin/anahuac', [CurriculumController::class, 'anahuac']);

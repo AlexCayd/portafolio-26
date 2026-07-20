@@ -14,6 +14,12 @@ use Model\Categoria;
 use Model\BlogCategoria;
 use Model\Visita;
 use Model\Usuario;
+use Model\Materia;
+use Model\HorarioBloque;
+use Model\Activo;
+use Model\Deuda;
+use Model\CuentaPorCobrar;
+use Model\GymDia;
 
 class AdminController
 {
@@ -26,6 +32,33 @@ class AdminController
         $servicios    = Servicio::ordenados();      // ascendente
         $credenciales = Credencial::all();
 
+        // --- Widgets multi-módulo (resumen de vida) ---
+        // Clase actual / próxima según día y hora
+        $clase = self::claseActualProxima();
+
+        // Lectura/visionado: últimos 30 días vs. 30 previos
+        $hoy      = date('Y-m-d');
+        $hace29   = date('Y-m-d', strtotime('-29 days'));
+        $hace30   = date('Y-m-d', strtotime('-30 days'));
+        $hace59   = date('Y-m-d', strtotime('-59 days'));
+        $librosAhora = Libro::contarPorRango($hace29, $hoy);
+        $librosPrev  = Libro::contarPorRango($hace59, $hace30);
+        $pelisAhora  = Pelicula::contarPorRango($hace29, $hoy);
+        $pelisPrev   = Pelicula::contarPorRango($hace59, $hace30);
+
+        $netoActual = Activo::total() + CuentaPorCobrar::total() - Deuda::total();
+
+        // Tasa de asistencia al gym: mes actual vs. mes anterior (% de días con «Sí»)
+        $tasaGym = function (array $map) : ?int {
+            $tot = count($map);
+            if ($tot === 0) return null;
+            $si = count(array_filter($map, fn($v) => (int) $v === 1));
+            return (int) round($si / $tot * 100);
+        };
+        $prevTs  = strtotime('first day of last month');
+        $gymAhora = $tasaGym(GymDia::delMes((int) date('Y'), (int) date('n')));
+        $gymPrev  = $tasaGym(GymDia::delMes((int) date('Y', $prevTs), (int) date('n', $prevTs)));
+
         $router->render('admin/dashboard', [
             'titulo'   => 'Dashboard', 'modulo' => 'dashboard', 'usaCharts' => true,
             'resumen'  => [
@@ -35,6 +68,13 @@ class AdminController
                 'blog'         => count(Blog::all()),
                 'libros'       => count(Libro::all()),
                 'peliculas'    => count(Pelicula::all()),
+            ],
+            'vida' => [
+                'clase'       => $clase,
+                'librosAhora' => $librosAhora, 'librosPrev' => $librosPrev,
+                'pelisAhora'  => $pelisAhora,  'pelisPrev'  => $pelisPrev,
+                'gymAhora'    => $gymAhora,    'gymPrev'    => $gymPrev,
+                'neto'        => $netoActual,
             ],
             'ultProyectos'    => array_slice(Proyecto::all(), 0, 5),
             'servicios'       => $servicios,
@@ -373,10 +413,22 @@ class AdminController
         $totalPag = max(1, (int) ceil(count($todas) / $porPagina));
         $pagina = max(1, min($totalPag, (int) ($_GET['pagina'] ?? 1)));
 
+        // Últimos 10 registros (más recientes por fecha de visto)
+        $ultimos = array_slice($todas, 0, 10);
+
+        // Los 10 mejor puntuados de este año (por fecha de visto)
+        $anioActual = (int) date('Y');
+        $deEsteAnio = array_values(array_filter($todas, fn($p) => (int) date('Y', strtotime((string) $p->fecha_vista)) === $anioActual && !empty($p->fecha_vista)));
+        usort($deEsteAnio, fn($a, $b) => (float) $b->nota <=> (float) $a->nota);
+        $topAnio = array_slice($deEsteAnio, 0, 10);
+
         $router->render('admin/peliculas', [
             'titulo' => 'Películas y Series', 'modulo' => 'peliculas',
             'stats'      => self::estadisticasPeliculas($todas),
             'peliculas'  => array_slice($todas, ($pagina - 1) * $porPagina, $porPagina),
+            'ultimos'    => $ultimos,
+            'topAnio'    => $topAnio,
+            'anioActual' => $anioActual,
             'pagina'     => $pagina, 'totalPag' => $totalPag,
             'usaCharts'  => true,
         ], 'admin-layout');
@@ -440,10 +492,10 @@ class AdminController
             $pelicula = new Pelicula($_POST);
             $pelicula->id = $id;
             $pelicula->categoria   = $categoria;
-            $pelicula->anio        = ($_POST['anio'] ?? '') !== '' ? (int) $_POST['anio'] : null;
-            $pelicula->duracion    = ($_POST['duracion'] ?? '') !== '' ? (int) $_POST['duracion'] : null;
+            $pelicula->anio        = ($_POST['anio'] ?? '') !== '' ? max(0, (int) $_POST['anio']) : null;
+            $pelicula->duracion    = ($_POST['duracion'] ?? '') !== '' ? max(0, (int) $_POST['duracion']) : null;
             $pelicula->fecha_vista = !empty($_POST['fecha_vista']) ? $_POST['fecha_vista'] : null;
-            $pelicula->nota        = (float) ($_POST['nota'] ?? 0);
+            $pelicula->nota        = max(0, min(10, (float) ($_POST['nota'] ?? 0)));
             $poster = subirArchivo('poster_file', rutaBuild('img/peliculas'), 'poster', ['png','jpg','jpeg','webp','avif']);
             if ($poster) $pelicula->poster = $poster; elseif ($editando) $pelicula->poster = $editando->poster;
             $pelicula->guardar();
@@ -504,6 +556,33 @@ class AdminController
     }
 
     /* =============================================================== Helpers */
+    // Determina la clase en curso o la siguiente de hoy según día y hora.
+    // Devuelve ['estado'=>'ahora'|'proxima'|'libre', 'materia'=>?, 'color'=>?, 'inicio'=>?, 'fin'=>?]
+    private static function claseActualProxima() : array
+    {
+        $map = [1 => 'lun', 2 => 'mar', 3 => 'mie', 4 => 'jue', 5 => 'vie'];
+        $hoy = $map[(int) date('N')] ?? null;
+        if (!$hoy) return ['estado' => 'libre'];   // fin de semana
+
+        $ahora = date('H:i:s');
+        $delDia = array_filter(HorarioBloque::conMateria(), fn($b) => $b['dia'] === $hoy);
+        usort($delDia, fn($a, $b) => strcmp($a['hora_inicio'], $b['hora_inicio']));
+
+        foreach ($delDia as $b) {
+            if ($ahora >= $b['hora_inicio'] && $ahora < $b['hora_fin']) {
+                return ['estado' => 'ahora', 'materia' => $b['m_nombre'], 'color' => $b['m_color'],
+                        'inicio' => substr($b['hora_inicio'], 0, 5), 'fin' => substr($b['hora_fin'], 0, 5)];
+            }
+        }
+        foreach ($delDia as $b) {
+            if ($ahora < $b['hora_inicio']) {
+                return ['estado' => 'proxima', 'materia' => $b['m_nombre'], 'color' => $b['m_color'],
+                        'inicio' => substr($b['hora_inicio'], 0, 5), 'fin' => substr($b['hora_fin'], 0, 5)];
+            }
+        }
+        return ['estado' => 'libre'];
+    }
+
     private static function eliminar(string $modelo, string $redir) : void
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['id'])) {

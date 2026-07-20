@@ -15,6 +15,63 @@
     <a class="stat-item s-pink" href="/admin/peliculas"><span class="st-ic"><?php echo icono('peliculas'); ?></span><div class="st-txt"><div class="st-num"><?php echo $resumen['peliculas']; ?></div><div class="st-lbl">Pelis/Series</div></div><span class="st-go">→</span></a>
 </div>
 
+<?php
+// Resumen de vida: clase actual/próxima + lectura/visionado (30 días) + gym + neto
+function vida_delta($ahora, $prev) {
+    $d = $ahora - $prev;
+    if ($d > 0) return '<span class="vida-delta up">▲ ' . $d . ' vs. mes previo</span>';
+    if ($d < 0) return '<span class="vida-delta down">▼ ' . abs($d) . ' vs. mes previo</span>';
+    return '<span class="vida-delta flat">= igual que el mes previo</span>';
+}
+function vida_delta_pct($ahora, $prev) {
+    if ($prev === null) return '<span class="vida-delta flat">sin dato del mes pasado</span>';
+    $d = $ahora - $prev;
+    if ($d > 0) return '<span class="vida-delta up">▲ ' . $d . ' pts vs. mes pasado</span>';
+    if ($d < 0) return '<span class="vida-delta down">▼ ' . abs($d) . ' pts vs. mes pasado</span>';
+    return '<span class="vida-delta flat">= igual que el mes pasado</span>';
+}
+$cl = $vida['clase'];
+?>
+<div class="vida-strip">
+    <div class="vida-tile vida-tile--clase<?php echo $cl['estado'] === 'ahora' ? ' is-live' : ''; ?>" style="--m-color:<?php echo s($cl['color'] ?? 'var(--accent)'); ?>">
+        <div class="vida-tile-top"><span class="vida-ic"><?php echo icono('horario'); ?></span>
+            <span class="vida-lbl"><?php echo $cl['estado'] === 'ahora' ? 'Ahora en clase' : ($cl['estado'] === 'proxima' ? 'Siguiente clase' : 'Sin clases'); ?></span>
+        </div>
+        <?php if ($cl['estado'] === 'libre') : ?>
+            <div class="vida-num vida-num--sm">Día libre</div>
+            <div class="vida-sub">No hay clases hoy</div>
+        <?php else : ?>
+            <div class="vida-num vida-num--sm"><?php echo s($cl['materia']); ?></div>
+            <div class="vida-sub"><?php echo $cl['estado'] === 'ahora' ? 'Hasta las ' . s($cl['fin']) : 'A las ' . s($cl['inicio']); ?></div>
+        <?php endif; ?>
+    </div>
+    <a class="vida-tile" href="/admin/libros">
+        <div class="vida-tile-top"><span class="vida-ic"><?php echo icono('libros'); ?></span><span class="vida-lbl">Libros leídos · 30 días</span></div>
+        <div class="vida-num"><?php echo (int) $vida['librosAhora']; ?></div>
+        <div class="vida-sub"><?php echo vida_delta($vida['librosAhora'], $vida['librosPrev']); ?></div>
+    </a>
+    <a class="vida-tile" href="/admin/peliculas">
+        <div class="vida-tile-top"><span class="vida-ic"><?php echo icono('peliculas'); ?></span><span class="vida-lbl">Pelis/series · 30 días</span></div>
+        <div class="vida-num"><?php echo (int) $vida['pelisAhora']; ?></div>
+        <div class="vida-sub"><?php echo vida_delta($vida['pelisAhora'], $vida['pelisPrev']); ?></div>
+    </a>
+    <a class="vida-tile" href="/admin/gym">
+        <div class="vida-tile-top"><span class="vida-ic"><?php echo icono('gym'); ?></span><span class="vida-lbl">Gym · asistencia del mes</span></div>
+        <?php if ($vida['gymAhora'] === null) : ?>
+            <div class="vida-num vida-num--sm">—</div>
+            <div class="vida-sub">Sin registros este mes</div>
+        <?php else : ?>
+            <div class="vida-num"><?php echo (int) $vida['gymAhora']; ?><small>%</small></div>
+            <div class="vida-sub"><?php echo vida_delta_pct($vida['gymAhora'], $vida['gymPrev']); ?></div>
+        <?php endif; ?>
+    </a>
+    <a class="vida-tile" href="/admin/finanzas">
+        <div class="vida-tile-top"><span class="vida-ic"><?php echo icono('finanzas'); ?></span><span class="vida-lbl">Patrimonio neto</span></div>
+        <div class="vida-num vida-num--fit">$<?php echo number_format((float) $vida['neto'], 0); ?></div>
+        <div class="vida-sub">activos + por cobrar − deudas</div>
+    </a>
+</div>
+
 <div class="panels">
     <div class="panel">
         <h3>Últimos proyectos <a href="/admin/proyectos">Ver todos</a></h3>

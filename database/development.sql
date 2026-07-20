@@ -40,8 +40,19 @@ INSERT INTO pys_categorias (nombre) VALUES
 ('Película'), ('Serie'), ('Cortometraje'), ('Documental'), ('Reality'), ('Stand Up');
 
 -- ---------------------------------------------------------------------
---  Películas y Series — sin datos de ejemplo (se cargan desde el panel).
+--  Películas y Series — registros de prueba
 -- ---------------------------------------------------------------------
+INSERT INTO peliculas_series (categoria, titulo, autor, anio, duracion, nota, fecha_vista, poster, comentario) VALUES
+('Película',  'Interestelar',   'Christopher Nolan',    2014, 169, 10, '2026-07-15', NULL, 'Una carta de amor a la ciencia y a la paternidad. La escena del acoplamiento me dejó sin aire.'),
+('Película',  'Whiplash',       'Damien Chazelle',      2014, 106,  9, '2026-07-10', NULL, 'Tensión pura. El montaje del último acto es una clase magistral de ritmo.'),
+('Serie',     'Chernobyl',      'Craig Mazin',          2019, 330, 10, '2026-06-28', NULL, 'El costo de la mentira contado con una frialdad devastadora.'),
+('Película',  'Parásitos',      'Bong Joon-ho',         2019, 132, 10, '2026-07-02', NULL, 'Cambia de género tres veces sin que se note la costura. Perfecta.'),
+('Serie',     'The Bear',       'Christopher Storer',   2022, 300,  9, '2026-05-20', NULL, 'Ansiedad en formato serie, pero con corazón. "Yes, chef".'),
+('Película',  'Dune: Parte Dos','Denis Villeneuve',     2024, 166,  8, '2026-07-18', NULL, 'Espectáculo visual y sonoro descomunal; se siente el peso de cada duna.'),
+('Documental','Cosmos',         'Ann Druyan',           2014,  60,  8, '2026-06-25', NULL, 'Divulgación con alma poética. Sagan estaría orgulloso.'),
+('Stand Up',  'Nanette',        'Hannah Gadsby',        2018,  69,  7, '2026-03-15', NULL, NULL),
+('Película',  'Amélie',         'Jean-Pierre Jeunet',   2001, 122,  9, '2026-01-22', NULL, 'París como un sueño de caramelo. Pura ternura.'),
+('Serie',     'Black Mirror',   'Charlie Brooker',      2011,  60,  8, '2026-07-19', NULL, 'Desigual por capítulos, pero los mejores se te quedan grabados.');
 
 -- ---------------------------------------------------------------------
 --  Videojuegos — sin datos de ejemplo (se cargan desde el panel).
@@ -57,8 +68,39 @@ INSERT INTO blog_categorias (nombre) VALUES
 ('Tecnología'), ('Cultura'), ('Actualidad'), ('Cuentos');
 
 -- ---------------------------------------------------------------------
---  Horario (materias + bloques) — sin datos de ejemplo (se cargan desde el panel).
+--  Horario — materias, bloques y criterios de prueba
 -- ---------------------------------------------------------------------
+INSERT INTO materias (id, nombre, profesor, nrc, creditos, color, orden) VALUES
+(1, 'Blockchain',                   'José de Jesús Ángel Ángel',    '11662', 4.5, '#4267AC', 1),
+(2, 'Big Data',                     'Flavio Lucio Pontecorvo',      '11665', 4.5, '#8AC926', 2),
+(3, 'Programación Dispositivos Móviles', 'Héctor Julián Selley',    '11659', 6.0, '#E51022', 3),
+(4, 'Cómputo en la Nube',           'Alejandro Goldberg Fridman',   '11667', 4.5, '#EA075A', 4),
+(5, 'Internet de las Cosas',        'Alejandro Goldberg Fridman',   '11666', 4.5, '#AA2296', 5),
+(6, 'Practicum I',                  'Emma Zárate Inestrillas',      '14006', 6.0, '#FC6722', 6);
+
+-- Bloques de la cuadrícula semanal
+INSERT INTO horario_bloques (materia_id, dia, hora_inicio, hora_fin) VALUES
+(1, 'mar', '10:00', '11:30'), (1, 'jue', '10:00', '11:30'),
+(2, 'mar', '11:30', '13:00'), (2, 'jue', '11:30', '13:00'),
+(3, 'mar', '16:00', '17:30'), (3, 'mie', '16:00', '17:30'), (3, 'jue', '16:00', '17:30'),
+(4, 'mar', '17:30', '19:00'), (4, 'jue', '17:30', '19:00'),
+(5, 'mie', '19:00', '20:30'), (5, 'jue', '19:00', '20:30'),
+(6, 'mie', '20:30', '22:00'), (6, 'jue', '20:30', '22:00');
+
+-- Criterios de evaluación (simulador de calificaciones)
+INSERT INTO materia_criterios (materia_id, nombre, peso, calificacion, orden) VALUES
+(1, 'Examen Escrito 1',      5.00, 10.00, 1),
+(1, 'Tareas y Lecturas',    15.00,  9.60, 2),
+(1, 'Examen Escrito 2',     20.00, 10.00, 3),
+(1, 'Examen Escrito 3',     20.00, 10.00, 4),
+(1, 'Examen Escrito Final', 40.00,  7.00, 5),
+(2, 'Examen Escrito 1',      3.00,  9.10, 1),
+(2, 'Examen Escrito 2',      4.00,  6.90, 2),
+(2, 'Proyecto Final',       53.00,  9.00, 3),
+(2, 'Participación',        40.00,  8.50, 4),
+(3, 'Prácticas',            40.00,  9.50, 1),
+(3, 'Proyecto Final',       60.00,  8.80, 2);
+
 
 -- ---------------------------------------------------------------------
 --  Mapa curricular — ANÁHUAC (Ing. en Sistemas y Tec. de la Información)

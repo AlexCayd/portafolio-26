@@ -332,12 +332,12 @@
 
   <!-- TEACHING -->
   <section id="ao-teaching" style="position:relative;z-index:2;background:var(--bg);padding:clamp(80px,12vh,150px) clamp(20px,4vw,56px);">
-    <div data-reveal style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:clamp(28px,5vh,52px);">
+    <div data-reveal style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:clamp(28px,5vh,52px);">
       <div>
         <span style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.24em;color:var(--accent);">/ 06 — DOCENCIA</span>
         <h2 style="margin:14px 0 0;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(1.9rem,3.6vw,3rem);letter-spacing:-.02em;">También me gusta <em style="font-style:normal;font-weight:700;color:var(--accent);">enseñar</em></h2>
       </div>
-      <div class="ao-count-block" style="text-align:right;">
+      <div class="ao-count-block" style="text-align:right;flex:none;">
         <span id="ao-count" data-target="25000" style="display:block;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(2rem,4.4vw,3.6rem);line-height:1;letter-spacing:-.02em;color:var(--accent);">+25,000</span>
         <span style="display:block;margin-top:8px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--muted);">ESTUDIANTES INSCRITOS EN MIS CURSOS</span>
       </div>

@@ -22,7 +22,7 @@
 
         <div class="rec-grid">
             <?php foreach ($seleccion as $t) : ?>
-                <article class="sel-card" data-anim title="<?php echo s($t->titulo); ?>">
+                <a class="sel-card" href="/tekhne/pelicula/<?php echo generarSlug($t->titulo); ?>" data-anim title="<?php echo s($t->titulo); ?>">
                     <div class="sel-poster">
                         <?php if (!empty($t->poster)) : ?>
                             <img src="/build/img/peliculas/<?php echo s($t->poster); ?>" alt="<?php echo s($t->titulo); ?>" loading="lazy">
@@ -33,7 +33,7 @@
                     </div>
                     <h3 class="sel-name"><?php echo s($t->titulo); ?></h3>
                     <p class="sel-meta"><?php echo s($t->categoria); ?><?php echo $t->anio ? ' · ' . s($t->anio) : ''; ?></p>
-                </article>
+                </a>
             <?php endforeach; ?>
             <?php if (empty($seleccion)) : ?><p style="color:var(--muted)">Aún no hay títulos con nota 10/10.</p><?php endif; ?>
         </div>

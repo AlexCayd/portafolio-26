@@ -99,6 +99,36 @@
             <?php endif; ?>
         </section>
 
+        <!-- Películas y series (catálogo) -->
+        <?php if (!empty($peliculas)) : ?>
+        <section class="sel-autor sel-autor--pys" data-anim>
+            <div class="sel-head">
+                <div>
+                    <span class="sel-kicker">/ CINE &amp; SERIES</span>
+                    <h2 class="sel-title">Todo lo que he <em>visto</em></h2>
+                    <p class="sel-sub">Mi bitácora completa de cine y series — <?php echo count($peliculas); ?> títulos calificados.</p>
+                </div>
+                <a class="sel-vertodas" href="/tekhne/peliculas">Ver catálogo <span>→</span></a>
+            </div>
+            <div class="sel-shelf">
+                <?php foreach (array_slice($peliculas, 0, 12) as $t) : $tiene = !empty(trim((string) $t->comentario)); $n = (float) $t->nota; ?>
+                    <a class="sel-card" href="/tekhne/pelicula/<?php echo generarSlug($t->titulo); ?>" title="<?php echo s($t->titulo); ?>">
+                        <div class="sel-poster">
+                            <?php if (!empty($t->poster)) : ?>
+                                <img src="/build/img/peliculas/<?php echo s($t->poster); ?>" alt="<?php echo s($t->titulo); ?>" loading="lazy">
+                            <?php else : ?>
+                                <div class="sel-ph"><?php echo icono('film'); ?></div>
+                            <?php endif; ?>
+                            <?php if ($tiene && $n > 0) : ?><span class="sel-badge"><?php echo icono('estrella'); ?><?php echo number_format($n, 0); ?></span><?php endif; ?>
+                        </div>
+                        <h3 class="sel-name"><?php echo s($t->titulo); ?></h3>
+                        <p class="sel-meta"><?php echo s($t->categoria); ?><?php echo $t->anio ? ' · ' . s($t->anio) : ''; ?></p>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        </section>
+        <?php endif; ?>
+
         <!-- Recomendaciones (al final) -->
         <?php if (!empty($seleccion)) : ?>
         <section class="sel-autor" data-anim>
@@ -112,7 +142,7 @@
             </div>
             <div class="sel-shelf">
                 <?php foreach (array_slice($seleccion, 0, 8) as $t) : ?>
-                    <article class="sel-card" title="<?php echo s($t->titulo); ?>">
+                    <a class="sel-card" href="/tekhne/pelicula/<?php echo generarSlug($t->titulo); ?>" title="<?php echo s($t->titulo); ?>">
                         <div class="sel-poster">
                             <?php if (!empty($t->poster)) : ?>
                                 <img src="/build/img/peliculas/<?php echo s($t->poster); ?>" alt="<?php echo s($t->titulo); ?>" loading="lazy">
@@ -123,7 +153,7 @@
                         </div>
                         <h3 class="sel-name"><?php echo s($t->titulo); ?></h3>
                         <p class="sel-meta"><?php echo s($t->categoria); ?><?php echo $t->anio ? ' · ' . s($t->anio) : ''; ?></p>
-                    </article>
+                    </a>
                 <?php endforeach; ?>
             </div>
         </section>
@@ -141,7 +171,7 @@
     var clearBtn = document.getElementById('tk-search-clear');
     var noneMsg  = document.getElementById('tk-search-none');
     var cuentos  = document.getElementById('tk-cuentos');
-    var recos    = document.querySelector('.sel-autor');
+    var shelves  = Array.prototype.slice.call(document.querySelectorAll('.sel-autor'));
     var cards    = Array.prototype.slice.call(document.querySelectorAll('[data-search]'));
 
     function norm(str) {
@@ -162,7 +192,7 @@
         if (q === '') {
             cards.forEach(function (c) { c.style.display = ''; });
             if (cuentos) cuentos.style.display = '';
-            if (recos) recos.style.display = '';
+            shelves.forEach(function (s) { s.style.display = ''; });
             noneMsg.hidden = true;
             return;
         }
@@ -176,7 +206,7 @@
             if (ok) visibles++;
         });
 
-        if (recos) recos.style.display = 'none';   // las recomendaciones no se buscan
+        shelves.forEach(function (s) { s.style.display = 'none'; });   // los estantes de pósters no se buscan
         seccionVisible(cuentos);
 
         noneMsg.hidden = visibles !== 0;

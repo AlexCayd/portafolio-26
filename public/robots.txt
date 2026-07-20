@@ -1,5 +1,8 @@
 User-agent: *
 Allow: /
+Allow: /tekhne
+Allow: /tekhne/peliculas
+Allow: /tekhne/pelicula/
 Disallow: /admin
 Disallow: /login
 

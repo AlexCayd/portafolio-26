@@ -9,22 +9,20 @@
     <h2><?php echo $editando ? 'Editar videojuego' : 'Nuevo videojuego'; ?></h2>
     <form method="POST" action="/admin/videojuegos/guardar" enctype="multipart/form-data">
         <input type="hidden" name="id" value="<?php echo $editando->id ?? ''; ?>">
-        <div class="pel-form-grid" style="grid-template-columns:200px 1fr">
-            <div class="campo">
-                <span>Portada <small style="color:var(--muted-2)">— opcional</small></span>
-                <div class="upload upload--stack" style="max-width:200px">
-                    <div class="upload-preview" id="prev-portada" style="width:100%;aspect-ratio:3/4;height:auto">
-                        <?php if (!empty($editando->portada)) : ?><img src="/build/img/videojuegos/<?php echo s($editando->portada); ?>" alt="" style="object-fit:cover"><?php else : ?><span class="vj-ph-ico"><?php echo icono('videojuegos'); ?></span><?php endif; ?>
-                    </div>
-                    <label class="upload-drop"><b>Elige</b> o arrastra la portada<br><small>JPG, PNG, WEBP</small><input type="file" name="portada_file" accept="image/*" data-preview="#prev-portada"></label>
+        <div class="campo" style="display:block">
+            <span>Portada <small style="color:var(--muted-2)">— opcional</small></span>
+            <div class="upload upload--vj" style="margin-top:8px">
+                <div class="upload-preview vj-prev" id="prev-portada">
+                    <?php if (!empty($editando->portada)) : ?><img src="/build/img/videojuegos/<?php echo s($editando->portada); ?>" alt=""><?php else : ?><span class="vj-ph-ico"><?php echo icono('videojuegos'); ?></span><?php endif; ?>
                 </div>
+                <label class="upload-drop"><b>Elige</b> o arrastra la portada<br><small>JPG, PNG, WEBP</small><input type="file" name="portada_file" accept="image/*" data-preview="#prev-portada"></label>
             </div>
-            <div class="form-grid">
-                <label class="campo full"><span>Nombre</span><input type="text" name="nombre" value="<?php echo s($editando->nombre ?? ''); ?>" required></label>
-                <label class="campo"><span>Horas iniciales</span><input type="number" step="0.1" name="horas_iniciales" value="<?php echo s($editando->horas_iniciales ?? '0'); ?>"></label>
-                <label class="campo"><span>Horas totales <small style="color:var(--muted-2)">(opcional)</small></span><input type="number" step="0.1" name="horas_totales" value="<?php echo s($editando->horas_totales ?? ''); ?>"></label>
-                <p class="campo full mini-s" style="color:var(--muted-2);margin:0">«Horas 2026» se calcula solo (totales − iniciales). La posición se ajusta arrastrando en la lista.</p>
-            </div>
+        </div>
+        <div class="form-grid" style="margin-top:16px">
+            <label class="campo full"><span>Nombre</span><input type="text" name="nombre" value="<?php echo s($editando->nombre ?? ''); ?>" required></label>
+            <label class="campo"><span>Horas iniciales</span><input type="number" step="0.1" name="horas_iniciales" value="<?php echo s($editando->horas_iniciales ?? '0'); ?>"></label>
+            <label class="campo"><span>Horas totales <small style="color:var(--muted-2)">(opcional)</small></span><input type="number" step="0.1" name="horas_totales" value="<?php echo s($editando->horas_totales ?? ''); ?>"></label>
+            <p class="campo full mini-s" style="color:var(--muted-2);margin:0">«Horas 2026» se calcula solo (totales − iniciales). La posición se ajusta arrastrando en la lista.</p>
         </div>
         <div class="form-actions">
             <button class="btn btn--primary"><?php echo $editando ? 'Guardar cambios' : 'Agregar'; ?></button>
@@ -32,6 +30,37 @@
         </div>
     </form>
 </div>
+
+<?php
+    // Galería ordenada por horas jugadas en 2026 (desc); los que no tienen totales van al final.
+    $galeria = $videojuegos;
+    usort($galeria, function ($a, $b) {
+        $ha = $a->horas2026(); $hb = $b->horas2026();
+        if ($ha === null && $hb === null) return 0;
+        if ($ha === null) return 1;
+        if ($hb === null) return -1;
+        return $hb <=> $ha;
+    });
+?>
+<?php if (!empty($galeria)) : ?>
+<div class="card">
+    <div class="card-head"><h2>Galería</h2><span class="mini-s" style="color:var(--muted)">ordenada por horas jugadas en 2026</span></div>
+    <div class="vj-galeria">
+        <?php foreach ($galeria as $vj) : $h = $vj->horas2026(); ?>
+            <a class="vj-poster" href="/admin/videojuegos?id=<?php echo $vj->id; ?>" title="Editar <?php echo s($vj->nombre); ?>">
+                <div class="vj-poster-img">
+                    <?php if (!empty($vj->portada)) : ?><img src="/build/img/videojuegos/<?php echo s($vj->portada); ?>" alt="" loading="lazy">
+                    <?php else : ?><span class="vj-ph-ico"><?php echo icono('videojuegos'); ?></span><?php endif; ?>
+                    <span class="vj-poster-h <?php echo ($h !== null && $h < 0) ? 'neg' : ($h === null ? 'na' : ''); ?>">
+                        <?php echo $h === null ? '—' : rtrim(rtrim(number_format($h, 1), '0'), '.') . ' h'; ?>
+                    </span>
+                </div>
+                <span class="vj-poster-nombre"><?php echo s($vj->nombre); ?></span>
+            </a>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
 
 <div class="card">
     <div class="card-head"><h2>Lista (<?php echo count($videojuegos); ?>)</h2><span class="mini-s" style="color:var(--muted)">↕ arrastra para reordenar</span></div>

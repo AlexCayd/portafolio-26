@@ -108,6 +108,7 @@ class PortfolioController
             'cuentos' => $cuentos,
             'categorias' => Blog::CATEGORIAS,
             'seleccion' => Pelicula::perfectas(),
+            'peliculas'  => Pelicula::ordenadas(),
         ], 'portfolio-layout');
     }
 
@@ -155,6 +156,41 @@ class PortfolioController
         ], 'portfolio-layout');
     }
 
+    // Catálogo público de películas y series: /tekhne/peliculas
+    public static function peliculas(Router $router)
+    {
+        Visita::registrarPagina('/tekhne/peliculas', 'Películas y series - Tékhne');
+        $router->render('pelicula/lista', [
+            'titulo' => 'Películas y series - Tékhne · Alexander Oliva',
+            'metaDescripcion' => 'Todo lo que he visto: cine y series calificadas por Alexander Oliva, con buscador.',
+            'canonical' => 'https://alexanderoliva.com/tekhne/peliculas',
+            'peliculas' => Pelicula::ordenadas(),
+        ], 'portfolio-layout');
+    }
+
+    // Ficha pública de una película/serie: /tekhne/pelicula/<slug>
+    public static function pelicula(Router $router)
+    {
+        $slug = trim($_GET['slug'] ?? '');
+        $film = $slug !== '' ? Pelicula::porSlug($slug) : null;
+        if (!$film) { header('Location: /tekhne/peliculas'); exit; }
+
+        $url = '/tekhne/pelicula/' . generarSlug($film->titulo);
+        Visita::registrarPagina($url, $film->titulo);
+
+        $router->render('pelicula/index', [
+            'titulo' => $film->titulo . ' - Tékhne · Alexander Oliva',
+            'metaDescripcion' => $film->comentario
+                ? mb_substr(strip_tags($film->comentario), 0, 160)
+                : trim(($film->categoria ?: '') . ($film->autor && $film->autor !== '—' ? ' de ' . $film->autor : '') . ($film->anio ? ' (' . $film->anio . ')' : '')),
+            'ogTitulo' => $film->titulo,
+            'ogImagen' => $film->poster ? '/build/img/peliculas/' . $film->poster : '/build/img/profile.png',
+            'ogTipo'   => 'article',
+            'canonical' => 'https://alexanderoliva.com' . $url,
+            'film'   => $film,
+        ], 'portfolio-layout');
+    }
+
     // Listado del blog por categoría: /blog/categoria/<slug>
     public static function categoria(Router $router)
     {
@@ -184,6 +220,7 @@ class PortfolioController
             ['loc' => $base . '/',                        'freq' => 'weekly',  'prio' => '1.0'],
             ['loc' => $base . '/tekhne',                  'freq' => 'weekly',  'prio' => '0.8'],
             ['loc' => $base . '/tekhne/recomendaciones',  'freq' => 'monthly', 'prio' => '0.5'],
+            ['loc' => $base . '/tekhne/peliculas',        'freq' => 'weekly',  'prio' => '0.6'],
         ];
         foreach (Proyecto::ordenados() as $p) {
             $urls[] = ['loc' => $base . '/proyecto/' . $p->slug, 'freq' => 'yearly', 'prio' => '0.7'];
@@ -197,6 +234,15 @@ class PortfolioController
                 'freq'    => 'monthly',
                 'prio'    => '0.6',
                 'lastmod' => $post->fecha_pub ?: null,
+            ];
+        }
+        foreach (Pelicula::ordenadas() as $film) {
+            $slug = generarSlug($film->titulo);
+            if ($slug === '') continue;
+            $urls[] = [
+                'loc'  => $base . '/tekhne/pelicula/' . $slug,
+                'freq' => 'monthly',
+                'prio' => '0.5',
             ];
         }
 

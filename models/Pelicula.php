@@ -70,6 +70,23 @@ class Pelicula extends ActiveRecord {
         return self::consultarSQL("SELECT * FROM " . static::$tabla . " ORDER BY fecha_vista DESC, id DESC");
     }
 
+    // Ficha pública por slug del título (no hay columna slug: se compara generado)
+    public static function porSlug(string $slug) {
+        foreach (self::ordenadas() as $p) {
+            if (generarSlug($p->titulo) === $slug) return $p;
+        }
+        return null;
+    }
+
+    // Cuenta títulos con fecha_vista dentro de [$desde, $hasta]
+    public static function contarPorRango(string $desde, string $hasta) : int {
+        $desde = self::$db->escape_string($desde);
+        $hasta = self::$db->escape_string($hasta);
+        $r = self::$db->query("SELECT COUNT(*) AS c FROM " . static::$tabla . "
+                               WHERE fecha_vista BETWEEN '{$desde}' AND '{$hasta}'")->fetch_assoc();
+        return (int) $r['c'];
+    }
+
     // Selección del autor: títulos con calificación perfecta (10/10)
     public static function perfectas() {
         return self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE nota >= 10 ORDER BY fecha_vista DESC, id DESC");
