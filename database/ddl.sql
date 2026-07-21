@@ -1,3 +1,7 @@
+-- Desactiva las claves foráneas mientras se recrea el esquema
+-- (evita el error #1451 al hacer DROP de tablas referenciadas).
+SET FOREIGN_KEY_CHECKS = 0;
+
 -- ---------------------------------------------------------------------
 --  Usuarios (autenticación del panel /admin)
 -- ---------------------------------------------------------------------
@@ -270,3 +274,6 @@ CREATE TABLE curriculum_materias (
     nombre   VARCHAR(160) NOT NULL,
     estado   ENUM('completado','cursando','desbloqueada','bloqueada') NOT NULL DEFAULT 'bloqueada'
 ) ENGINE=InnoDB;
+
+-- Reactiva la comprobación de claves foráneas
+SET FOREIGN_KEY_CHECKS = 1;

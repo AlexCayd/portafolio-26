@@ -1,38 +1,13 @@
--- phpMyAdmin SQL Dump
--- version 5.2.2
--- https://www.phpmyadmin.net/
---
--- Servidor: 127.0.0.1:3306
--- Tiempo de generación: 20-07-2026 a las 01:34:46
--- Versión del servidor: 11.8.8-MariaDB-log
--- Versión de PHP: 7.2.34
+-- Datos base (deploy). Solo INSERT; el esquema está en ddl.sql
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
-
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
-
---
--- Base de datos: `u277274915_a_oliva`
---
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `activos`
---
-
-CREATE TABLE `activos` (
-  `id` int(11) NOT NULL,
-  `nombre` varchar(120) NOT NULL,
-  `monto` decimal(12,2) NOT NULL DEFAULT 0.00,
-  `orden` int(11) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `activos`
@@ -45,40 +20,6 @@ INSERT INTO `activos` (`id`, `nombre`, `monto`, `orden`) VALUES
 (5, 'Briq', 1000.00, 4),
 (6, 'Monific', 1000.00, 5);
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `blog`
---
-
-CREATE TABLE `blog` (
-  `id` int(11) NOT NULL,
-  `titulo` varchar(180) NOT NULL,
-  `slug` varchar(180) DEFAULT NULL,
-  `estado` enum('borrador','publicado') NOT NULL DEFAULT 'publicado',
-  `categoria` varchar(60) DEFAULT NULL,
-  `fecha_pub` date DEFAULT NULL,
-  `descripcion` text DEFAULT NULL,
-  `contenido` mediumtext DEFAULT NULL,
-  `cover_img` varchar(160) DEFAULT NULL,
-  `ref_tipo` varchar(20) DEFAULT NULL,
-  `ref_id` int(11) DEFAULT NULL,
-  `visitas` int(11) NOT NULL DEFAULT 0,
-  `orden` int(11) NOT NULL DEFAULT 0,
-  `creado` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `blog_categorias`
---
-
-CREATE TABLE `blog_categorias` (
-  `id` int(11) NOT NULL,
-  `nombre` varchar(60) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 --
 -- Volcado de datos para la tabla `blog_categorias`
 --
@@ -89,35 +30,6 @@ INSERT INTO `blog_categorias` (`id`, `nombre`) VALUES
 (2, 'Cultura'),
 (1, 'Tecnología');
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `credenciales`
---
-
-CREATE TABLE `credenciales` (
-  `id` int(11) NOT NULL,
-  `logo` varchar(160) NOT NULL,
-  `alt` varchar(120) DEFAULT NULL,
-  `anio` int(11) DEFAULT NULL,
-  `titulo` varchar(160) NOT NULL,
-  `institucion` varchar(120) DEFAULT NULL,
-  `orden` int(11) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `cuentas_por_cobrar`
---
-
-CREATE TABLE `cuentas_por_cobrar` (
-  `id` int(11) NOT NULL,
-  `nombre` varchar(120) NOT NULL,
-  `monto` decimal(12,2) NOT NULL DEFAULT 0.00,
-  `orden` int(11) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 --
 -- Volcado de datos para la tabla `cuentas_por_cobrar`
 --
@@ -125,22 +37,6 @@ CREATE TABLE `cuentas_por_cobrar` (
 INSERT INTO `cuentas_por_cobrar` (`id`, `nombre`, `monto`, `orden`) VALUES
 (1, 'Maye', 47200.00, 1),
 (2, 'Julio', 33400.00, 2);
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `curriculum_materias`
---
-
-CREATE TABLE `curriculum_materias` (
-  `id` int(11) NOT NULL,
-  `mapa` enum('anahuac','unam') NOT NULL,
-  `semestre` int(11) NOT NULL,
-  `fila` int(11) NOT NULL DEFAULT 0,
-  `codigo` varchar(20) DEFAULT NULL,
-  `nombre` varchar(160) NOT NULL,
-  `estado` enum('completado','cursando','desbloqueada','bloqueada') NOT NULL DEFAULT 'bloqueada'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `curriculum_materias`
@@ -261,37 +157,12 @@ INSERT INTO `curriculum_materias` (`id`, `mapa`, `semestre`, `fila`, `codigo`, `
 (112, 'unam', 8, 4, NULL, 'Optativa - Análisis Semiótico', 'desbloqueada'),
 (113, 'unam', 8, 5, NULL, 'Optativa - Nuevos escenarios tecnológicos en producción audiovisual', 'desbloqueada');
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `deudas`
---
-
-CREATE TABLE `deudas` (
-  `id` int(11) NOT NULL,
-  `nombre` varchar(120) NOT NULL,
-  `monto` decimal(12,2) NOT NULL DEFAULT 0.00,
-  `orden` int(11) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 --
 -- Volcado de datos para la tabla `deudas`
 --
 
 INSERT INTO `deudas` (`id`, `nombre`, `monto`, `orden`) VALUES
 (1, 'Deuda', 47500.00, 1);
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `gym_dias`
---
-
-CREATE TABLE `gym_dias` (
-  `id` int(11) NOT NULL,
-  `fecha` date NOT NULL,
-  `asistio` tinyint(1) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `gym_dias`
@@ -499,20 +370,6 @@ INSERT INTO `gym_dias` (`id`, `fecha`, `asistio`) VALUES
 (201, '2026-07-18', 0),
 (202, '2026-07-19', 0);
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `horario_bloques`
---
-
-CREATE TABLE `horario_bloques` (
-  `id` int(11) NOT NULL,
-  `materia_id` int(11) NOT NULL,
-  `dia` enum('lun','mar','mie','jue','vie') NOT NULL,
-  `hora_inicio` time NOT NULL,
-  `hora_fin` time NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 --
 -- Volcado de datos para la tabla `horario_bloques`
 --
@@ -531,25 +388,6 @@ INSERT INTO `horario_bloques` (`id`, `materia_id`, `dia`, `hora_inicio`, `hora_f
 (13, 6, 'jue', '19:00:00', '20:30:00'),
 (14, 5, 'mie', '20:30:00', '22:00:00'),
 (15, 5, 'jue', '20:30:00', '22:00:00');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `libros`
---
-
-CREATE TABLE `libros` (
-  `id` int(11) NOT NULL,
-  `titulo` varchar(160) NOT NULL,
-  `autor` varchar(120) NOT NULL,
-  `estado` enum('pendiente','leido') NOT NULL DEFAULT 'pendiente',
-  `completado` tinyint(1) NOT NULL DEFAULT 0,
-  `posicion` int(11) NOT NULL DEFAULT 0,
-  `estrellas` decimal(2,1) DEFAULT NULL,
-  `comentario` text DEFAULT NULL,
-  `fecha_leido` date DEFAULT NULL,
-  `creado` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `libros`
@@ -587,22 +425,6 @@ INSERT INTO `libros` (`id`, `titulo`, `autor`, `estado`, `completado`, `posicion
 (29, 'Siddharta', 'Herman Hesse', 'pendiente', 0, 29, NULL, NULL, '2026-07-18 15:23:52'),
 (30, 'El hombre en búsqueda del sentido', 'Víctor Frankl', 'pendiente', 0, 30, NULL, NULL, '2026-07-18 15:24:40');
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `materias`
---
-
-CREATE TABLE `materias` (
-  `id` int(11) NOT NULL,
-  `nombre` varchar(160) NOT NULL,
-  `profesor` varchar(160) DEFAULT NULL,
-  `nrc` varchar(20) DEFAULT NULL,
-  `creditos` decimal(3,1) NOT NULL DEFAULT 0.0,
-  `color` varchar(9) NOT NULL DEFAULT '#4267AC',
-  `orden` int(11) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 --
 -- Volcado de datos para la tabla `materias`
 --
@@ -617,100 +439,12 @@ INSERT INTO `materias` (`id`, `nombre`, `profesor`, `nrc`, `creditos`, `color`, 
 (7, 'Practicum I', 'Emma María Teresa Zárate Inestrillas', '14006', 6.0, '#FC6722', 7),
 (8, 'Responsabilidad Social', 'Profesor', '0', 6.0, '#3A86FF', 8);
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `materia_criterios`
---
-
-CREATE TABLE `materia_criterios` (
-  `id` int(11) NOT NULL,
-  `materia_id` int(11) NOT NULL,
-  `nombre` varchar(120) NOT NULL DEFAULT '',
-  `peso` decimal(5,2) NOT NULL DEFAULT 0.00,
-  `calificacion` decimal(4,2) NOT NULL DEFAULT 0.00,
-  `orden` int(11) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `patrimonio_snapshots`
---
-
-CREATE TABLE `patrimonio_snapshots` (
-  `id` int(11) NOT NULL,
-  `fecha` date NOT NULL,
-  `neto` decimal(12,2) NOT NULL DEFAULT 0.00
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 --
 -- Volcado de datos para la tabla `patrimonio_snapshots`
 --
 
 INSERT INTO `patrimonio_snapshots` (`id`, `fecha`, `neto`) VALUES
 (1, '2026-07-01', 87100.00);
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `peliculas_series`
---
-
-CREATE TABLE `peliculas_series` (
-  `id` int(11) NOT NULL,
-  `categoria` varchar(60) DEFAULT NULL,
-  `titulo` varchar(160) NOT NULL,
-  `autor` varchar(120) DEFAULT NULL,
-  `anio` int(11) DEFAULT NULL,
-  `duracion` int(11) DEFAULT NULL,
-  `nota` decimal(3,1) NOT NULL,
-  `fecha_vista` date DEFAULT NULL,
-  `poster` varchar(160) DEFAULT NULL,
-  `comentario` text DEFAULT NULL,
-  `creado` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `proyectos`
---
-
-CREATE TABLE `proyectos` (
-  `id` int(11) NOT NULL,
-  `titulo` varchar(120) NOT NULL,
-  `slug` varchar(180) DEFAULT NULL,
-  `anio` varchar(10) DEFAULT NULL,
-  `img` varchar(160) NOT NULL,
-  `descripcion` text DEFAULT NULL,
-  `orden` int(11) NOT NULL DEFAULT 0,
-  `creado` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `proyecto_imagenes`
---
-
-CREATE TABLE `proyecto_imagenes` (
-  `id` int(11) NOT NULL,
-  `proyecto_id` int(11) NOT NULL,
-  `img` varchar(160) NOT NULL,
-  `orden` int(11) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `pys_categorias`
---
-
-CREATE TABLE `pys_categorias` (
-  `id` int(11) NOT NULL,
-  `nombre` varchar(60) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `pys_categorias`
@@ -724,21 +458,6 @@ INSERT INTO `pys_categorias` (`id`, `nombre`) VALUES
 (2, 'Serie'),
 (6, 'Stand Up');
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `servicios`
---
-
-CREATE TABLE `servicios` (
-  `id` int(11) NOT NULL,
-  `num` varchar(4) NOT NULL,
-  `titulo` varchar(120) NOT NULL,
-  `descripcion` text NOT NULL,
-  `tags` varchar(255) DEFAULT NULL,
-  `orden` int(11) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 --
 -- Volcado de datos para la tabla `servicios`
 --
@@ -750,47 +469,12 @@ INSERT INTO `servicios` (`id`, `num`, `titulo`, `descripcion`, `tags`, `orden`) 
 (4, '04', 'Automatizaciones', 'Flujos que ahorran horas: integro herramientas y proceso tareas repetitivas para que el trabajo se haga solo.', 'Workflows,Integraciones,APIs', 4),
 (5, '05', 'SEO', 'Posicionamiento orgánico con base técnica: estructura, contenido y rendimiento para que te encuentren.', 'SEO técnico,Contenido,Analítica', 5);
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `usuarios`
---
-
-CREATE TABLE `usuarios` (
-  `id` int(11) NOT NULL,
-  `usuario` varchar(60) NOT NULL,
-  `nombre` varchar(60) DEFAULT NULL,
-  `apellido` varchar(60) DEFAULT NULL,
-  `email` varchar(120) DEFAULT NULL,
-  `password` varchar(255) NOT NULL,
-  `admin` tinyint(1) NOT NULL DEFAULT 0,
-  `confirmado` tinyint(1) NOT NULL DEFAULT 0,
-  `token` varchar(255) DEFAULT NULL,
-  `creado` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 --
 -- Volcado de datos para la tabla `usuarios`
 --
 
 INSERT INTO `usuarios` (`id`, `usuario`, `nombre`, `apellido`, `email`, `password`, `admin`, `confirmado`, `token`, `creado`) VALUES
 (1, 'alex', 'Alexander', 'Oliva', 'alexcayd@gmail.com', '$2y$12$BILzYC15G.oP1RPDlbzErutMfczwhvCEfYjAGn17UsVI3AIsU8Rd6', 1, 1, NULL, '2026-07-17 20:22:15');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `videojuegos`
---
-
-CREATE TABLE `videojuegos` (
-  `id` int(11) NOT NULL,
-  `nombre` varchar(160) NOT NULL,
-  `horas_iniciales` decimal(6,1) NOT NULL DEFAULT 0.0,
-  `horas_totales` decimal(6,1) DEFAULT NULL,
-  `portada` varchar(160) DEFAULT NULL,
-  `orden` int(11) NOT NULL DEFAULT 0,
-  `creado` timestamp NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `videojuegos`
@@ -809,18 +493,6 @@ INSERT INTO `videojuegos` (`id`, `nombre`, `horas_iniciales`, `horas_totales`, `
 (10, 'Librarian', 0.0, 7.1, 'vj-1784477321-dfb497.webp', 10, '2026-07-19 16:08:41'),
 (11, 'Good Pizza, Great Pizza', 0.0, NULL, 'vj-1784477336-d73e18.jpg', 11, '2026-07-19 16:08:56');
 
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `visitas`
---
-
-CREATE TABLE `visitas` (
-  `id` int(11) NOT NULL,
-  `fecha` date NOT NULL,
-  `total` int(11) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 --
 -- Volcado de datos para la tabla `visitas`
 --
@@ -829,20 +501,6 @@ INSERT INTO `visitas` (`id`, `fecha`, `total`) VALUES
 (1, '2026-07-17', 4),
 (5, '2026-07-18', 34),
 (39, '2026-07-19', 18);
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `visitas_pagina`
---
-
-CREATE TABLE `visitas_pagina` (
-  `id` int(11) NOT NULL,
-  `ruta` varchar(191) NOT NULL,
-  `titulo` varchar(200) NOT NULL DEFAULT '',
-  `total` int(11) NOT NULL DEFAULT 0,
-  `actualizado` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `visitas_pagina`
@@ -855,309 +513,6 @@ INSERT INTO `visitas_pagina` (`id`, `ruta`, `titulo`, `total`, `actualizado`) VA
 (18, '/tekhne/categoria/cuentos', 'Cuentos — Tékhne', 3, '2026-07-18 13:02:35'),
 (22, '/tekhne/categoria/actualidad', 'Actualidad — Tékhne', 3, '2026-07-18 13:02:36');
 
---
--- Índices para tablas volcadas
---
-
---
--- Indices de la tabla `activos`
---
-ALTER TABLE `activos`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `blog`
---
-ALTER TABLE `blog`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `blog_categorias`
---
-ALTER TABLE `blog_categorias`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `nombre` (`nombre`);
-
---
--- Indices de la tabla `credenciales`
---
-ALTER TABLE `credenciales`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `cuentas_por_cobrar`
---
-ALTER TABLE `cuentas_por_cobrar`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `curriculum_materias`
---
-ALTER TABLE `curriculum_materias`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `deudas`
---
-ALTER TABLE `deudas`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `gym_dias`
---
-ALTER TABLE `gym_dias`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `fecha` (`fecha`);
-
---
--- Indices de la tabla `horario_bloques`
---
-ALTER TABLE `horario_bloques`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_bloque_materia` (`materia_id`);
-
---
--- Indices de la tabla `libros`
---
-ALTER TABLE `libros`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `materias`
---
-ALTER TABLE `materias`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `materia_criterios`
---
-ALTER TABLE `materia_criterios`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_criterio_materia` (`materia_id`);
-
---
--- Indices de la tabla `patrimonio_snapshots`
---
-ALTER TABLE `patrimonio_snapshots`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `fecha` (`fecha`);
-
---
--- Indices de la tabla `peliculas_series`
---
-ALTER TABLE `peliculas_series`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `proyectos`
---
-ALTER TABLE `proyectos`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `proyecto_imagenes`
---
-ALTER TABLE `proyecto_imagenes`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_pimg_proyecto` (`proyecto_id`);
-
---
--- Indices de la tabla `pys_categorias`
---
-ALTER TABLE `pys_categorias`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `nombre` (`nombre`);
-
---
--- Indices de la tabla `servicios`
---
-ALTER TABLE `servicios`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `usuarios`
---
-ALTER TABLE `usuarios`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `usuario` (`usuario`);
-
---
--- Indices de la tabla `videojuegos`
---
-ALTER TABLE `videojuegos`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indices de la tabla `visitas`
---
-ALTER TABLE `visitas`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `fecha` (`fecha`);
-
---
--- Indices de la tabla `visitas_pagina`
---
-ALTER TABLE `visitas_pagina`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `ruta` (`ruta`);
-
---
--- AUTO_INCREMENT de las tablas volcadas
---
-
---
--- AUTO_INCREMENT de la tabla `activos`
---
-ALTER TABLE `activos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT de la tabla `blog`
---
-ALTER TABLE `blog`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `blog_categorias`
---
-ALTER TABLE `blog_categorias`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
-
---
--- AUTO_INCREMENT de la tabla `credenciales`
---
-ALTER TABLE `credenciales`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `cuentas_por_cobrar`
---
-ALTER TABLE `cuentas_por_cobrar`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT de la tabla `curriculum_materias`
---
-ALTER TABLE `curriculum_materias`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=114;
-
---
--- AUTO_INCREMENT de la tabla `deudas`
---
-ALTER TABLE `deudas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT de la tabla `gym_dias`
---
-ALTER TABLE `gym_dias`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=203;
-
---
--- AUTO_INCREMENT de la tabla `horario_bloques`
---
-ALTER TABLE `horario_bloques`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
-
---
--- AUTO_INCREMENT de la tabla `libros`
---
-ALTER TABLE `libros`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
-
---
--- AUTO_INCREMENT de la tabla `materias`
---
-ALTER TABLE `materias`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
-
---
--- AUTO_INCREMENT de la tabla `materia_criterios`
---
-ALTER TABLE `materia_criterios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `patrimonio_snapshots`
---
-ALTER TABLE `patrimonio_snapshots`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
-
---
--- AUTO_INCREMENT de la tabla `peliculas_series`
---
-ALTER TABLE `peliculas_series`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `proyectos`
---
-ALTER TABLE `proyectos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `proyecto_imagenes`
---
-ALTER TABLE `proyecto_imagenes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT de la tabla `pys_categorias`
---
-ALTER TABLE `pys_categorias`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT de la tabla `servicios`
---
-ALTER TABLE `servicios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT de la tabla `usuarios`
---
-ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT de la tabla `videojuegos`
---
-ALTER TABLE `videojuegos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
-
---
--- AUTO_INCREMENT de la tabla `visitas`
---
-ALTER TABLE `visitas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
-
---
--- AUTO_INCREMENT de la tabla `visitas_pagina`
---
-ALTER TABLE `visitas_pagina`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=72;
-
---
--- Restricciones para tablas volcadas
---
-
---
--- Filtros para la tabla `horario_bloques`
---
-ALTER TABLE `horario_bloques`
-  ADD CONSTRAINT `fk_bloque_materia` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `materia_criterios`
---
-ALTER TABLE `materia_criterios`
-  ADD CONSTRAINT `fk_criterio_materia` FOREIGN KEY (`materia_id`) REFERENCES `materias` (`id`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `proyecto_imagenes`
---
-ALTER TABLE `proyecto_imagenes`
-  ADD CONSTRAINT `fk_pimg_proyecto` FOREIGN KEY (`proyecto_id`) REFERENCES `proyectos` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
