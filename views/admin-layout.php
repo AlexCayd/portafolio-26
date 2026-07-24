@@ -32,7 +32,7 @@ $nav = [
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="/build/img/profile.png">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/build/css/admin.css">
+<link rel="stylesheet" href="<?php echo asset('/build/css/admin.css'); ?>">
 <?php if (!empty($usaCharts)) : ?><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script><?php endif; ?>
 <?php if (!empty($usaPdf)) : ?>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -231,7 +231,8 @@ window.initStars = function (root) {
         var max = parseInt(sr.dataset.max || '5', 10), input = document.querySelector(sr.dataset.input);
         var permiteMedia = parseFloat(sr.dataset.step || '0.5') < 1;   // step=1 => sin decimales
         function media(e, st) { if (!permiteMedia) return 0; var r = st.getBoundingClientRect(); return (e.clientX - r.left) < r.width / 2 ? 0.5 : 0; }
-        for (var i = 1; i <= max; i++) { var s = document.createElement('span'); s.className = 'star'; s.dataset.i = i; s.innerHTML = '<span class="half">★</span>★'; sr.appendChild(s); }
+        var SVG = '<svg class="star-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.48 3.5a.56.56 0 011.04 0l2.12 5.11a.56.56 0 00.48.35l5.52.44c.5.04.7.66.32.99l-4.2 3.6a.56.56 0 00-.18.56l1.28 5.39a.56.56 0 01-.84.6l-4.72-2.88a.56.56 0 00-.59 0l-4.72 2.88a.56.56 0 01-.84-.6l1.28-5.39a.56.56 0 00-.18-.56l-4.2-3.6a.56.56 0 01.32-.99l5.52-.44a.56.56 0 00.48-.35z"/></svg>';
+        for (var i = 1; i <= max; i++) { var s = document.createElement('span'); s.className = 'star'; s.dataset.i = i; s.innerHTML = '<span class="half">' + SVG + '</span>' + SVG; sr.appendChild(s); }
         function paint(v) { sr.querySelectorAll('.star').forEach(function (st) { var i = +st.dataset.i; st.classList.remove('full', 'half-on'); if (v >= i) st.classList.add('full'); else if (v >= i - 0.5) st.classList.add('half-on'); }); }
         // Callback opcional de etiqueta en hover (data-onhover="fnGlobal")
         function hover(v) { var fn = sr.dataset.onhover && window[sr.dataset.onhover]; if (fn) fn(v); }

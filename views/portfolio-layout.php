@@ -84,7 +84,7 @@ $ao_ogTipo = $ogTipo ?? 'website';
 <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
 
 <!-- Estilos compilados del sitio -->
-<link rel="stylesheet" href="/build/css/portfolio.css">
+<link rel="stylesheet" href="<?php echo asset('/build/css/portfolio.css'); ?>">
 
 <!-- Transición de página: paneles deslizantes (motion graphics) -->
 <style>
@@ -157,6 +157,6 @@ $ao_ogTipo = $ogTipo ?? 'website';
     });
     </script>
     <?php echo $contenido; ?>
-    <script src="/build/js/bundle.min.js" defer></script>
+    <script src="<?php echo asset('/build/js/bundle.min.js'); ?>" defer></script>
 </body>
 </html>

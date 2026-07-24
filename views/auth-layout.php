@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="/build/img/profile.png">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/build/css/admin.css">
+<link rel="stylesheet" href="<?php echo asset('/build/css/admin.css'); ?>">
 </head>
 <body class="auth-body">
     <div class="auth-bg" aria-hidden="true"><span></span><span></span><span></span></div>

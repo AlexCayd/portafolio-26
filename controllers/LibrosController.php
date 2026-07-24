@@ -7,16 +7,58 @@ use Model\Libro;
 
 class LibrosController
 {
+    const POR_PAGINA = 25;   // libros leídos por página
+
     // Página de gestión (solo admin)
     public static function index(Router $router)
     {
         protegerAdmin();
+        $leidosTodos = Libro::leidos();               // ya ordenados por fecha de completado (desc)
+        $totalLeidos = count($leidosTodos);
+        $totalPag    = max(1, (int) ceil($totalLeidos / self::POR_PAGINA));
+        $pag         = max(1, min($totalPag, (int) ($_GET['pag'] ?? 1)));
+        $leidos      = array_slice($leidosTodos, ($pag - 1) * self::POR_PAGINA, self::POR_PAGINA);
+
         $router->render('libros/index', [
-            'titulo'     => 'Libros',
-            'modulo'     => 'libros',
-            'pendientes' => Libro::pendientes(),
-            'leidos'     => Libro::leidos(),
+            'titulo'      => 'Libros',
+            'modulo'      => 'libros',
+            'pendientes'  => Libro::pendientes(),
+            'leidos'      => $leidos,
+            'totalLeidos' => $totalLeidos,
+            'pag'         => $pag,
+            'totalPag'    => $totalPag,
+            'inicioLeido' => ($pag - 1) * self::POR_PAGINA,   // offset para numerar la posición
         ], 'admin-layout');
+    }
+
+    // Búsqueda: localiza un libro en cualquier columna y devuelve su posición
+    // (y la página de «Leídos» donde aparece) para poder saltar a él.
+    public static function buscar()
+    {
+        protegerAdmin();
+        self::json(function () {
+            $q = mb_strtolower(trim($_GET['q'] ?? $_POST['q'] ?? ''));
+            if ($q === '') return ['ok' => true, 'resultados' => []];
+
+            $coincide = function ($l) use ($q) {
+                return mb_strpos(mb_strtolower($l->titulo . ' ' . $l->autor), $q) !== false;
+            };
+            $res = [];
+            foreach (Libro::pendientes() as $i => $l) {
+                if ($coincide($l)) $res[] = [
+                    'id' => (int) $l->id, 'titulo' => $l->titulo, 'autor' => $l->autor,
+                    'columna' => 'Pendientes', 'posicion' => $i + 1, 'pagina' => null,
+                ];
+            }
+            foreach (Libro::leidos() as $i => $l) {
+                if ($coincide($l)) $res[] = [
+                    'id' => (int) $l->id, 'titulo' => $l->titulo, 'autor' => $l->autor,
+                    'columna' => 'Leídos', 'posicion' => $i + 1,
+                    'pagina' => intdiv($i, self::POR_PAGINA) + 1,
+                ];
+            }
+            return ['ok' => true, 'resultados' => $res];
+        });
     }
 
     // Crear un libro pendiente (al final por orden de inserción)
@@ -87,6 +129,10 @@ class LibrosController
             }
             if (!empty($_POST['al_final'])) $libro->posicion = Libro::maxPosicion() + 1;
             $libro->guardar();
+            // Reordenar a una posición concreta (solo aplica a pendientes)
+            if (isset($_POST['nueva_pos']) && trim((string) $_POST['nueva_pos']) !== '' && $libro->estado === 'pendiente') {
+                Libro::moverAPosicion((int) $libro->id, (int) $_POST['nueva_pos']);
+            }
             return ['ok' => true];
         });
     }

@@ -16,13 +16,25 @@
     </form>
 </div>
 
+<div class="card">
+    <h2>Buscar libro</h2>
+    <p class="mini-s" style="color:var(--muted);margin:-6px 0 12px">Localiza un título en cualquier columna y descubre su posición.</p>
+    <div class="libro-buscar">
+        <div class="libro-buscar-field">
+            <span class="libro-buscar-ic"><?php echo icono('buscar'); ?></span>
+            <input type="search" id="libro-q" placeholder="Título o autor..." autocomplete="off">
+        </div>
+        <div class="libro-buscar-res" id="libro-q-res"></div>
+    </div>
+</div>
+
 <div class="libros-cols">
     <!-- PENDIENTES -->
     <section class="libros-col">
         <h2>Pendientes <span class="conteo"><?php echo count($pendientes); ?></span></h2>
         <ul class="libro-lista" id="lista-pendientes">
             <?php foreach ($pendientes as $idx => $l) : ?>
-                <li class="libro libro-item is-editable<?php echo $l->completado ? ' is-completado' : ''; ?>" data-id="<?php echo $l->id; ?>">
+                <li class="libro libro-item is-editable<?php echo $l->completado ? ' is-completado' : ''; ?>" id="libro-<?php echo $l->id; ?>" data-id="<?php echo $l->id; ?>">
                     <span class="pos"><?php echo $idx + 1; ?></span>
                     <div class="libro-info">
                         <div class="libro-titulo"><?php echo s($l->titulo); ?></div>
@@ -38,6 +50,7 @@
                             <span class="alfinal-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></span>
                             <span class="alfinal-txt">Enviar al final de la lista</span>
                         </label>
+                        <label class="campo-mini" style="margin-top:10px;max-width:180px"><span>Mover a la posición #</span><input type="number" class="edit-pos" min="1" placeholder="<?php echo $idx + 1; ?>"></label>
                         <div class="row" style="margin-top:10px">
                             <button class="btn btn--sm btn--primary btn-guardar">Guardar</button>
                             <button class="btn btn--sm btn--ghost btn-cancelar">Cancelar</button>
@@ -52,11 +65,12 @@
     </section>
 
     <!-- LEÍDOS -->
-    <section class="libros-col">
-        <h2>Leídos <span class="conteo"><?php echo count($leidos); ?></span></h2>
+    <section class="libros-col" id="col-leidos">
+        <h2>Leídos <span class="conteo"><?php echo $totalLeidos; ?></span></h2>
         <ul class="libro-lista" id="lista-leidos">
-            <?php foreach ($leidos as $l) : $tiene = $l->estrellas !== null && (float)$l->estrellas > 0; ?>
-                <li class="libro libro-item leido is-editable" data-id="<?php echo $l->id; ?>">
+            <?php foreach ($leidos as $idx => $l) : $tiene = $l->estrellas !== null && (float)$l->estrellas > 0; ?>
+                <li class="libro libro-item leido is-editable" id="libro-<?php echo $l->id; ?>" data-id="<?php echo $l->id; ?>">
+                    <span class="pos"><?php echo $inicioLeido + $idx + 1; ?></span>
                     <div class="libro-info" style="flex:1;min-width:0">
                         <div class="leido-head" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
                             <div style="min-width:0">
@@ -64,10 +78,9 @@
                                 <div class="libro-autor"><?php echo s($l->autor); ?></div>
                             </div>
                             <?php if ($tiene) : ?>
-                                <span class="leido-stars-static" style="color:var(--c-amber);white-space:nowrap"><?php
-                                    $e = (float)$l->estrellas;
-                                    for ($i = 1; $i <= 5; $i++) echo $e >= $i ? '★' : ($e >= $i - 0.5 ? '⯨' : '☆');
-                                    echo ' <span style="font-family:var(--mono);font-size:.78rem;color:var(--muted)">' . number_format($e,1) . '</span>';
+                                <span class="leido-stars-static"><?php
+                                    echo estrellasHtml((float)$l->estrellas);
+                                    echo '<span class="leido-stars-num">' . number_format((float)$l->estrellas, 1) . '</span>';
                                 ?></span>
                             <?php else : ?><span class="sin-resena" style="font-size:.78rem;color:var(--muted-2)">Sin reseña</span><?php endif; ?>
                         </div>
@@ -81,7 +94,7 @@
                             <div class="star-rating star-rating--lg" data-max="5" data-input="#lr-<?php echo $l->id; ?>"></div>
                         </div>
                         <input type="hidden" class="leido-star-input" id="lr-<?php echo $l->id; ?>" value="<?php echo (float)$l->estrellas; ?>">
-                        <label class="campo-mini" style="margin-top:8px"><span>Fecha de lectura</span><input type="date" class="edit-fechaleido" value="<?php echo s($l->fecha_leido ?? ''); ?>"></label>
+                        <label class="campo-mini" style="margin-top:8px"><span>Fecha de completado</span><input type="text" class="edit-fechaleido" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="<?php echo $l->fecha_leido ? date('d/m/Y', strtotime($l->fecha_leido)) : ''; ?>"></label>
                         <textarea class="edit-opinion" placeholder="Tu opinión..." style="width:100%;margin-top:8px;background:var(--surface-2);border:1px solid var(--line-2);color:var(--text);border-radius:10px;padding:11px;font:inherit;font-size:.9rem;min-height:70px;"><?php echo s($l->comentario); ?></textarea>
                         <div class="row" style="margin-top:8px">
                             <button class="btn btn--sm btn--primary btn-guardar">Guardar</button>
@@ -94,6 +107,14 @@
             <?php endforeach; ?>
             <?php if (empty($leidos)) : ?><li style="color:var(--muted)">Aún no hay libros leídos.</li><?php endif; ?>
         </ul>
+        <?php if ($totalPag > 1) : ?>
+            <div class="paginacion">
+                <?php for ($i = 1; $i <= $totalPag; $i++) : ?>
+                    <?php if ($i === $pag) : ?><span class="actual"><?php echo $i; ?></span>
+                    <?php else : ?><a href="/admin/libros?pag=<?php echo $i; ?>#col-leidos"><?php echo $i; ?></a><?php endif; ?>
+                <?php endfor; ?>
+            </div>
+        <?php endif; ?>
     </section>
 </div>
 
@@ -121,6 +142,27 @@
         fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
             .then(function (r) { return r.json(); }).then(cb).catch(function () { alert('Error'); });
     }
+
+    // Convierte "dd/mm/aaaa" a ISO "aaaa-mm-dd". '' => '' (limpia). Inválida => null.
+    function fechaISO(v) {
+        v = (v || '').trim();
+        if (v === '') return '';
+        var m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (!m) return null;
+        var d = +m[1], mo = +m[2], y = +m[3];
+        var dt = new Date(y, mo - 1, d);
+        if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+        return y + '-' + ('0' + mo).slice(-2) + '-' + ('0' + d).slice(-2);
+    }
+    // Máscara dd/mm/aaaa mientras se escribe
+    document.querySelectorAll('.edit-fechaleido').forEach(function (inp) {
+        inp.addEventListener('input', function () {
+            var n = inp.value.replace(/\D/g, '').slice(0, 8), out = n.slice(0, 2);
+            if (n.length > 2) out += '/' + n.slice(2, 4);
+            if (n.length > 4) out += '/' + n.slice(4, 8);
+            inp.value = out;
+        });
+    });
 
     var mResena = document.getElementById('modal-resena'), resenaId = null, resVal = document.getElementById('resena-val');
 
@@ -180,7 +222,13 @@
             e.stopPropagation();
             var data = { id: libro.dataset.id, titulo: libro.querySelector('.edit-titulo').value, autor: libro.querySelector('.edit-autor').value };
             var af = libro.querySelector('.edit-alfinal'); if (af && af.checked) data.al_final = 1;
-            var fl = libro.querySelector('.edit-fechaleido'); if (fl) data.fecha_leido = fl.value;
+            var np = libro.querySelector('.edit-pos'); if (np && np.value.trim() !== '') data.nueva_pos = np.value.trim();
+            var fl = libro.querySelector('.edit-fechaleido');
+            if (fl) {
+                var iso = fechaISO(fl.value);
+                if (iso === null) { (window.toast ? toast('Fecha inválida: usa dd/mm/aaaa', 'eliminado') : alert('Fecha inválida: usa dd/mm/aaaa')); return; }
+                data.fecha_leido = iso;
+            }
             post('/admin/libros/editar', data, function () {
                 var sv = libro.querySelector('.leido-star-input');
                 if (sv) post('/admin/libros/resenar', { id: libro.dataset.id, estrellas: sv.value, comentario: libro.querySelector('.edit-opinion').value }, function () { location.reload(); });
@@ -206,6 +254,58 @@
                 document.body.appendChild(f); f.submit();
             });
         });
+    });
+})();
+</script>
+
+<script>
+// Buscador: localiza un libro y su posición en cada columna
+(function () {
+    var q = document.getElementById('libro-q'), box = document.getElementById('libro-q-res');
+    if (!q) return;
+    var pagActual = <?php echo (int) $pag; ?>, timer = null;
+
+    function saltar(id, columna, pagina) {
+        // Leídos en otra página: recargar en esa página y anclar al libro
+        if (columna === 'Leídos' && pagina && pagina !== pagActual) {
+            location.href = '/admin/libros?pag=' + pagina + '#libro-' + id;
+            return;
+        }
+        var el = document.getElementById('libro-' + id);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('is-hit');
+        setTimeout(function () { el.classList.remove('is-hit'); }, 1600);
+    }
+
+    function render(items) {
+        if (!items.length) { box.innerHTML = '<div class="libro-buscar-vacio">Sin coincidencias.</div>'; box.classList.add('is-open'); return; }
+        box.innerHTML = items.map(function (it) {
+            var pag = it.columna === 'Leídos' && it.pagina ? ' · pág. ' + it.pagina : '';
+            return '<button type="button" class="libro-buscar-item" data-id="' + it.id + '" data-col="' + it.columna + '" data-pag="' + (it.pagina || '') + '">' +
+                '<span class="lb-tit">' + it.titulo.replace(/</g, '&lt;') + '</span>' +
+                '<span class="lb-meta"><span class="lb-col lb-col--' + (it.columna === 'Leídos' ? 'leido' : 'pend') + '">' + it.columna + '</span> · posición #' + it.posicion + pag + '</span>' +
+                '</button>';
+        }).join('');
+        box.classList.add('is-open');
+        box.querySelectorAll('.libro-buscar-item').forEach(function (b) {
+            b.addEventListener('click', function () { saltar(+b.dataset.id, b.dataset.col, b.dataset.pag ? +b.dataset.pag : null); });
+        });
+    }
+
+    q.addEventListener('input', function () {
+        clearTimeout(timer);
+        var val = q.value.trim();
+        if (!val) { box.classList.remove('is-open'); box.innerHTML = ''; return; }
+        timer = setTimeout(function () {
+            fetch('/admin/libros/buscar?q=' + encodeURIComponent(val))
+                .then(function (r) { return r.json(); })
+                .then(function (d) { if (d.ok) render(d.resultados); })
+                .catch(function () {});
+        }, 220);
+    });
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.libro-buscar')) box.classList.remove('is-open');
     });
 })();
 </script>

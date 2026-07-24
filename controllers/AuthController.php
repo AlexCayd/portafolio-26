@@ -9,8 +9,11 @@ use MVC\Router;
 class AuthController {
     public static function login(Router $router) {
 
-        // Si ya hay sesión activa, ir directo al panel
-        if(estaAutenticado()) {
+        // Si ya hay sesión de administrador, ir directo al panel.
+        // Se comprueba esAdmin() (no solo estaAutenticado) para evitar un bucle de
+        // redirecciones si quedara una sesión con `id` pero sin privilegio de admin:
+        // /admin -> /login -> /admin -> ...
+        if(esAdmin()) {
             header('Location: /admin');
             exit;
         }

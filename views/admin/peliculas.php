@@ -95,20 +95,20 @@
 
 <div class="card" style="margin-top:22px">
     <div class="card-head"><h2>Catálogo</h2><a href="/admin/peliculas/gestionar" class="btn btn--sm btn--primary">Gestionar / Reseñar →</a></div>
-    <div class="tabla-wrap">
-        <table class="tabla">
+    <div class="tabla-wrap tabla-wrap--cards">
+        <table class="tabla tabla--cards">
             <thead><tr><th>Póster</th><th>Título</th><th>Categoría</th><th>Dir./Creador</th><th>Año</th><th>Nota</th><th>Estado</th><th></th></tr></thead>
             <tbody>
             <?php foreach ($peliculas as $p) : $n = (float) $p->nota; $cls = $n >= 8 ? 'nota-alta' : ($n >= 5 ? 'nota-media' : 'nota-baja'); ?>
                 <tr>
-                    <td><?php if (!empty($p->poster)) : ?><img class="poster-mini" src="/build/img/peliculas/<?php echo s($p->poster); ?>" alt=""><?php else : ?><div class="poster-mini" style="display:grid;place-items:center;color:var(--muted-2)"><?php echo icono('film'); ?></div><?php endif; ?></td>
-                    <td><?php echo s($p->titulo); ?></td>
-                    <td><span class="badge badge--cat"><?php echo s($p->categoria); ?></span></td>
-                    <td style="color:var(--muted)"><?php echo s($p->autor); ?></td>
-                    <td><?php echo s($p->anio); ?></td>
-                    <td><span class="nota-badge <?php echo $cls; ?>"><?php echo number_format($n, 0); ?></span></td>
-                    <td><?php echo $p->estaAprobada() ? '<span class="badge badge--ok">Aprobado</span>' : '<span class="badge badge--no">No aprobado</span>'; ?></td>
-                    <td class="acciones">
+                    <td class="cell-poster" data-label=""><?php if (!empty($p->poster)) : ?><img class="poster-mini" src="/build/img/peliculas/<?php echo s($p->poster); ?>" alt=""><?php else : ?><div class="poster-mini" style="display:grid;place-items:center;color:var(--muted-2)"><?php echo icono('film'); ?></div><?php endif; ?></td>
+                    <td class="cell-titulo" data-label="Título"><?php echo s($p->titulo); ?></td>
+                    <td data-label="Categoría"><span class="badge badge--cat"><?php echo s($p->categoria); ?></span></td>
+                    <td data-label="Dir./Creador" style="color:var(--muted)"><?php echo s($p->autor); ?></td>
+                    <td data-label="Año"><?php echo s($p->anio); ?></td>
+                    <td data-label="Nota"><span class="nota-badge <?php echo $cls; ?>"><?php echo number_format($n, 0); ?></span></td>
+                    <td data-label="Estado"><?php echo $p->estaAprobada() ? '<span class="badge badge--ok">Aprobado</span>' : '<span class="badge badge--no">No aprobado</span>'; ?></td>
+                    <td class="acciones" data-label="Acciones">
                         <a href="/admin/peliculas/gestionar?id=<?php echo $p->id; ?>" class="act-btn act-edit" title="Editar"><?php echo icono('editar'); ?></a>
                         <form method="POST" action="/admin/peliculas/eliminar" data-confirm="Se eliminará este título." data-confirm-name="<?php echo s($p->titulo); ?>">
                             <input type="hidden" name="id" value="<?php echo $p->id; ?>">

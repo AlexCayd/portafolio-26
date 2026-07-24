@@ -124,6 +124,7 @@ function icono(string $n) : string {
         'editar' => '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>',
         'eliminar' => '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
         'ok' => '<path d="M20 6L9 17l-5-5"/>',
+        'buscar' => '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
         'estrella' => '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
         'externo' => '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
         'trash' => '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
@@ -132,4 +133,30 @@ function icono(string $n) : string {
     ];
     $inner = $p[$n] ?? '';
     return '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' . $inner . '</svg>';
+}
+
+/**
+ * Ruta de asset con cache-busting (?v=mtime) para forzar recarga tras un deploy.
+ */
+function asset(string $ruta) : string {
+    $abs = dirname(__DIR__) . '/public' . $ruta;
+    $v = is_file($abs) ? filemtime($abs) : null;
+    return $ruta . ($v ? '?v=' . $v : '');
+}
+
+/**
+ * Estrellas de solo lectura (medias estrellas nítidas con SVG centrado).
+ * Reutiliza el CSS de .star-rating. Devuelve el contenedor con $max estrellas.
+ */
+function estrellasHtml(float $v, int $max = 5) : string {
+    $path = 'M11.48 3.5a.56.56 0 011.04 0l2.12 5.11a.56.56 0 00.48.35l5.52.44c.5.04.7.66.32.99l-4.2 3.6a.56.56 0 00-.18.56l1.28 5.39a.56.56 0 01-.84.6l-4.72-2.88a.56.56 0 00-.59 0l-4.72 2.88a.56.56 0 01-.84-.6l1.28-5.39a.56.56 0 00-.18-.56l-4.2-3.6a.56.56 0 01.32-.99l5.52-.44a.56.56 0 00.48-.35z';
+    $svg = '<svg class="star-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="' . $path . '"/></svg>';
+    $out = '<span class="star-rating star-rating--sm is-readonly" aria-label="' . number_format($v, 1) . ' de ' . $max . '">';
+    for ($i = 1; $i <= $max; $i++) {
+        $cls = 'star';
+        if ($v >= $i) $cls .= ' full';
+        elseif ($v >= $i - 0.5) $cls .= ' half-on';
+        $out .= '<span class="' . $cls . '"><span class="half">' . $svg . '</span>' . $svg . '</span>';
+    }
+    return $out . '</span>';
 }

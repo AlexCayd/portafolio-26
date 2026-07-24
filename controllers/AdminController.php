@@ -556,30 +556,52 @@ class AdminController
     }
 
     /* =============================================================== Helpers */
-    // Determina la clase en curso o la siguiente de hoy según día y hora.
-    // Devuelve ['estado'=>'ahora'|'proxima'|'libre', 'materia'=>?, 'color'=>?, 'inicio'=>?, 'fin'=>?]
+    // Determina la clase en curso o la siguiente. Si hoy no quedan clases (día
+    // libre o fin de semana), busca hacia adelante en la semana y devuelve la
+    // próxima aunque sea otro día.
+    // Devuelve ['estado'=>'ahora'|'proxima'|'libre', 'materia'=>?, 'color'=>?,
+    //           'inicio'=>?, 'fin'=>?, 'esHoy'=>bool, 'diaLabel'=>?]
     private static function claseActualProxima() : array
     {
-        $map = [1 => 'lun', 2 => 'mar', 3 => 'mie', 4 => 'jue', 5 => 'vie'];
-        $hoy = $map[(int) date('N')] ?? null;
-        if (!$hoy) return ['estado' => 'libre'];   // fin de semana
+        $dias    = [1 => 'lun', 2 => 'mar', 3 => 'mie', 4 => 'jue', 5 => 'vie'];
+        $nombres = ['lun' => 'Lunes', 'mar' => 'Martes', 'mie' => 'Miércoles', 'jue' => 'Jueves', 'vie' => 'Viernes'];
 
+        $bloques = HorarioBloque::conMateria();
+        if (empty($bloques)) return ['estado' => 'libre'];
+
+        $hoyN  = (int) date('N');   // 1 (lun) … 7 (dom)
         $ahora = date('H:i:s');
-        $delDia = array_filter(HorarioBloque::conMateria(), fn($b) => $b['dia'] === $hoy);
-        usort($delDia, fn($a, $b) => strcmp($a['hora_inicio'], $b['hora_inicio']));
 
-        foreach ($delDia as $b) {
-            if ($ahora >= $b['hora_inicio'] && $ahora < $b['hora_fin']) {
-                return ['estado' => 'ahora', 'materia' => $b['m_nombre'], 'color' => $b['m_color'],
-                        'inicio' => substr($b['hora_inicio'], 0, 5), 'fin' => substr($b['hora_fin'], 0, 5)];
+        // Agrupar los bloques por día y ordenarlos por hora de inicio
+        $porDia = [];
+        foreach ($bloques as $b) $porDia[$b['dia']][] = $b;
+        foreach ($porDia as &$lista) usort($lista, fn($a, $b) => strcmp($a['hora_inicio'], $b['hora_inicio']));
+        unset($lista);
+
+        // 1) ¿Hay una clase en curso hoy?
+        if (isset($dias[$hoyN])) {
+            foreach ($porDia[$dias[$hoyN]] ?? [] as $b) {
+                if ($ahora >= $b['hora_inicio'] && $ahora < $b['hora_fin']) {
+                    return ['estado' => 'ahora', 'materia' => $b['m_nombre'], 'color' => $b['m_color'],
+                            'inicio' => substr($b['hora_inicio'], 0, 5), 'fin' => substr($b['hora_fin'], 0, 5),
+                            'esHoy' => true, 'diaLabel' => 'Hoy'];
+                }
             }
         }
-        foreach ($delDia as $b) {
-            if ($ahora < $b['hora_inicio']) {
+
+        // 2) Próxima clase: recorre hasta 7 días hacia adelante (incluye otros días)
+        for ($off = 0; $off <= 7; $off++) {
+            $n = (($hoyN - 1 + $off) % 7) + 1;
+            if (!isset($dias[$n])) continue;   // fin de semana: sin clases
+            foreach ($porDia[$dias[$n]] ?? [] as $b) {
+                if ($off === 0 && $ahora >= $b['hora_inicio']) continue;   // hoy: solo las que faltan
+                $label = $off === 0 ? 'Hoy' : ($off === 1 ? 'Mañana' : $nombres[$dias[$n]]);
                 return ['estado' => 'proxima', 'materia' => $b['m_nombre'], 'color' => $b['m_color'],
-                        'inicio' => substr($b['hora_inicio'], 0, 5), 'fin' => substr($b['hora_fin'], 0, 5)];
+                        'inicio' => substr($b['hora_inicio'], 0, 5), 'fin' => substr($b['hora_fin'], 0, 5),
+                        'esHoy' => ($off === 0), 'diaLabel' => $label];
             }
         }
+
         return ['estado' => 'libre'];
     }
 

@@ -39,10 +39,18 @@ $cl = $vida['clase'];
         </div>
         <?php if ($cl['estado'] === 'libre') : ?>
             <div class="vida-num vida-num--sm">Día libre</div>
-            <div class="vida-sub">No hay clases hoy</div>
+            <div class="vida-sub">Sin clases programadas</div>
         <?php else : ?>
             <div class="vida-num vida-num--sm"><?php echo s($cl['materia']); ?></div>
-            <div class="vida-sub"><?php echo $cl['estado'] === 'ahora' ? 'Hasta las ' . s($cl['fin']) : 'A las ' . s($cl['inicio']); ?></div>
+            <div class="vida-sub"><?php
+                if ($cl['estado'] === 'ahora') {
+                    echo 'Hasta las ' . s($cl['fin']);
+                } elseif (!empty($cl['esHoy'])) {
+                    echo 'A las ' . s($cl['inicio']);
+                } else {
+                    echo s($cl['diaLabel']) . ' · ' . s($cl['inicio']);
+                }
+            ?></div>
         <?php endif; ?>
     </div>
     <a class="vida-tile" href="/admin/libros">

@@ -43,15 +43,28 @@ class Libro extends ActiveRecord {
         return self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE estado = 'pendiente' ORDER BY posicion ASC, id ASC");
     }
 
-    // Leídos (más reciente arriba por posición)
+    // Leídos: los completados más recientemente primero (fecha_leido = fecha de completado)
     public static function leidos() {
-        return self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE estado = 'leido' ORDER BY posicion ASC, id ASC");
+        return self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE estado = 'leido' ORDER BY fecha_leido DESC, posicion ASC, id ASC");
     }
 
     // Búsqueda para autocompletar
     public static function buscar(string $q) {
         $q = self::$db->escape_string($q);
         return self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE titulo LIKE '%{$q}%' OR autor LIKE '%{$q}%' ORDER BY titulo ASC LIMIT 8");
+    }
+
+    // Reordena un pendiente a una nueva posición (1-based dentro de la columna
+    // de pendientes) y reasigna las posiciones consecutivas del resto.
+    public static function moverAPosicion(int $id, int $nuevaPos) : void {
+        $mover = null; $resto = [];
+        foreach (self::pendientes() as $l) {
+            if ((int) $l->id === $id) $mover = $l; else $resto[] = $l;
+        }
+        if (!$mover) return;
+        $nuevaPos = max(1, min(count($resto) + 1, $nuevaPos));
+        array_splice($resto, $nuevaPos - 1, 0, [$mover]);
+        foreach ($resto as $i => $l) { $l->posicion = $i + 1; $l->guardar(); }
     }
 
     // Posición máxima (orden de inserción global)

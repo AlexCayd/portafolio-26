@@ -86,8 +86,8 @@
         <h2>Catálogo</h2>
         <input type="search" id="cat-search" class="tabla-search" placeholder="Buscar por título, categoría o director…" autocomplete="off">
     </div>
-    <div class="tabla-wrap">
-        <table class="tabla tabla--sort" id="cat-tabla">
+    <div class="tabla-wrap tabla-wrap--cards">
+        <table class="tabla tabla--sort tabla--cards" id="cat-tabla">
             <thead><tr>
                 <th>Póster</th>
                 <th class="th-sort" data-sort="text">Título</th>
@@ -102,15 +102,15 @@
             <tbody>
             <?php foreach ($peliculas as $p) : $n = (float) $p->nota; $cls = $n >= 8 ? 'nota-alta' : ($n >= 5 ? 'nota-media' : 'nota-baja'); ?>
                 <tr>
-                    <td><?php if (!empty($p->poster)) : ?><img class="poster-mini" src="/build/img/peliculas/<?php echo s($p->poster); ?>" alt=""><?php else : ?><div class="poster-mini" style="display:grid;place-items:center;color:var(--muted-2)"><?php echo icono('film'); ?></div><?php endif; ?></td>
-                    <td data-v="<?php echo s($p->titulo); ?>"><?php echo s($p->titulo); ?></td>
-                    <td data-v="<?php echo s($p->categoria); ?>"><span class="badge badge--cat"><?php echo s($p->categoria); ?></span></td>
-                    <td data-v="<?php echo s($p->autor); ?>" style="color:var(--muted)"><?php echo s($p->autor); ?></td>
-                    <td data-v="<?php echo s($p->anio); ?>"><?php echo s($p->anio); ?></td>
-                    <td data-v="<?php echo s($p->fecha_vista ?? ''); ?>" style="color:var(--muted)"><?php echo $p->fecha_vista ? date('d/m/Y', strtotime($p->fecha_vista)) : '—'; ?></td>
-                    <td data-v="<?php echo $n; ?>"><span class="nota-badge <?php echo $cls; ?>"><?php echo number_format($n, 0); ?></span></td>
-                    <td data-v="<?php echo $p->estaAprobada() ? '1' : '0'; ?>"><?php echo $p->estaAprobada() ? '<span class="badge badge--ok">Aprobado</span>' : '<span class="badge badge--no">No aprobado</span>'; ?></td>
-                    <td class="acciones">
+                    <td class="cell-poster" data-label=""><?php if (!empty($p->poster)) : ?><img class="poster-mini" src="/build/img/peliculas/<?php echo s($p->poster); ?>" alt=""><?php else : ?><div class="poster-mini" style="display:grid;place-items:center;color:var(--muted-2)"><?php echo icono('film'); ?></div><?php endif; ?></td>
+                    <td class="cell-titulo" data-label="Título" data-v="<?php echo s($p->titulo); ?>"><?php echo s($p->titulo); ?></td>
+                    <td data-label="Categoría" data-v="<?php echo s($p->categoria); ?>"><span class="badge badge--cat"><?php echo s($p->categoria); ?></span></td>
+                    <td data-label="Dir./Creador" data-v="<?php echo s($p->autor); ?>" style="color:var(--muted)"><?php echo s($p->autor); ?></td>
+                    <td data-label="Año" data-v="<?php echo s($p->anio); ?>"><?php echo s($p->anio); ?></td>
+                    <td data-label="Vista" data-v="<?php echo s($p->fecha_vista ?? ''); ?>" style="color:var(--muted)"><?php echo $p->fecha_vista ? date('d/m/Y', strtotime($p->fecha_vista)) : '—'; ?></td>
+                    <td data-label="Nota" data-v="<?php echo $n; ?>"><span class="nota-badge <?php echo $cls; ?>"><?php echo number_format($n, 0); ?></span></td>
+                    <td data-label="Estado" data-v="<?php echo $p->estaAprobada() ? '1' : '0'; ?>"><?php echo $p->estaAprobada() ? '<span class="badge badge--ok">Aprobado</span>' : '<span class="badge badge--no">No aprobado</span>'; ?></td>
+                    <td class="acciones" data-label="Acciones">
                         <a href="/admin/peliculas/gestionar?id=<?php echo $p->id; ?>" class="act-btn act-edit" title="Editar"><?php echo icono('editar'); ?></a>
                         <form method="POST" action="/admin/peliculas/eliminar" data-confirm="Se eliminará este título." data-confirm-name="<?php echo s($p->titulo); ?>">
                             <input type="hidden" name="id" value="<?php echo $p->id; ?>">

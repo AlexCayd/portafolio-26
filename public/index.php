@@ -117,6 +117,7 @@ $router->post('/admin/cv/subir',[AdminController::class, 'cvSubir']);
 
 // Libros (solo admin)
 $router->get('/admin/libros',           [LibrosController::class, 'index']);
+$router->get('/admin/libros/buscar',    [LibrosController::class, 'buscar']);
 $router->post('/admin/libros/crear',    [LibrosController::class, 'crear']);
 $router->post('/admin/libros/editar',   [LibrosController::class, 'editar']);
 $router->post('/admin/libros/estado',   [LibrosController::class, 'estado']);
