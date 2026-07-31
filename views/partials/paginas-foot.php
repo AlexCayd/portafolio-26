@@ -87,6 +87,25 @@
         });
     }
 
+    // ---- View transition del póster hacia la ficha de película ----------
+    // Solo un elemento puede llevar un mismo view-transition-name, así que se
+    // marca el póster de la tarjeta clicada justo antes de navegar (y se limpia
+    // al volver atrás desde bfcache).
+    var posterMarcado = null;
+    function limpiarPoster() {
+        if (posterMarcado) { posterMarcado.style.viewTransitionName = ''; posterMarcado = null; }
+    }
+    document.querySelectorAll('a.sel-card[href*="/tekhne/pelicula/"]').forEach(function (card) {
+        card.addEventListener('click', function () {
+            limpiarPoster();
+            var poster = card.querySelector('.sel-poster');
+            if (!poster) return;
+            poster.style.viewTransitionName = 'ao-poster';
+            posterMarcado = poster;
+        });
+    });
+    window.addEventListener('pageshow', limpiarPoster);
+
     // ---- Modo Focus (artículo): limpia la pantalla para leer ------------
     var focusBtn = document.getElementById('pg-focus');
     if (focusBtn) {

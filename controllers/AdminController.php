@@ -8,6 +8,7 @@ use Model\ProyectoImagen;
 use Model\Servicio;
 use Model\Credencial;
 use Model\Blog;
+use Model\BlogRecurso;
 use Model\Libro;
 use Model\Pelicula;
 use Model\Categoria;
@@ -108,7 +109,7 @@ class AdminController
                 $out[] = [
                     'tipo' => 'pelicula', 'id' => $p->id, 'titulo' => $p->titulo,
                     'sub' => trim(($p->categoria ?: '') . ' · ' . ($p->anio ?: ''), ' ·'),
-                    'poster' => $p->poster ? '/build/img/peliculas/' . $p->poster : null,
+                    'poster' => $p->poster ? urlSubida('peliculas', $p->poster) : null,
                 ];
             }
         }
@@ -172,7 +173,7 @@ class AdminController
         protegerAdmin();
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['proyecto_id'])) {
             $pid = (int) $_POST['proyecto_id'];
-            $img = subirArchivo('galeria_file', rutaBuild('img/proyectos/galeria'), 'gal', ['png','jpg','jpeg','webp','avif']);
+            $img = subirArchivo('galeria_file', rutaSubidas('proyectos/galeria'), 'gal', ['png','jpg','jpeg','webp','avif']);
             if ($img) {
                 $n = count(ProyectoImagen::porProyecto($pid));
                 (new ProyectoImagen(['proyecto_id' => $pid, 'img' => $img, 'orden' => $n + 1]))->guardar();
@@ -204,7 +205,7 @@ class AdminController
             $proyecto = new Proyecto($_POST);
             $proyecto->id = $editando->id ?? null;
             $proyecto->slug = generarSlug($proyecto->titulo);
-            $img = subirArchivo('img_file', rutaBuild('img/proyectos/portadas'), 'proyecto', ['png','jpg','jpeg','webp','avif']);
+            $img = subirArchivo('img_file', rutaSubidas('proyectos/portadas'), 'proyecto', ['png','jpg','jpeg','webp','avif']);
             if ($img) $proyecto->img = $img; elseif ($editando) $proyecto->img = $editando->img;
             if (!$proyecto->id) $proyecto->orden = count(Proyecto::all()) + 1;
             $res = $proyecto->guardar();
@@ -212,7 +213,7 @@ class AdminController
 
             // Galería: subir múltiples imágenes (disponible en creación y edición)
             if ($pid && !empty($_FILES['galeria_files']) && is_array($_FILES['galeria_files']['name'])) {
-                $dir = rutaBuild('img/proyectos/galeria');
+                $dir = rutaSubidas('proyectos/galeria');
                 if (!is_dir($dir)) mkdir($dir, 0775, true);
                 $n = count(ProyectoImagen::porProyecto((int) $pid));
                 foreach ($_FILES['galeria_files']['name'] as $i => $nombre) {
@@ -283,7 +284,7 @@ class AdminController
             $cred = new Credencial($_POST);
             $cred->id = $editando->id ?? null;
             $cred->anio = ($_POST['anio'] ?? '') !== '' ? (int) $_POST['anio'] : null;
-            $logo = subirArchivo('logo_file', rutaBuild('img/logos'), 'logo', ['png','jpg','jpeg','webp','svg']);
+            $logo = subirArchivo('logo_file', rutaSubidas('logos'), 'logo', ['png','jpg','jpeg','webp','svg']);
             if ($logo) $cred->logo = $logo; elseif ($editando) $cred->logo = $editando->logo;
             if (!$cred->id) $cred->orden = count(Credencial::all()) + 1;
             $cred->guardar();
@@ -318,11 +319,14 @@ class AdminController
     {
         protegerAdmin();
         $masVistos = Blog::masVistos(8);
+        $editando = isset($_GET['id']) ? Blog::find((int) $_GET['id']) : null;
         $router->render('admin/blog', [
             'titulo' => 'Blog', 'modulo' => 'blog', 'usaCharts' => true,
             'posts'      => Blog::ordenados(),
             'categorias' => BlogCategoria::todas(),
-            'editando'   => isset($_GET['id']) ? Blog::find((int) $_GET['id']) : null,
+            'editando'   => $editando,
+            // Recursos ya asociados, resueltos para poder mostrar su título
+            'recursos'   => $editando ? BlogRecurso::resolver(BlogRecurso::deEntrada((int) $editando->id)) : [],
             'chartVisitas' => [
                 'labels' => array_map(fn($p) => $p->titulo, $masVistos),
                 'data'   => array_map(fn($p) => (int) $p->visitas, $masVistos),
@@ -350,16 +354,20 @@ class AdminController
             }
             $post->categoria = $categoria;
             $post->fecha_pub = !empty($_POST['fecha_pub']) ? $_POST['fecha_pub'] : null;
-            $post->ref_tipo  = !empty($_POST['ref_tipo']) ? $_POST['ref_tipo'] : null;
-            $post->ref_id    = !empty($_POST['ref_id']) ? (int) $_POST['ref_id'] : null;
             // Estado: publicar o guardar como borrador
             $post->estado = ($_POST['accion'] ?? '') === 'borrador' ? 'borrador' : 'publicado';
             // Slug: manual o derivado del título (SEO)
             $post->slug = !empty(trim($_POST['slug'] ?? '')) ? generarSlug($_POST['slug']) : generarSlug($post->titulo);
-            $cover = subirArchivo('cover_file', rutaBuild('img/blog'), 'blog', ['png','jpg','jpeg','webp','avif']);
+            $cover = subirArchivo('cover_file', rutaSubidas('blog'), 'blog', ['png','jpg','jpeg','webp','avif']);
             if ($cover) $post->cover_img = $cover; elseif ($editando) $post->cover_img = $editando->cover_img;
             if (!$post->id) $post->orden = count(Blog::all()) + 1;
-            $post->guardar();
+            $resultado = $post->guardar();
+
+            // Recursos asociados (varios): llegan como JSON [{tipo, id}, …]
+            $blogId = (int) ($post->id ?: ($resultado['id'] ?? 0));
+            $recursos = json_decode($_POST['recursos'] ?? '[]', true);
+            BlogRecurso::guardarLista($blogId, is_array($recursos) ? $recursos : []);
+
             flash($editando ? 'Entrada actualizada' : ($post->estado === 'borrador' ? 'Borrador guardado' : 'Entrada publicada'), $editando ? 'editado' : 'ok');
         }
         header('Location: /admin/blog'); exit;
@@ -373,8 +381,8 @@ class AdminController
     {
         protegerAdmin();
         header('Content-Type: application/json');
-        $img = subirArchivo('imagen', rutaBuild('img/blog'), 'body', ['png','jpg','jpeg','webp','gif','avif']);
-        echo json_encode($img ? ['ok' => true, 'url' => '/build/img/blog/' . $img] : ['ok' => false]);
+        $img = subirArchivo('imagen', rutaSubidas('blog'), 'body', ['png','jpg','jpeg','webp','gif','avif']);
+        echo json_encode($img ? ['ok' => true, 'url' => urlSubida('blog', $img)] : ['ok' => false]);
         exit;
     }
 
@@ -382,7 +390,7 @@ class AdminController
     public static function cv(Router $router)
     {
         protegerAdmin();
-        $ruta = rutaBuild('pdf/cv.pdf');
+        $ruta = rutaSubidas('cv.pdf');
         $router->render('admin/cv', [
             'titulo' => 'CV', 'modulo' => 'cv',
             'existe' => file_exists($ruta),
@@ -395,7 +403,7 @@ class AdminController
         protegerAdmin();
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['cv_file']) && $_FILES['cv_file']['error'] === UPLOAD_ERR_OK) {
             if (strtolower(pathinfo($_FILES['cv_file']['name'], PATHINFO_EXTENSION)) === 'pdf') {
-                $dir = rutaBuild('pdf');
+                $dir = rutaSubidas();
                 if (!is_dir($dir)) mkdir($dir, 0775, true);
                 move_uploaded_file($_FILES['cv_file']['tmp_name'], $dir . DIRECTORY_SEPARATOR . 'cv.pdf');
             }
@@ -422,9 +430,18 @@ class AdminController
         usort($deEsteAnio, fn($a, $b) => (float) $b->nota <=> (float) $a->nota);
         $topAnio = array_slice($deEsteAnio, 0, 10);
 
+        // Vistos por mes, con selector de año (+ "Todos" acumulando los años)
+        $vistosPorMes = Pelicula::vistosPorMesPorAnio();
+        $vmAnios = array_values(array_filter(array_keys($vistosPorMes), fn($k) => $k !== 'Todos'));
+        $vmSel = in_array((string) $anioActual, $vmAnios, true) ? (string) $anioActual : ($vmAnios[0] ?? 'Todos');
+
         $router->render('admin/peliculas', [
             'titulo' => 'Películas y Series', 'modulo' => 'peliculas',
             'stats'      => self::estadisticasPeliculas($todas),
+            'mesesLabels'  => Pelicula::MESES,
+            'vistosPorMes' => $vistosPorMes,
+            'vmAnios'      => $vmAnios,
+            'vmSel'        => $vmSel,
             'peliculas'  => array_slice($todas, ($pagina - 1) * $porPagina, $porPagina),
             'ultimos'    => $ultimos,
             'topAnio'    => $topAnio,
@@ -439,7 +456,7 @@ class AdminController
     {
         protegerAdmin();
         $stats = self::estadisticasPeliculas(Pelicula::ordenadas());
-        // Distribución de 10/10 por mes, por año (con selector; default = año actual)
+        // Distribución de la selección por mes, por año (con selector; default = año actual)
         $anios = Pelicula::aniosConPerfectas();
         $anioActual = (int) date('Y');
         if (!in_array($anioActual, $anios, true) && !empty($anios)) $anioActual = $anios[0];
@@ -464,7 +481,7 @@ class AdminController
         $router->render('admin/peliculas-gestionar', [
             'titulo' => 'Gestionar Películas', 'modulo' => 'peliculas',
             'peliculas'  => Pelicula::ordenadas(),
-            'categorias' => Categoria::todas(),
+            'categorias' => Categoria::ordenadas(),
             'editando'   => isset($_GET['id']) ? Pelicula::find((int) $_GET['id']) : null,
         ], 'admin-layout');
     }
@@ -493,10 +510,18 @@ class AdminController
             $pelicula->id = $id;
             $pelicula->categoria   = $categoria;
             $pelicula->anio        = ($_POST['anio'] ?? '') !== '' ? max(0, (int) $_POST['anio']) : null;
-            $pelicula->duracion    = ($_POST['duracion'] ?? '') !== '' ? max(0, (int) $_POST['duracion']) : null;
+
+            // La duración se captura en horas + minutos y se guarda en minutos totales.
+            // Las series no tienen duración (el formulario bloquea los campos).
+            $horas   = max(0, (int) ($_POST['duracion_h'] ?? 0));
+            $minutos = max(0, min(59, (int) ($_POST['duracion_m'] ?? 0)));
+            $total   = $horas * 60 + $minutos;
+            $pelicula->duracion    = ($categoria === 'Serie' || $total === 0) ? null : $total;
+
             $pelicula->fecha_vista = !empty($_POST['fecha_vista']) ? $_POST['fecha_vista'] : null;
             $pelicula->nota        = max(0, min(10, (float) ($_POST['nota'] ?? 0)));
-            $poster = subirArchivo('poster_file', rutaBuild('img/peliculas'), 'poster', ['png','jpg','jpeg','webp','avif']);
+            $pelicula->seleccion   = !empty($_POST['seleccion']) ? 1 : 0;
+            $poster = subirArchivo('poster_file', rutaSubidas('peliculas'), 'poster', ['png','jpg','jpeg','webp','avif']);
             if ($poster) $pelicula->poster = $poster; elseif ($editando) $pelicula->poster = $editando->poster;
             $pelicula->guardar();
             flash($editando ? 'Título actualizado' : 'Título agregado', $editando ? 'editado' : 'ok');
@@ -511,7 +536,7 @@ class AdminController
         $total = count($peliculas);
         $sumaNota = 0; $sumaDur = 0; $countDur = 0; $aprobados = 0;
         $distNotas = array_fill(1, 10, 0);
-        $porAnio = []; $cat = []; $catNota = []; $catAprob = []; $catNo = []; $autores = []; $watchlist = [];
+        $porAnio = []; $porAnioVisto = []; $cat = []; $catNota = []; $catAprob = []; $catNo = []; $autores = []; $watchlist = [];
 
         foreach ($peliculas as $p) {
             $nota = (float) $p->nota; $sumaNota += $nota;
@@ -519,8 +544,16 @@ class AdminController
             if ($aprob) $aprobados++;
             $distNotas[max(1, min(10, (int) round($nota)))]++;
 
+            // Año de estreno: alimenta "Puntuadas por año" y "Vistas acumuladas"
             $anio = (int) $p->anio;
             if ($anio) { $porAnio[$anio]['count'] = ($porAnio[$anio]['count'] ?? 0) + 1; $porAnio[$anio]['suma'] = ($porAnio[$anio]['suma'] ?? 0) + $nota; }
+
+            // Año en que se vio: alimenta "Nota promedio por año visto"
+            $anioVisto = $p->fecha_vista ? (int) date('Y', strtotime((string) $p->fecha_vista)) : 0;
+            if ($anioVisto) {
+                $porAnioVisto[$anioVisto]['count'] = ($porAnioVisto[$anioVisto]['count'] ?? 0) + 1;
+                $porAnioVisto[$anioVisto]['suma']  = ($porAnioVisto[$anioVisto]['suma'] ?? 0) + $nota;
+            }
 
             $c = $p->categoria ?: 'Sin categoría';
             $cat[$c] = ($cat[$c] ?? 0) + 1; $catNota[$c][] = $nota;
@@ -528,15 +561,17 @@ class AdminController
             $catNo[$c] = ($catNo[$c] ?? 0) + ($aprob ? 0 : 1);
             if ($p->duracion) { $sumaDur += (int) $p->duracion; $countDur++; }
             if (!empty($p->autor) && $p->autor !== '—') $autores[$p->autor] = ($autores[$p->autor] ?? 0) + 1;
-            if ($nota >= 10) $watchlist[] = ['titulo' => $p->titulo, 'categoria' => $c, 'autor' => $p->autor, 'anio' => $p->anio, 'poster' => $p->poster];
+            if ((int) $p->seleccion === 1) $watchlist[] = ['titulo' => $p->titulo, 'categoria' => $c, 'autor' => $p->autor, 'anio' => $p->anio, 'poster' => $p->poster, 'nota' => $nota];
         }
 
-        ksort($porAnio); arsort($cat); arsort($autores);
+        ksort($porAnio); ksort($porAnioVisto); arsort($cat); arsort($autores);
         $autores = array_slice($autores, 0, 8, true);
         $aniosLabels = array_map('strval', array_keys($porAnio));
         $aniosCount  = array_map(fn($x) => $x['count'], array_values($porAnio));
         $aniosProm   = array_map(fn($x) => round($x['suma'] / max(1, $x['count']), 2), array_values($porAnio));
         $acum = []; $run = 0; foreach ($aniosCount as $c2) { $run += $c2; $acum[] = $run; }
+        $vistoLabels = array_map('strval', array_keys($porAnioVisto));
+        $vistoProm   = array_map(fn($x) => round($x['suma'] / max(1, $x['count']), 2), array_values($porAnioVisto));
         $catLabels = array_keys($cat);
 
         return [
@@ -546,6 +581,7 @@ class AdminController
             'pctAprobacion' => $total ? round($aprobados / $total * 100, 1) : 0,
             'distNotas' => array_values($distNotas),
             'aniosLabels' => $aniosLabels, 'aniosCount' => $aniosCount, 'aniosProm' => $aniosProm, 'acumulado' => $acum,
+            'vistoLabels' => $vistoLabels, 'vistoProm' => $vistoProm,
             'catLabels' => $catLabels, 'catCount' => array_values($cat),
             'catNotaProm' => array_map(fn($c) => round(array_sum($catNota[$c]) / max(1, count($catNota[$c])), 2), $catLabels),
             'catAprob' => array_map(fn($c) => $catAprob[$c], $catLabels),

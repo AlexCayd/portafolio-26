@@ -15,7 +15,7 @@
                 <span>Logo de la institución</span>
                 <div class="upload upload--stack" style="max-width:220px;flex:1;display:flex;flex-direction:column">
                     <div class="upload-preview logo" id="prev-logo" style="width:100%;flex:1;min-height:150px">
-                        <?php if (!empty($editando->logo)) : ?><img src="/build/img/logos/<?php echo s($editando->logo); ?>" alt=""><?php else : ?>Sin logo<?php endif; ?>
+                        <?php if (!empty($editando->logo)) : ?><img src="<?php echo urlSubida('logos', $editando->logo); ?>" alt=""><?php else : ?>Sin logo<?php endif; ?>
                     </div>
                     <label class="upload-drop">
                         <b>Elige</b> o arrastra el logo<br><small>PNG, JPG, SVG, WEBP</small>
@@ -64,7 +64,7 @@
             <?php foreach ($credenciales as $c) : ?>
                 <tr class="sortable-row" draggable="true" data-id="<?php echo $c->id; ?>">
                     <td><span class="drag-handle">⠿</span></td>
-                    <td><img class="logo-cell" src="/build/img/logos/<?php echo s($c->logo); ?>" alt="" onerror="this.style.visibility='hidden'"></td>
+                    <td><img class="logo-cell" src="<?php echo urlSubida('logos', $c->logo); ?>" alt="" onerror="this.style.visibility='hidden'"></td>
                     <td><?php echo s($c->titulo); ?></td>
                     <td style="color:var(--muted)"><?php echo s($c->institucion); ?></td>
                     <td style="font-family:var(--mono)"><?php echo s($c->anio); ?></td>

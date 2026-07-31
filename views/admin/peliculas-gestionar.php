@@ -9,15 +9,20 @@
 <div class="card">
     <h2><?php echo $editando ? 'Editar título' : 'Nuevo título'; ?></h2>
 
+    <?php
+        // Película va primero y sale preseleccionada; Serie después y el resto alfabético
+        $catActual = $editando->categoria ?? \Model\Categoria::porDefecto($categorias);
+        $dur = (int) ($editando->duracion ?? 0);
+    ?>
     <form method="POST" action="/admin/peliculas/guardar" enctype="multipart/form-data">
         <input type="hidden" name="id" value="<?php echo $editando->id ?? ''; ?>">
         <div class="pel-form-grid">
             <!-- Póster vertical -->
-            <div class="campo">
+            <div class="campo campo-poster">
                 <span>Póster</span>
-                <div class="upload upload--stack" style="max-width:220px">
+                <div class="upload upload--stack upload--poster">
                     <div class="upload-preview" id="prev-poster" style="width:100%;aspect-ratio:2/3;height:auto">
-                        <?php if (!empty($editando->poster)) : ?><img src="/build/img/peliculas/<?php echo s($editando->poster); ?>" alt="" style="object-fit:cover"><?php else : ?><span class="poster-ph" style="border:none"><?php echo icono('film'); ?></span><?php endif; ?>
+                        <?php if (!empty($editando->poster)) : ?><img src="<?php echo urlSubida('peliculas', $editando->poster); ?>" alt="" style="object-fit:cover"><?php else : ?><span class="poster-ph" style="border:none"><?php echo icono('film'); ?></span><?php endif; ?>
                     </div>
                     <label class="upload-drop"><b>Elige</b> o arrastra el póster<br><small>JPG, PNG, WEBP</small><input type="file" name="poster_file" accept="image/*" data-preview="#prev-poster"></label>
                 </div>
@@ -33,11 +38,11 @@
                     <span>Categoría</span>
                     <div class="tabs" id="cat-tabs">
                         <?php foreach ($categorias as $cat) : ?>
-                            <span class="tab <?php echo (!empty($editando) && $editando->categoria === $cat->nombre) ? 'sel' : ''; ?>" data-val="<?php echo s($cat->nombre); ?>"><?php echo s($cat->nombre); ?></span>
+                            <span class="tab <?php echo $catActual === $cat->nombre ? 'sel' : ''; ?>" data-val="<?php echo s($cat->nombre); ?>"><?php echo s($cat->nombre); ?></span>
                         <?php endforeach; ?>
                         <span class="tab" data-val="__nueva__">＋ Nueva</span>
                     </div>
-                    <input type="hidden" name="categoria" id="cat-input" value="<?php echo s($editando->categoria ?? (!empty($categorias) ? $categorias[0]->nombre : '')); ?>">
+                    <input type="hidden" name="categoria" id="cat-input" value="<?php echo s($catActual); ?>">
                 </div>
                 <label class="campo full" id="nueva-cat" style="display:none">
                     <span>Nueva categoría</span>
@@ -48,18 +53,25 @@
                     <input type="text" name="autor" class="ac-input" value="<?php echo s($editando->autor ?? ''); ?>" autocomplete="off">
                     <div class="ac-results"></div>
                 </div>
-                <label class="campo">
-                    <span>Fecha vista</span>
-                    <input type="date" name="fecha_vista" value="<?php echo s($editando->fecha_vista ?? ''); ?>">
-                </label>
+                <?php echo campoFechaDmy('fecha_vista', $editando->fecha_vista ?? '', 'Fecha vista'); ?>
                 <label class="campo">
                     <span>Año</span>
                     <input type="number" name="anio" min="0" step="1" value="<?php echo s($editando->anio ?? ''); ?>" placeholder="<?php echo date('Y'); ?>">
                 </label>
-                <label class="campo">
-                    <span>Duración (min)</span>
-                    <input type="number" name="duracion" min="0" step="1" value="<?php echo s($editando->duracion ?? ''); ?>">
-                </label>
+                <div class="campo" id="campo-duracion">
+                    <span>Duración <small style="color:var(--muted-2)" id="dur-nota"></small></span>
+                    <div class="dur-inputs">
+                        <label><input type="number" name="duracion_h" id="dur-h" min="0" max="99" step="1" placeholder="0" value="<?php echo $dur ? intdiv($dur, 60) : ''; ?>"><span>h</span></label>
+                        <label><input type="number" name="duracion_m" id="dur-m" min="0" max="59" step="1" placeholder="0" value="<?php echo $dur ? $dur % 60 : ''; ?>"><span>min</span></label>
+                    </div>
+                </div>
+                <div class="campo full">
+                    <label class="alfinal-toggle">
+                        <input type="checkbox" name="seleccion" value="1" <?php echo !empty($editando->seleccion) ? 'checked' : ''; ?>>
+                        <span class="alfinal-box"><?php echo icono('ok'); ?></span>
+                        <span class="alfinal-txt">Incluir en la <strong>Selección del Autor</strong> <small style="color:var(--muted-2)">— aparece en /tekhne/recomendaciones</small></span>
+                    </label>
+                </div>
                 <div class="campo full">
                     <span style="text-align:center">Nota</span>
                     <div class="score-wrap">
@@ -83,7 +95,7 @@
 
 <div class="card">
     <div class="card-head" style="flex-wrap:wrap;gap:12px">
-        <h2>Catálogo</h2>
+        <h2>Catálogo <span class="conteo"><?php echo count($peliculas); ?></span></h2>
         <input type="search" id="cat-search" class="tabla-search" placeholder="Buscar por título, categoría o director…" autocomplete="off">
     </div>
     <div class="tabla-wrap tabla-wrap--cards">
@@ -97,12 +109,13 @@
                 <th class="th-sort" data-sort="date">Vista</th>
                 <th class="th-sort" data-sort="num">Nota</th>
                 <th class="th-sort" data-sort="text">Estado</th>
+                <th class="th-sort" data-sort="num" title="Selección del Autor">Sel.</th>
                 <th>Acciones</th>
             </tr></thead>
             <tbody>
             <?php foreach ($peliculas as $p) : $n = (float) $p->nota; $cls = $n >= 8 ? 'nota-alta' : ($n >= 5 ? 'nota-media' : 'nota-baja'); ?>
                 <tr>
-                    <td class="cell-poster" data-label=""><?php if (!empty($p->poster)) : ?><img class="poster-mini" src="/build/img/peliculas/<?php echo s($p->poster); ?>" alt=""><?php else : ?><div class="poster-mini" style="display:grid;place-items:center;color:var(--muted-2)"><?php echo icono('film'); ?></div><?php endif; ?></td>
+                    <td class="cell-poster" data-label=""><?php if (!empty($p->poster)) : ?><img class="poster-mini" src="<?php echo urlSubida('peliculas', $p->poster); ?>" alt=""><?php else : ?><div class="poster-mini" style="display:grid;place-items:center;color:var(--muted-2)"><?php echo icono('film'); ?></div><?php endif; ?></td>
                     <td class="cell-titulo" data-label="Título" data-v="<?php echo s($p->titulo); ?>"><?php echo s($p->titulo); ?></td>
                     <td data-label="Categoría" data-v="<?php echo s($p->categoria); ?>"><span class="badge badge--cat"><?php echo s($p->categoria); ?></span></td>
                     <td data-label="Dir./Creador" data-v="<?php echo s($p->autor); ?>" style="color:var(--muted)"><?php echo s($p->autor); ?></td>
@@ -110,6 +123,7 @@
                     <td data-label="Vista" data-v="<?php echo s($p->fecha_vista ?? ''); ?>" style="color:var(--muted)"><?php echo $p->fecha_vista ? date('d/m/Y', strtotime($p->fecha_vista)) : '—'; ?></td>
                     <td data-label="Nota" data-v="<?php echo $n; ?>"><span class="nota-badge <?php echo $cls; ?>"><?php echo number_format($n, 0); ?></span></td>
                     <td data-label="Estado" data-v="<?php echo $p->estaAprobada() ? '1' : '0'; ?>"><?php echo $p->estaAprobada() ? '<span class="badge badge--ok">Aprobado</span>' : '<span class="badge badge--no">No aprobado</span>'; ?></td>
+                    <td data-label="Selección" data-v="<?php echo !empty($p->seleccion) ? '1' : '0'; ?>"><?php echo !empty($p->seleccion) ? '<span class="sel-marca" title="En la Selección del Autor">' . icono('estrella') . '</span>' : '<span style="color:var(--muted-2)">—</span>'; ?></td>
                     <td class="acciones" data-label="Acciones">
                         <a href="/admin/peliculas/gestionar?id=<?php echo $p->id; ?>" class="act-btn act-edit" title="Editar"><?php echo icono('editar'); ?></a>
                         <form method="POST" action="/admin/peliculas/eliminar" data-confirm="Se eliminará este título." data-confirm-name="<?php echo s($p->titulo); ?>">
@@ -119,7 +133,7 @@
                     </td>
                 </tr>
             <?php endforeach; ?>
-            <?php if (empty($peliculas)) : ?><tr><td colspan="9" style="color:var(--muted)">Sin títulos todavía.</td></tr><?php endif; ?>
+            <?php if (empty($peliculas)) : ?><tr><td colspan="10" style="color:var(--muted)">Sin títulos todavía.</td></tr><?php endif; ?>
             </tbody>
         </table>
     </div>
@@ -129,6 +143,17 @@
 window.pelPick = function (item) { location.href = '/admin/peliculas/gestionar?id=' + item.id; };
 window.autorPick = function (item, box) { box.querySelector('.ac-input').value = item.titulo; };
 (function () {
+    // La duración no aplica en series: se bloquea al elegir esa categoría
+    var campoDur = document.getElementById('campo-duracion'), durNota = document.getElementById('dur-nota');
+    var durH = document.getElementById('dur-h'), durM = document.getElementById('dur-m');
+    function toggleDuracion(cat) {
+        var esSerie = cat === 'Serie';
+        campoDur.classList.toggle('is-locked', esSerie);
+        durH.disabled = durM.disabled = esSerie;
+        durNota.textContent = esSerie ? '— no aplica en series' : '';
+        if (esSerie) { durH.value = ''; durM.value = ''; }
+    }
+
     // Categoría por tabs
     var tabs = document.getElementById('cat-tabs'), catInput = document.getElementById('cat-input'), nueva = document.getElementById('nueva-cat');
     tabs.querySelectorAll('.tab').forEach(function (t) {
@@ -136,8 +161,10 @@ window.autorPick = function (item, box) { box.querySelector('.ac-input').value =
             tabs.querySelectorAll('.tab').forEach(function (x) { x.classList.remove('sel'); });
             t.classList.add('sel'); catInput.value = t.dataset.val;
             nueva.style.display = t.dataset.val === '__nueva__' ? 'flex' : 'none';
+            toggleDuracion(t.dataset.val);
         });
     });
+    toggleDuracion(catInput.value);   // estado inicial (también al editar)
 
     // Etiqueta de puntaje por nota (1–10) con color — se pinta en hover y al elegir
     var LABELS = {

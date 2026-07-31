@@ -5,7 +5,7 @@ namespace Model;
 class Pelicula extends ActiveRecord {
 
     protected static $tabla = 'peliculas_series';
-    protected static $columnasDB = ['id', 'categoria', 'titulo', 'autor', 'anio', 'duracion', 'nota', 'fecha_vista', 'poster', 'comentario'];
+    protected static $columnasDB = ['id', 'categoria', 'titulo', 'autor', 'anio', 'duracion', 'nota', 'fecha_vista', 'poster', 'comentario', 'seleccion'];
 
     // Umbral de aprobación: nota >= 6
     const UMBRAL_APROBADO = 6;
@@ -20,6 +20,7 @@ class Pelicula extends ActiveRecord {
     public $fecha_vista;
     public $poster;
     public $comentario;
+    public $seleccion;
 
     public function __construct($args = []) {
         $this->id          = $args['id']          ?? null;
@@ -32,6 +33,7 @@ class Pelicula extends ActiveRecord {
         $this->fecha_vista = $args['fecha_vista'] ?? null;
         $this->poster      = $args['poster']      ?? null;
         $this->comentario  = $args['comentario']  ?? null;
+        $this->seleccion   = $args['seleccion']   ?? 0;
     }
 
     // Busca un título existente por nombre exacto (case-insensitive)
@@ -87,28 +89,30 @@ class Pelicula extends ActiveRecord {
         return (int) $r['c'];
     }
 
-    // Selección del autor: títulos con calificación perfecta (10/10)
+    // Etiquetas de meses reutilizadas por las gráficas del panel
+    const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+    // Selección del autor: títulos marcados a mano desde el panel
     public static function perfectas() {
-        return self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE nota >= 10 ORDER BY fecha_vista DESC, id DESC");
+        return self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE seleccion = 1 ORDER BY fecha_vista DESC, id DESC");
     }
 
-    // Distribución de 10/10 por mes (Ene→Dic) de un año dado
+    // Distribución de la selección por mes (Ene→Dic) de un año dado
     public static function perfectasPorMes(int $anio) : array {
         $anio = (int) $anio;
         $res = self::$db->query("SELECT MONTH(fecha_vista) AS m, COUNT(*) AS c FROM " . static::$tabla . "
-                                 WHERE nota >= 10 AND YEAR(fecha_vista) = {$anio} GROUP BY m");
+                                 WHERE seleccion = 1 AND YEAR(fecha_vista) = {$anio} GROUP BY m");
         $map = [];
         while ($r = $res->fetch_assoc()) { $map[(int) $r['m']] = (int) $r['c']; }
-        $meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
         $labels = []; $data = [];
-        for ($m = 1; $m <= 12; $m++) { $labels[] = $meses[$m - 1]; $data[] = $map[$m] ?? 0; }
+        for ($m = 1; $m <= 12; $m++) { $labels[] = self::MESES[$m - 1]; $data[] = $map[$m] ?? 0; }
         return ['labels' => $labels, 'data' => $data];
     }
 
-    // Años (desc) que tienen al menos un 10/10 con fecha
+    // Años (desc) que tienen al menos un título de la selección con fecha
     public static function aniosConPerfectas() : array {
         $res = self::$db->query("SELECT DISTINCT YEAR(fecha_vista) AS y FROM " . static::$tabla . "
-                                 WHERE nota >= 10 AND fecha_vista IS NOT NULL ORDER BY y DESC");
+                                 WHERE seleccion = 1 AND fecha_vista IS NOT NULL ORDER BY y DESC");
         $out = [];
         while ($r = $res->fetch_assoc()) { if ($r['y']) $out[] = (int) $r['y']; }
         return $out;
@@ -122,9 +126,32 @@ class Pelicula extends ActiveRecord {
                                  WHERE YEAR(fecha_vista) = {$anio} GROUP BY m");
         $map = [];
         while ($r = $res->fetch_assoc()) { $map[(int) $r['m']] = (int) $r['c']; }
-        $meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
         $labels = []; $data = [];
-        for ($m = 1; $m <= $mesActual; $m++) { $labels[] = $meses[$m - 1]; $data[] = $map[$m] ?? 0; }
+        for ($m = 1; $m <= $mesActual; $m++) { $labels[] = self::MESES[$m - 1]; $data[] = $map[$m] ?? 0; }
         return ['labels' => $labels, 'data' => $data];
+    }
+
+    /**
+     * Vistos por mes agrupados por año de la fecha_vista.
+     * Devuelve ['2025' => [12 enteros], …, 'Todos' => [12 enteros sumados]].
+     * Alimenta la gráfica con selector de año del dashboard.
+     */
+    public static function vistosPorMesPorAnio() : array {
+        $res = self::$db->query("SELECT YEAR(fecha_vista) AS y, MONTH(fecha_vista) AS m, COUNT(*) AS c
+                                 FROM " . static::$tabla . "
+                                 WHERE fecha_vista IS NOT NULL
+                                 GROUP BY y, m ORDER BY y DESC");
+        $out = [];
+        $todos = array_fill(0, 12, 0);
+        while ($r = $res->fetch_assoc()) {
+            $y = (string) (int) $r['y'];
+            $m = (int) $r['m'];
+            if (!$y || !$m) continue;
+            if (!isset($out[$y])) $out[$y] = array_fill(0, 12, 0);
+            $out[$y][$m - 1] += (int) $r['c'];
+            $todos[$m - 1]   += (int) $r['c'];
+        }
+        $out['Todos'] = $todos;
+        return $out;
     }
 }

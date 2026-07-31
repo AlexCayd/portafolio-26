@@ -10,9 +10,26 @@ function s($html = '') : string {
     return htmlspecialchars($html ?? '');
 }
 
-// Ruta absoluta dentro de public/build (para subidas)
+// Ruta absoluta dentro de public/build (assets del repo: CSS, JS, imágenes de diseño)
 function rutaBuild(string $rel = '') : string {
     return dirname(__DIR__) . '/public/build/' . ltrim($rel, '/\\');
+}
+
+// ---------------------------------------------------------------------
+//  Archivos subidos desde el panel: viven en public/uploads, NUNCA en
+//  public/build. Así un despliegue (que reemplaza /build) no los borra.
+//  En la BD solo se guarda el nombre del archivo; la ruta la ponen estos
+//  dos helpers, que son el único lugar donde se escribe /uploads.
+// ---------------------------------------------------------------------
+function rutaSubidas(string $rel = '') : string {
+    return dirname(__DIR__) . '/public/uploads/' . ltrim($rel, '/\\');
+}
+
+// URL pública de un archivo subido, ya escapada para imprimir en HTML.
+// Devuelve '' si no hay archivo: urlSubida('peliculas', $p->poster)
+function urlSubida(string $carpeta, ?string $archivo) : string {
+    if (empty($archivo)) return '';
+    return s('/uploads/' . trim($carpeta, '/') . '/' . $archivo);
 }
 
 // Enlace de WhatsApp con mensaje opcional (México +52)
@@ -126,6 +143,7 @@ function icono(string $n) : string {
         'ok' => '<path d="M20 6L9 17l-5-5"/>',
         'buscar' => '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
         'estrella' => '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        'calendario' => '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
         'externo' => '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
         'trash' => '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
         'descargar' => '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',
@@ -142,6 +160,26 @@ function asset(string $ruta) : string {
     $abs = dirname(__DIR__) . '/public' . $ruta;
     $v = is_file($abs) ? filemtime($abs) : null;
     return $ruta . ($v ? '?v=' . $v : '');
+}
+
+/**
+ * Campo de fecha en formato dd/mm/aaaa.
+ *
+ * El <input type="date"> nativo muestra el formato según el idioma del
+ * navegador, así que en el panel se captura como texto con máscara. El JS
+ * global (initFechasDmy, en admin-layout.php) valida y escribe el ISO en el
+ * hidden antes de enviar, de modo que el controlador sigue recibiendo
+ * "aaaa-mm-dd" en $_POST[$name].
+ */
+function campoFechaDmy(string $name, ?string $iso, string $label, string $clases = 'campo') : string {
+    $iso = trim((string) $iso);
+    $dmy = $iso !== '' ? date('d/m/Y', strtotime($iso)) : '';
+    return '<label class="' . s($clases) . '">'
+         . '<span>' . s($label) . '</span>'
+         . '<input type="text" data-fecha-dmy="' . s($name) . '" inputmode="numeric" maxlength="10" '
+         . 'placeholder="dd/mm/aaaa" autocomplete="off" value="' . s($dmy) . '">'
+         . '<input type="hidden" name="' . s($name) . '" value="' . s($iso) . '">'
+         . '</label>';
 }
 
 /**

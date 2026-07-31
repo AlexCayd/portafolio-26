@@ -85,7 +85,7 @@ $cl = $vida['clase'];
         <h3>Últimos proyectos <a href="/admin/proyectos">Ver todos</a></h3>
         <ul class="mini-list">
             <?php foreach ($ultProyectos as $p) : ?>
-                <li><img class="thumb" src="/build/img/proyectos/portadas/<?php echo s($p->img); ?>" alt="" onerror="this.style.visibility='hidden'"><div><div class="mini-t"><?php echo s($p->titulo); ?></div><div class="mini-s"><?php echo s($p->anio); ?></div></div></li>
+                <li><img class="thumb" src="<?php echo urlSubida('proyectos/portadas', $p->img); ?>" alt="" onerror="this.style.visibility='hidden'"><div><div class="mini-t"><?php echo s($p->titulo); ?></div><div class="mini-s"><?php echo s($p->anio); ?></div></div></li>
             <?php endforeach; ?>
             <?php if (empty($ultProyectos)) : ?><li class="mini-s">Sin proyectos.</li><?php endif; ?>
         </ul>
@@ -103,7 +103,7 @@ $cl = $vida['clase'];
         <h3>Últimas credenciales <a href="/admin/credenciales">Ver todas</a></h3>
         <ul class="mini-list">
             <?php foreach ($ultCredenciales as $c) : ?>
-                <li><img class="logo-thumb" src="/build/img/logos/<?php echo s($c->logo); ?>" alt="" onerror="this.style.visibility='hidden'"><div><div class="mini-t"><?php echo s($c->titulo); ?></div><div class="mini-s"><?php echo s($c->institucion); ?></div></div></li>
+                <li><img class="logo-thumb" src="<?php echo urlSubida('logos', $c->logo); ?>" alt="" onerror="this.style.visibility='hidden'"><div><div class="mini-t"><?php echo s($c->titulo); ?></div><div class="mini-s"><?php echo s($c->institucion); ?></div></div></li>
             <?php endforeach; ?>
             <?php if (empty($ultCredenciales)) : ?><li class="mini-s">Sin credenciales.</li><?php endif; ?>
         </ul>

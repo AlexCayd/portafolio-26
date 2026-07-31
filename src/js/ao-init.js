@@ -479,7 +479,7 @@
 
     /* Proyectos administrados desde /admin (window.AO_PROJECTS). Sin datos = sin slider. */
     var projects = (Array.isArray(window.AO_PROJECTS) && window.AO_PROJECTS.length) ? window.AO_PROJECTS : [];
-    var BASE = '/build/img/proyectos/portadas/';
+    var BASE = '/uploads/proyectos/portadas/';
     var n = projects.length;
     if (!n) { slider.style.display = 'none'; return; }   // sección dinámica: nada que mostrar
     var EASE = 'transform .85s cubic-bezier(.16,1,.3,1)';

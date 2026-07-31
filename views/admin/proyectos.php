@@ -15,7 +15,7 @@
                 <span>Portada (horizontal 16:9)</span>
                 <div class="upload upload--stack" style="max-width:380px">
                     <div class="upload-preview" id="prev-portada" style="width:100%;aspect-ratio:16/9;height:auto">
-                        <?php if (!empty($editando->img)) : ?><img src="/build/img/proyectos/portadas/<?php echo s($editando->img); ?>" alt="" style="object-fit:cover"><?php else : ?>Sin imagen<?php endif; ?>
+                        <?php if (!empty($editando->img)) : ?><img src="<?php echo urlSubida('proyectos/portadas', $editando->img); ?>" alt="" style="object-fit:cover"><?php else : ?>Sin imagen<?php endif; ?>
                     </div>
                     <label class="upload-drop">
                         <b>Elige</b> o arrastra una imagen<br><small>PNG, JPG, WEBP · reemplaza la actual</small>
@@ -59,7 +59,7 @@
                 <?php foreach ($galeria as $g) : ?>
                     <div class="galeria-item" draggable="true" data-id="<?php echo $g->id; ?>">
                         <span class="galeria-drag" title="Arrastrar">⠿</span>
-                        <img src="/build/img/proyectos/galeria/<?php echo s($g->img); ?>" alt="">
+                        <img src="<?php echo urlSubida('proyectos/galeria', $g->img); ?>" alt="">
                         <form method="POST" action="/admin/proyectos/imagen/eliminar">
                             <input type="hidden" name="id" value="<?php echo $g->id; ?>">
                             <button class="del" title="Quitar">✕</button>
@@ -100,7 +100,7 @@
             <?php foreach ($proyectos as $p) : ?>
                 <tr class="sortable-row" draggable="true" data-id="<?php echo $p->id; ?>">
                     <td><span class="drag-handle">⠿</span></td>
-                    <td><img class="thumb-cell" src="/build/img/proyectos/portadas/<?php echo s($p->img); ?>" alt="" onerror="this.style.visibility='hidden'"></td>
+                    <td><img class="thumb-cell" src="<?php echo urlSubida('proyectos/portadas', $p->img); ?>" alt="" onerror="this.style.visibility='hidden'"></td>
                     <td><?php echo s($p->titulo); ?></td>
                     <td><?php echo s($p->anio); ?></td>
                     <td class="acciones">

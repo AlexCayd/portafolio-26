@@ -36,7 +36,7 @@
                    data-search="<?php echo s($p->titulo . ' ' . $p->categoria . ' ' . $p->autor . ' ' . $p->anio); ?>">
                     <div class="sel-poster">
                         <?php if (!empty($p->poster)) : ?>
-                            <img src="/build/img/peliculas/<?php echo s($p->poster); ?>" alt="<?php echo s($p->titulo); ?>" loading="lazy">
+                            <img src="<?php echo urlSubida('peliculas', $p->poster); ?>" alt="<?php echo s($p->titulo); ?>" loading="lazy">
                         <?php else : ?>
                             <div class="sel-ph"><?php echo icono('film'); ?></div>
                         <?php endif; ?>

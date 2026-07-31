@@ -5,7 +5,9 @@ namespace Model;
 class Blog extends ActiveRecord {
 
     protected static $tabla = 'blog';
-    protected static $columnasDB = ['id', 'titulo', 'slug', 'estado', 'categoria', 'fecha_pub', 'descripcion', 'contenido', 'cover_img', 'ref_tipo', 'ref_id', 'visitas', 'orden'];
+    // ref_tipo / ref_id siguen en la tabla como legado: los recursos asociados
+    // viven ahora en blog_recursos (varios por entrada).
+    protected static $columnasDB = ['id', 'titulo', 'slug', 'estado', 'categoria', 'fecha_pub', 'descripcion', 'contenido', 'cover_img', 'visitas', 'orden'];
 
     const CATEGORIAS = ['Tecnología', 'Cultura', 'Actualidad', 'Cuentos'];
 
@@ -18,8 +20,6 @@ class Blog extends ActiveRecord {
     public $descripcion;
     public $contenido;
     public $cover_img;
-    public $ref_tipo;
-    public $ref_id;
     public $visitas;
     public $orden;
 
@@ -33,8 +33,6 @@ class Blog extends ActiveRecord {
         $this->descripcion = $args['descripcion'] ?? '';
         $this->contenido   = $args['contenido']   ?? '';
         $this->cover_img   = $args['cover_img']   ?? null;
-        $this->ref_tipo    = $args['ref_tipo']    ?? null;
-        $this->ref_id      = $args['ref_id']      ?? null;
         $this->visitas     = $args['visitas']     ?? 0;
         $this->orden       = $args['orden']       ?? 0;
     }

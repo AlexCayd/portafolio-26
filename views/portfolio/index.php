@@ -74,7 +74,7 @@
     <a class="ao-mnav" href="#ao-blog" style="color:var(--fg);text-decoration:none;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(2rem,10vw,3.4rem);line-height:1.12;letter-spacing:-.02em;">Tékhne</a>
     <div style="margin-top:auto;display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding-top:32px;border-top:1px solid var(--line);">
       <a href="<?php echo waLink('Hola Alexander, vi tu portafolio y me gustaría platicar contigo.'); ?>" target="_blank" rel="noopener" class="ao-mnav" style="flex:1 1 auto;text-align:center;background:var(--accent);color:var(--accent-fg);text-decoration:none;padding:15px 22px;border-radius:40px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:1rem;">Contáctame</a>
-      <a href="/build/pdf/cv.pdf" download style="flex:1 1 auto;text-align:center;border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:15px 22px;border-radius:40px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Descargar CV</a>
+      <a href="/uploads/cv.pdf" download style="flex:1 1 auto;text-align:center;border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:15px 22px;border-radius:40px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Descargar CV</a>
       <button id="ao-theme-m" type="button" aria-label="Cambiar tema" style="flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;gap:10px;background:transparent;border:1px solid var(--line);color:var(--fg);border-radius:40px;padding:15px 22px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;">
         <svg class="ao-icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
         <svg class="ao-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
@@ -135,7 +135,7 @@
 
       <div style="position:relative;">
         <div style="border-radius:12px;overflow:hidden;background:#0b0b0c;aspect-ratio:3/4;">
-          <img src="/build/img/profile.png" alt="Alexander Oliva" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <img src="/build/img/profile.jpeg" alt="Alexander Oliva" style="width:100%;height:100%;object-fit:cover;display:block;">
         </div>
       </div>
     </div>
@@ -260,7 +260,7 @@
       <a href="/tekhne" data-cursor data-magnetic style="display:inline-flex;align-items:center;gap:10px;background:var(--accent);color:var(--accent-fg);text-decoration:none;padding:14px 26px;border-radius:40px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:1rem;white-space:nowrap;">Entrar a Tékhne <span style="font-size:1.1em;line-height:1;">→</span></a>
     </div>
 
-    <div data-reveal-stagger style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:clamp(16px,2.4vw,24px);">
+    <div class="ao-posts" data-reveal-stagger>
 
       <?php
       $ao_grads = [
@@ -270,17 +270,17 @@
       ];
       foreach ($posts as $ao_i => $post) :
         $ao_cover = !empty($post->cover_img)
-          ? "url('/build/img/blog/" . s($post->cover_img) . "') center/cover no-repeat"
+          ? "url('" . urlSubida('blog', $post->cover_img) . "') center/cover no-repeat"
           : $ao_grads[$ao_i % count($ao_grads)];
       ?>
       <a class="ao-post" data-vt-cover href="/tekhne/<?php echo s($post->slug ?: $post->id); ?>" data-cursor data-cursor-label="LEER" style="display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg);text-decoration:none;color:var(--fg);transition:transform .4s cubic-bezier(.16,1,.3,1),border-color .4s,box-shadow .4s;">
-        <div class="ao-post-cover" data-vt-img style="position:relative;aspect-ratio:16/9;background:<?php echo $ao_cover; ?>;">
+        <div class="ao-post-cover" data-vt-img style="position:relative;aspect-ratio:16/10;background:<?php echo $ao_cover; ?>;">
           <span style="position:absolute;top:14px;left:14px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--accent-fg);background:rgba(8,8,9,.4);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16);padding:6px 12px;border-radius:30px;"><?php echo s($post->categoria); ?></span>
           <span style="position:absolute;bottom:14px;right:14px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:#f4f1ea;background:rgba(8,8,9,.5);backdrop-filter:blur(6px);padding:6px 12px;border-radius:30px;"><?php echo s($post->metaTarjeta()); ?></span>
         </div>
-        <div style="display:flex;flex-direction:column;gap:12px;padding:clamp(22px,2.4vw,28px);flex:1;">
-          <h3 style="margin:0;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(1.35rem,2vw,1.7rem);line-height:1.12;letter-spacing:-.01em;"><?php echo s($post->titulo); ?></h3>
-          <p style="margin:0;color:var(--muted);font-size:.96rem;line-height:1.5;"><?php echo s($post->descripcion); ?></p>
+        <div style="display:flex;flex-direction:column;gap:10px;padding:clamp(18px,1.8vw,22px);flex:1;">
+          <h3 style="margin:0;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(1.15rem,1.5vw,1.4rem);line-height:1.14;letter-spacing:-.01em;"><?php echo s($post->titulo); ?></h3>
+          <p style="margin:0;color:var(--muted);font-size:.9rem;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;"><?php echo s($post->descripcion); ?></p>
           <span style="margin-top:auto;display:inline-flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.1em;color:var(--accent);">Leer artículo <span class="ao-post-arrow" style="display:inline-block;transition:transform .35s cubic-bezier(.16,1,.3,1);">→</span></span>
         </div>
       </a>
@@ -306,7 +306,7 @@
       <?php foreach ($credenciales as $cred) : ?>
       <div class="ao-cert" style="border:1px solid var(--line);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:16px;min-height:172px;transition:transform .4s cubic-bezier(.16,1,.3,1),border-color .4s,box-shadow .4s;">
         <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="width:48px;height:48px;border-radius:10px;background:var(--chip);display:flex;align-items:center;justify-content:center;padding:7px;overflow:hidden;"><img src="/build/img/logos/<?php echo $cred->logo; ?>" alt="<?php echo $cred->alt; ?>" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:5px;"></div>
+          <div style="width:48px;height:48px;border-radius:10px;background:var(--chip);display:flex;align-items:center;justify-content:center;padding:7px;overflow:hidden;"><img src="<?php echo urlSubida('logos', $cred->logo); ?>" alt="<?php echo $cred->alt; ?>" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:5px;"></div>
           <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.1em;"><?php echo s($cred->anio); ?></span>
         </div>
         <div style="margin-top:auto;">
@@ -405,7 +405,7 @@
         <a class="ao-cta" href="<?php echo waLink('Hola Alexander, me gustaría cotizar un proyecto contigo. ¿Podemos platicar?'); ?>" target="_blank" rel="noopener" data-cursor data-magnetic style="display:inline-flex;align-items:center;gap:12px;background:var(--accent);color:var(--accent-fg);text-decoration:none;padding:16px 30px;border-radius:50px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(1rem,1.5vw,1.25rem);">Cotiza tu proyecto
           <span style="font-size:.85em;font-weight:500;opacity:.85;">→</span>
         </a>
-        <a href="/build/pdf/cv.pdf" download data-cursor data-magnetic style="display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:16px 28px;border-radius:50px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Descargar CV ↓</a>
+        <a href="/uploads/cv.pdf" download data-cursor data-magnetic style="display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:16px 28px;border-radius:50px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Descargar CV ↓</a>
       </div>
     </div>
 

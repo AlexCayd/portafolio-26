@@ -8,6 +8,7 @@ use Model\ProyectoImagen;
 use Model\Servicio;
 use Model\Credencial;
 use Model\Blog;
+use Model\BlogRecurso;
 use Model\Libro;
 use Model\Pelicula;
 use Model\Visita;
@@ -83,7 +84,7 @@ class PortfolioController
         $router->render('proyecto/index', [
             'titulo'   => $proyecto->titulo . ' - Alexander Oliva',
             'metaDescripcion' => mb_substr(strip_tags($proyecto->descripcion), 0, 160),
-            'ogImagen' => '/build/img/proyectos/portadas/' . $proyecto->img,
+            'ogImagen' => urlSubida('proyectos/portadas', $proyecto->img),
             'canonical' => 'https://alexanderoliva.com/proyecto/' . $proyecto->slug,
             'proyecto' => $proyecto,
             'galeria'  => ProyectoImagen::porProyecto((int) $proyecto->id),
@@ -112,13 +113,13 @@ class PortfolioController
         ], 'portfolio-layout');
     }
 
-    // Todas las recomendaciones (10/10): /blog/recomendaciones
+    // Todas las recomendaciones (selección curada): /blog/recomendaciones
     public static function recomendaciones(Router $router)
     {
         Visita::registrarPagina('/tekhne/recomendaciones', 'Recomendaciones - Tékhne');
         $router->render('blog/recomendaciones', [
             'titulo' => 'Para ver más tarde - Tékhne · Alexander Oliva',
-            'metaDescripcion' => 'Mi selección de cine y series con calificación perfecta 10/10.',
+            'metaDescripcion' => 'Mi selección personal de cine y series: lo mejor que he visto.',
             'canonical' => 'https://alexanderoliva.com/tekhne/recomendaciones',
             'seleccion' => Pelicula::perfectas(),
         ], 'portfolio-layout');
@@ -135,24 +136,19 @@ class PortfolioController
         Blog::registrarVisita((int) $post->id);   // contador de visitas del artículo
         Visita::registrarPagina('/tekhne/' . ($post->slug ?: $post->id), $post->titulo);
 
-        // Recurso asociado (libro / película) si existe
-        $ref = null;
-        if ($post->ref_tipo === 'libro' && $post->ref_id) {
-            $ref = Libro::find((int) $post->ref_id);
-        } elseif ($post->ref_tipo === 'pelicula' && $post->ref_id) {
-            $ref = Pelicula::find((int) $post->ref_id);
-        }
+        // Recursos asociados (libros / películas), varios por entrada
+        $recursos = BlogRecurso::resolver(BlogRecurso::deEntrada((int) $post->id));
 
         $router->render('blog/articulo', [
             'titulo' => $post->titulo . ' - Tékhne · Alexander Oliva',
             'metaDescripcion' => $post->descripcion,
             'ogTitulo' => $post->titulo,
-            'ogImagen' => $post->cover_img ? '/build/img/blog/' . $post->cover_img : '/build/img/profile.png',
+            'ogImagen' => $post->cover_img ? urlSubida('blog', $post->cover_img) : '/build/img/profile.png',
             'ogTipo'   => 'article',
             'ogFecha'  => $post->fecha_pub ?: null,
             'canonical' => 'https://alexanderoliva.com/tekhne/' . ($post->slug ?: $post->id),
-            'post'   => $post,
-            'ref'    => $ref,
+            'post'     => $post,
+            'recursos' => $recursos,
         ], 'portfolio-layout');
     }
 
@@ -184,7 +180,7 @@ class PortfolioController
                 ? mb_substr(strip_tags($film->comentario), 0, 160)
                 : trim(($film->categoria ?: '') . ($film->autor && $film->autor !== '—' ? ' de ' . $film->autor : '') . ($film->anio ? ' (' . $film->anio . ')' : '')),
             'ogTitulo' => $film->titulo,
-            'ogImagen' => $film->poster ? '/build/img/peliculas/' . $film->poster : '/build/img/profile.png',
+            'ogImagen' => $film->poster ? urlSubida('peliculas', $film->poster) : '/build/img/profile.png',
             'ogTipo'   => 'article',
             'canonical' => 'https://alexanderoliva.com' . $url,
             'film'   => $film,

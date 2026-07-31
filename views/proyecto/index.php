@@ -23,14 +23,14 @@
             <p class="pg-lead" data-anim><?php echo nl2br(s($proyecto->descripcion)); ?></p>
         <?php endif; ?>
 
-        <img class="pg-cover" data-anim src="/build/img/proyectos/portadas/<?php echo s($proyecto->img); ?>" alt="Portada de <?php echo s($proyecto->titulo); ?>" style="view-transition-name:ao-cover" onerror="this.style.display='none'">
+        <img class="pg-cover" data-anim src="<?php echo urlSubida('proyectos/portadas', $proyecto->img); ?>" alt="Portada de <?php echo s($proyecto->titulo); ?>" style="view-transition-name:ao-cover" onerror="this.style.display='none'">
 
         <?php if (!empty($galeria)) : ?>
             <h2 class="pg-gallery-title" data-anim>Galería</h2>
             <div class="pg-gallery" data-lightbox>
                 <?php foreach ($galeria as $g) : ?>
                     <figure class="pg-shot" data-anim>
-                        <img src="/build/img/proyectos/galeria/<?php echo s($g->img); ?>" alt="<?php echo s($proyecto->titulo); ?>" loading="lazy">
+                        <img src="<?php echo urlSubida('proyectos/galeria', $g->img); ?>" alt="<?php echo s($proyecto->titulo); ?>" loading="lazy">
                         <span class="pg-shot-zoom">⤢</span>
                     </figure>
                 <?php endforeach; ?>

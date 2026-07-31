@@ -33,18 +33,38 @@
     <section class="libros-col">
         <h2>Pendientes <span class="conteo"><?php echo count($pendientes); ?></span></h2>
         <ul class="libro-lista" id="lista-pendientes">
-            <?php foreach ($pendientes as $idx => $l) : ?>
+            <?php foreach ($pendientes as $idx => $l) : $tienePend = $l->estrellas !== null && (float)$l->estrellas > 0; ?>
                 <li class="libro libro-item is-editable<?php echo $l->completado ? ' is-completado' : ''; ?>" id="libro-<?php echo $l->id; ?>" data-id="<?php echo $l->id; ?>">
                     <span class="pos"><?php echo $idx + 1; ?></span>
                     <div class="libro-info">
-                        <div class="libro-titulo"><?php echo s($l->titulo); ?></div>
-                        <div class="libro-autor"><?php echo s($l->autor); ?></div>
+                        <div class="leido-head">
+                            <div class="leido-main">
+                                <div class="libro-titulo"><?php echo s($l->titulo); ?></div>
+                                <div class="libro-autor"><?php echo s($l->autor); ?></div>
+                            </div>
+                            <?php if ($l->completado && $tienePend) : ?>
+                                <div class="leido-meta">
+                                    <span class="leido-stars-static"><?php
+                                        echo estrellasHtml((float)$l->estrellas);
+                                        echo '<span class="leido-stars-num">' . number_format((float)$l->estrellas, 1) . '</span>';
+                                    ?></span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <div class="libro-edit">
                         <div class="row">
                             <label class="campo-mini" style="flex:2"><span>Título</span><input type="text" class="edit-titulo" value="<?php echo s($l->titulo); ?>"></label>
                             <label class="campo-mini" style="flex:1.4"><span>Autor</span><input type="text" class="edit-autor" value="<?php echo s($l->autor); ?>"></label>
                         </div>
+                        <?php if ($l->completado) : /* Ya completado aunque siga en pendientes: se puede calificar */ ?>
+                            <div class="stars-lg" style="margin-top:10px">
+                                <div class="star-rating star-rating--lg" data-max="5" data-input="#lr-<?php echo $l->id; ?>"></div>
+                            </div>
+                            <input type="hidden" class="leido-star-input" id="lr-<?php echo $l->id; ?>" value="<?php echo (float)$l->estrellas; ?>">
+                            <label class="campo-mini" style="margin-top:8px"><span>Fecha de completado</span><input type="text" class="edit-fechaleido" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="<?php echo $l->fecha_leido ? date('d/m/Y', strtotime($l->fecha_leido)) : ''; ?>"></label>
+                            <textarea class="edit-opinion" placeholder="Tu opinión..." style="width:100%;margin-top:8px;background:var(--surface-2);border:1px solid var(--line-2);color:var(--text);border-radius:10px;padding:11px;font:inherit;font-size:.9rem;min-height:70px;"><?php echo s($l->comentario); ?></textarea>
+                        <?php endif; ?>
                         <label class="alfinal-toggle" style="margin-top:10px">
                             <input type="checkbox" class="edit-alfinal">
                             <span class="alfinal-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></span>
@@ -71,18 +91,21 @@
             <?php foreach ($leidos as $idx => $l) : $tiene = $l->estrellas !== null && (float)$l->estrellas > 0; ?>
                 <li class="libro libro-item leido is-editable" id="libro-<?php echo $l->id; ?>" data-id="<?php echo $l->id; ?>">
                     <span class="pos"><?php echo $inicioLeido + $idx + 1; ?></span>
-                    <div class="libro-info" style="flex:1;min-width:0">
-                        <div class="leido-head" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
-                            <div style="min-width:0">
+                    <div class="libro-info">
+                        <div class="leido-head">
+                            <div class="leido-main">
                                 <div class="libro-titulo"><?php echo s($l->titulo); ?></div>
                                 <div class="libro-autor"><?php echo s($l->autor); ?></div>
                             </div>
-                            <?php if ($tiene) : ?>
-                                <span class="leido-stars-static"><?php
-                                    echo estrellasHtml((float)$l->estrellas);
-                                    echo '<span class="leido-stars-num">' . number_format((float)$l->estrellas, 1) . '</span>';
-                                ?></span>
-                            <?php else : ?><span class="sin-resena" style="font-size:.78rem;color:var(--muted-2)">Sin reseña</span><?php endif; ?>
+                            <div class="leido-meta">
+                                <?php if ($tiene) : ?>
+                                    <span class="leido-stars-static"><?php
+                                        echo estrellasHtml((float)$l->estrellas);
+                                        echo '<span class="leido-stars-num">' . number_format((float)$l->estrellas, 1) . '</span>';
+                                    ?></span>
+                                <?php else : ?><span class="sin-resena">Sin reseña</span><?php endif; ?>
+                                <span class="leido-fecha"><?php echo icono('calendario'); ?><?php echo $l->fecha_leido ? date('d/m/Y', strtotime($l->fecha_leido)) : 'Sin fecha'; ?></span>
+                            </div>
                         </div>
                     </div>
                     <div class="libro-edit">
@@ -118,23 +141,6 @@
     </section>
 </div>
 
-<!-- Modal de calificación (al marcar completado) -->
-<div class="modal-backdrop" id="modal-resena">
-    <div class="modal" style="max-width:480px;text-align:center">
-        <h3>Libro completado</h3>
-        <p id="resena-titulo" style="margin-bottom:22px">¿Cuántas estrellas le das?</p>
-        <div class="stars-lg" style="justify-content:center">
-            <div class="star-rating star-rating--xl" id="resena-stars" data-max="5" data-input="#resena-val"></div>
-        </div>
-        <input type="hidden" id="resena-val" value="0">
-        <p class="mini-s" style="color:var(--muted-2);margin-top:16px">El comentario lo puedes agregar después editando la tarjeta en «Leídos».</p>
-        <div class="modal-actions" style="margin-top:18px;justify-content:center">
-            <button class="btn btn--ghost" id="resena-skip">Más tarde</button>
-            <button class="btn btn--primary" id="resena-guardar">Guardar</button>
-        </div>
-    </div>
-</div>
-
 <script>
 (function () {
     function post(url, data, cb) {
@@ -143,42 +149,12 @@
             .then(function (r) { return r.json(); }).then(cb).catch(function () { alert('Error'); });
     }
 
-    // Convierte "dd/mm/aaaa" a ISO "aaaa-mm-dd". '' => '' (limpia). Inválida => null.
-    function fechaISO(v) {
-        v = (v || '').trim();
-        if (v === '') return '';
-        var m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-        if (!m) return null;
-        var d = +m[1], mo = +m[2], y = +m[3];
-        var dt = new Date(y, mo - 1, d);
-        if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
-        return y + '-' + ('0' + mo).slice(-2) + '-' + ('0' + d).slice(-2);
+    // Máscara dd/mm/aaaa (la conversión a ISO la hace window.fechaISO, global).
+    // Si el layout fuera una versión anterior sin estos helpers, la página sigue
+    // funcionando: solo se queda sin máscara y sin campo de fecha en el guardado.
+    if (window.mascaraFechaDmy) {
+        document.querySelectorAll('.edit-fechaleido').forEach(function (inp) { window.mascaraFechaDmy(inp); });
     }
-    // Máscara dd/mm/aaaa mientras se escribe
-    document.querySelectorAll('.edit-fechaleido').forEach(function (inp) {
-        inp.addEventListener('input', function () {
-            var n = inp.value.replace(/\D/g, '').slice(0, 8), out = n.slice(0, 2);
-            if (n.length > 2) out += '/' + n.slice(2, 4);
-            if (n.length > 4) out += '/' + n.slice(4, 8);
-            inp.value = out;
-        });
-    });
-
-    var mResena = document.getElementById('modal-resena'), resenaId = null, resVal = document.getElementById('resena-val');
-
-    // Al marcar «completado» se pide solo la calificación del libro clicado.
-    function pedirEstrellas(id, titulo) {
-        resenaId = id; resVal.value = 0;
-        document.querySelectorAll('#resena-stars .star').forEach(function (s) { s.classList.remove('full', 'half-on'); });
-        document.getElementById('resena-titulo').textContent = '«' + titulo + '» — ¿cuántas estrellas le das?';
-        mResena.classList.add('is-open');
-    }
-
-    document.getElementById('resena-skip').addEventListener('click', function () { location.reload(); });
-    document.getElementById('resena-guardar').addEventListener('click', function () {
-        post('/admin/libros/resenar', { id: resenaId, estrellas: resVal.value }, function () { location.reload(); });
-    });
-    mResena.addEventListener('click', function (e) { if (e.target === mResena) location.reload(); });
 
     document.querySelectorAll('.libro-item').forEach(function (libro) {
         var timer = null;
@@ -224,8 +200,8 @@
             var af = libro.querySelector('.edit-alfinal'); if (af && af.checked) data.al_final = 1;
             var np = libro.querySelector('.edit-pos'); if (np && np.value.trim() !== '') data.nueva_pos = np.value.trim();
             var fl = libro.querySelector('.edit-fechaleido');
-            if (fl) {
-                var iso = fechaISO(fl.value);
+            if (fl && window.fechaISO) {
+                var iso = window.fechaISO(fl.value);
                 if (iso === null) { (window.toast ? toast('Fecha inválida: usa dd/mm/aaaa', 'eliminado') : alert('Fecha inválida: usa dd/mm/aaaa')); return; }
                 data.fecha_leido = iso;
             }

@@ -28,7 +28,7 @@ class VideojuegoController
             $vj->horas_totales   = ($_POST['horas_totales'] ?? '') !== '' ? (float) $_POST['horas_totales'] : null;
             $vj->id = $id;
             if (!$vj->id) $vj->orden = count(Videojuego::all()) + 1;
-            $portada = subirArchivo('portada_file', rutaBuild('img/videojuegos'), 'vj', ['png','jpg','jpeg','webp','avif']);
+            $portada = subirArchivo('portada_file', rutaSubidas('videojuegos'), 'vj', ['png','jpg','jpeg','webp','avif']);
             if ($portada) $vj->portada = $portada; elseif ($editando) $vj->portada = $editando->portada;
             $vj->guardar();
             flash($editando ? 'Videojuego actualizado' : 'Videojuego agregado', $editando ? 'editado' : 'ok');

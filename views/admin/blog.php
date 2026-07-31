@@ -16,7 +16,7 @@
                 <span>Portada <small style="color:var(--muted-2)">— opcional</small></span>
                 <div class="upload upload--stack">
                     <div class="upload-preview" id="prev-cover" style="width:100%;aspect-ratio:16/9;height:auto">
-                        <?php if (!empty($editando->cover_img)) : ?><img src="/build/img/blog/<?php echo s($editando->cover_img); ?>" alt="" style="object-fit:cover"><?php else : ?>Degradado<?php endif; ?>
+                        <?php if (!empty($editando->cover_img)) : ?><img src="<?php echo urlSubida('blog', $editando->cover_img); ?>" alt="" style="object-fit:cover"><?php else : ?>Degradado<?php endif; ?>
                     </div>
                     <label class="upload-drop">
                         <b>Elige</b> o arrastra<br><small>PNG, JPG, WEBP</small>
@@ -34,10 +34,7 @@
                     <input type="text" name="slug" id="blog-slug" value="<?php echo s($editando->slug ?? ''); ?>" placeholder="mi-articulo">
                     <span class="mini-s" style="color:var(--muted-2);margin-top:4px">/tekhne/<span id="slug-preview" style="color:#ff5364"><?php echo s($editando->slug ?? ''); ?></span></span>
                 </label>
-                <label class="campo">
-                    <span>Fecha de publicación</span>
-                    <input type="date" name="fecha_pub" value="<?php echo s($editando->fecha_pub ?? date('Y-m-d')); ?>">
-                </label>
+                <?php echo campoFechaDmy('fecha_pub', $editando->fecha_pub ?? date('Y-m-d'), 'Fecha de publicación'); ?>
                 <div class="campo full">
                     <span>Categoría</span>
                     <div class="tabs tabs--grid" id="cat-tabs-blog">
@@ -74,15 +71,17 @@
             </div>
 
             <div class="campo full autocomplete" data-autocomplete data-endpoint="/admin/buscar?tipo=ref" data-onpick="blogPick">
-                <span>Asociar a un recurso (libro / película / serie) — opcional</span>
-                <input type="text" class="ac-input" placeholder="Busca un título…">
+                <span>Recursos asociados (libros / películas / series) — opcional, puedes añadir varios</span>
+                <input type="text" class="ac-input" placeholder="Busca un título y elígelo para añadirlo…">
                 <div class="ac-results"></div>
-                <div class="ac-chosen <?php echo (!empty($editando) && $editando->ref_id) ? 'show' : ''; ?>" id="ref-chosen">
-                    <span class="ref-label"><?php echo (!empty($editando) && $editando->ref_id) ? s(ucfirst($editando->ref_tipo) . ' #' . $editando->ref_id) : ''; ?></span>
-                    <b id="ref-clear">Quitar ✕</b>
+                <div class="ref-lista" id="ref-lista">
+                    <?php foreach ($recursos as $r) : ?>
+                        <span class="tag-pill" data-tipo="<?php echo s($r['tipo']); ?>" data-id="<?php echo (int) $r['obj']->id; ?>">
+                            <?php echo s(($r['tipo'] === 'libro' ? 'Libro: ' : 'Película: ') . $r['obj']->titulo); ?> <b data-x>✕</b>
+                        </span>
+                    <?php endforeach; ?>
                 </div>
-                <input type="hidden" name="ref_tipo" id="ref_tipo" value="<?php echo s($editando->ref_tipo ?? ''); ?>">
-                <input type="hidden" name="ref_id" id="ref_id" value="<?php echo s($editando->ref_id ?? ''); ?>">
+                <input type="hidden" name="recursos" id="ref-json" value="">
             </div>
 
         </div>
@@ -105,7 +104,7 @@
                 <tr class="sortable-row<?php echo $ao_ix < 3 ? ' is-landing' : ''; ?>" draggable="true" data-id="<?php echo $post->id; ?>">
                     <td><span class="drag-handle">⠿</span><?php if ($ao_ix < 3) : ?><span class="landing-badge" title="Se muestra en la landing"><?php echo icono('estrella'); ?></span><?php endif; ?></td>
                     <td>
-                        <?php if (!empty($post->cover_img)) : ?><img class="thumb-cell" src="/build/img/blog/<?php echo s($post->cover_img); ?>" alt="">
+                        <?php if (!empty($post->cover_img)) : ?><img class="thumb-cell" src="<?php echo urlSubida('blog', $post->cover_img); ?>" alt="">
                         <?php else : ?><div class="thumb-cell" style="background:linear-gradient(135deg,var(--accent),#1a0207)"></div><?php endif; ?>
                     </td>
                     <td>
@@ -160,6 +159,13 @@
     // Sincroniza el HTML al hidden antes de enviar (también al final del script)
     editor.closest('form').addEventListener('submit', function () { hidden.value = editor.innerHTML.trim(); });
 
+    // ¿El nodo es un bloque vacío? (solo espacios o un <br> suelto)
+    function bloqueVacio(n) {
+        if (!n || n.nodeType !== 1) return false;
+        if (!/^(P|DIV|H2|H3)$/.test(n.nodeName)) return false;
+        return n.textContent.trim() === '';
+    }
+
     // Inserta un nodo en la posición del cursor dentro del editor
     function insertarNodo(node) {
         editor.focus();
@@ -169,17 +175,62 @@
             var range = selc.getRangeAt(0); range.collapse(false); range.insertNode(node);
             range.setStartAfter(node); range.collapse(true); selc.removeAllRanges(); selc.addRange(range);
         }
-        // asegura un párrafo editable después
-        var p = document.createElement('p'); p.innerHTML = '<br>'; node.parentNode.insertBefore(p, node.nextSibling);
+        // Solo se añade el párrafo si no hay ya uno vacío detrás; si no, se
+        // acumulaba una línea en blanco de más en cada inserción.
+        if (!bloqueVacio(node.nextSibling)) {
+            var p = document.createElement('p'); p.innerHTML = '<br>';
+            node.parentNode.insertBefore(p, node.nextSibling);
+        }
         calc();
+    }
+
+    // Bloque (hijo directo del editor) que contiene el cursor
+    function bloqueDelCursor() {
+        var selc = window.getSelection();
+        if (!selc.rangeCount || !editor.contains(selc.anchorNode)) return null;
+        var n = selc.anchorNode;
+        while (n && n.parentNode !== editor) n = n.parentNode;
+        return n && n.nodeType === 1 ? n : null;
+    }
+
+    /**
+     * Convierte en <h2> la línea donde está el cursor (o la devuelve a <p> si
+     * ya era título). Se reemplaza el bloque en su sitio, sin insertar nodos
+     * nuevos, para que no aparezca un salto de línea extra.
+     */
+    function formatearTitulo() {
+        editor.focus();
+        var bloque = bloqueDelCursor();
+
+        // Texto suelto sin bloque: se envuelve el editor completo no, solo se
+        // crea el h2 con lo que haya seleccionado/escrito en esa línea.
+        if (!bloque) {
+            if (editor.textContent.trim() === '') {
+                var vacio = document.createElement('h2'); vacio.innerHTML = '<br>';
+                editor.appendChild(vacio); colocarCaret(vacio); calc(); return;
+            }
+            document.execCommand('formatBlock', false, 'h2'); calc(); return;
+        }
+
+        var nuevo = document.createElement(bloque.nodeName === 'H2' ? 'p' : 'h2');
+        nuevo.innerHTML = bloque.innerHTML.replace(/<br\s*\/?>\s*$/i, '') || '<br>';
+        bloque.parentNode.replaceChild(nuevo, bloque);
+        colocarCaret(nuevo);
+        calc();
+    }
+
+    // Deja el cursor al final del bloque indicado
+    function colocarCaret(nodo) {
+        var range = document.createRange(), selc = window.getSelection();
+        range.selectNodeContents(nodo); range.collapse(false);
+        selc.removeAllRanges(); selc.addRange(range);
     }
 
     // --- Atajos de teclado en el editor: Ctrl/Cmd+1 = formatear título ---
     editor.addEventListener('keydown', function (e) {
         if ((e.ctrlKey || e.metaKey) && e.key === '1') {
             e.preventDefault();
-            document.execCommand('formatBlock', false, 'h2');
-            calc();
+            formatearTitulo();
         }
     });
 
@@ -201,11 +252,8 @@
 
     calc();
 
-    // Insertar título de sección
-    document.getElementById('btn-heading').addEventListener('click', function () {
-        var h = document.createElement('h2'); h.textContent = 'Título de sección';
-        insertarNodo(h);
-    });
+    // El botón hace exactamente lo mismo que Ctrl+1 (lo anuncia su tooltip)
+    document.getElementById('btn-heading').addEventListener('click', formatearTitulo);
 
     // Insertar imagen en el cuerpo (sube y coloca un <img> real)
     var btn = document.getElementById('btn-img'), file = document.getElementById('body-img');
@@ -220,17 +268,34 @@
         });
     });
 
-    // Asociación de recurso
-    window.blogPick = function (item) {
-        document.getElementById('ref_tipo').value = item.tipo;
-        document.getElementById('ref_id').value = item.id;
-        var ch = document.getElementById('ref-chosen');
-        ch.querySelector('.ref-label').textContent = (item.tipo === 'libro' ? 'Libro: ' : 'Película: ') + item.titulo;
-        ch.classList.add('show');
+    // --- Recursos asociados: varios por entrada, como chips ---
+    var refLista = document.getElementById('ref-lista'), refJson = document.getElementById('ref-json');
+
+    // El hidden viaja como JSON [{tipo, id}, …] en el orden de los chips
+    function sincronizarRefs() {
+        refJson.value = JSON.stringify(Array.prototype.map.call(refLista.querySelectorAll('.tag-pill'), function (p) {
+            return { tipo: p.dataset.tipo, id: +p.dataset.id };
+        }));
+    }
+    window.blogPick = function (item, box) {
+        var yaEsta = refLista.querySelector('.tag-pill[data-tipo="' + item.tipo + '"][data-id="' + item.id + '"]');
+        if (!yaEsta) {
+            var pill = document.createElement('span');
+            pill.className = 'tag-pill';
+            pill.dataset.tipo = item.tipo; pill.dataset.id = item.id;
+            pill.textContent = (item.tipo === 'libro' ? 'Libro: ' : 'Película: ') + item.titulo + ' ';
+            var x = document.createElement('b'); x.setAttribute('data-x', ''); x.textContent = '✕';
+            pill.appendChild(x);
+            refLista.appendChild(pill);
+            sincronizarRefs();
+        }
+        box.querySelector('.ac-input').value = '';
     };
-    document.getElementById('ref-clear').addEventListener('click', function () {
-        document.getElementById('ref_tipo').value = ''; document.getElementById('ref_id').value = '';
-        document.getElementById('ref-chosen').classList.remove('show');
+    refLista.addEventListener('click', function (e) {
+        var x = e.target.closest('[data-x]'); if (!x) return;
+        x.closest('.tag-pill').remove();
+        sincronizarRefs();
     });
+    sincronizarRefs();   // estado inicial (chips precargados al editar)
 })();
 </script>

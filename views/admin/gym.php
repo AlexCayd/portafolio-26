@@ -80,7 +80,7 @@ function mini_mes(int $anio, int $mes, array $dias) : void {
     </div>
 
     <div class="card">
-        <h2>Resumen global</h2>
+        <h2>Resumen · <?php echo s($ambito); ?></h2>
         <div class="kpis" style="grid-template-columns:1fr 1fr;margin-bottom:18px">
             <div class="kpi k-green"><div class="kpi-label">Sí</div><div class="kpi-value" id="t-si"><?php echo $totales['si']; ?></div></div>
             <div class="kpi k-red"><div class="kpi-label">No</div><div class="kpi-value" id="t-no"><?php echo $totales['no']; ?></div></div>
@@ -92,53 +92,79 @@ function mini_mes(int $anio, int $mes, array $dias) : void {
 </div>
 
 <div class="card" style="margin-top:22px">
-    <h3 style="margin:0 0 4px">Asistencias por mes — <?php echo date('Y'); ?></h3>
-    <p class="chart-sub" style="margin:0 0 16px">De enero al mes actual</p>
+    <h3 style="margin:0 0 4px" id="gym-serie-titulo"><?php echo s($serie['titulo']); ?></h3>
+    <p class="chart-sub" style="margin:0 0 16px" id="gym-serie-sub"><?php echo s($serie['sub']); ?></p>
     <canvas id="gymMesChart" style="max-height:260px"></canvas>
 </div>
 
 <script>
 (function () {
+    // El ámbito que se está viendo: se reenvía en cada toggle para que el
+    // refresco sin recarga no se salga del mes/año seleccionado.
+    var AMBITO = {
+        anio:  <?php echo (int) $anio; ?>,
+        mes:   <?php echo (int) $mes; ?>,
+        vista: '<?php echo $vista; ?>'
+    };
+
+    // Los clicks del calendario no dependen de Chart.js: se registran siempre.
+    document.querySelectorAll('[data-fecha]').forEach(function (cell) {
+        cell.addEventListener('click', function () {
+            var datos = { fecha: cell.dataset.fecha, anio: AMBITO.anio, mes: AMBITO.mes, vista: AMBITO.vista };
+            postForm('/admin/gym/toggle', datos).then(function (r) {
+                if (!r.ok) return;
+                cell.classList.remove('si', 'no');
+                if (r.estado === 'si') cell.classList.add('si'); else if (r.estado === 'no') cell.classList.add('no');
+                if (window.gymRefrescar) window.gymRefrescar(r);
+            });
+        });
+    });
+
     if (typeof Chart === 'undefined') return;
     var GREEN = '#34A853', RED = '#E51022', GRID = 'rgba(255,255,255,.07)';
 
-    // Gráfica mensual (barras)
-    var M = <?php echo json_encode($porMes, JSON_UNESCAPED_UNICODE); ?>;
-    var mesChart = new Chart(document.getElementById('gymMesChart'), {
+    // Barras del ámbito: por día si la vista es de mes, por mes si es de año
+    var S = <?php echo json_encode($serie, JSON_UNESCAPED_UNICODE); ?>;
+    var serieChart = new Chart(document.getElementById('gymMesChart'), {
         type: 'bar',
-        data: { labels: M.labels, datasets: [{ label: 'Asistencias', data: M.data, backgroundColor: GREEN, borderRadius: 5, borderSkipped: false }] },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: GRID }, ticks: { precision: 0 } }, x: { grid: { display: false } } } }
+        data: {
+            labels: S.labels,
+            datasets: [
+                { label: 'Fui',    data: S.si, backgroundColor: GREEN, borderRadius: 5, borderSkipped: false },
+                { label: 'No fui', data: S.no, backgroundColor: RED,   borderRadius: 5, borderSkipped: false }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom', labels: { color: '#9a9aa4' } } },
+            scales: {
+                y: { beginAtZero: true, stacked: true, grid: { color: GRID }, ticks: { precision: 0 } },
+                x: { stacked: true, grid: { display: false } }
+            }
+        }
     });
 
-    // Dona global
+    // Dona del ámbito
+    var T = <?php echo json_encode($totales, JSON_UNESCAPED_UNICODE); ?>;
     var chart = new Chart(document.getElementById('gymChart'), {
         type: 'doughnut',
-        data: { labels: ['Fui', 'No fui'], datasets: [{ data: [<?php echo $totales['si']; ?>, <?php echo $totales['no']; ?>], backgroundColor: [GREEN, RED], borderColor: '#131316', borderWidth: 2 }] },
+        data: { labels: ['Fui', 'No fui'], datasets: [{ data: [T.si, T.no], backgroundColor: [GREEN, RED], borderColor: '#131316', borderWidth: 2 }] },
         options: { responsive: true, cutout: '64%', plugins: { legend: { position: 'bottom', labels: { color: '#9a9aa4' } } } }
     });
 
-    function refresca(t) {
-        var cumplido = t.si + t.no, pct = cumplido ? Math.round(t.si / cumplido * 10000) / 100 : 0;
+    window.gymRefrescar = function (r) {
+        var t = r.totales, cumplido = t.si + t.no, pct = cumplido ? Math.round(t.si / cumplido * 10000) / 100 : 0;
         document.getElementById('t-si').textContent = t.si;
         document.getElementById('t-no').textContent = t.no;
         document.getElementById('t-cumplido').textContent = cumplido;
         document.getElementById('t-pct').textContent = pct + '%';
         chart.data.datasets[0].data = [t.si, t.no]; chart.update();
-    }
-    function refrescaMes(m) {
-        if (!m) return;
-        mesChart.data.labels = m.labels; mesChart.data.datasets[0].data = m.data; mesChart.update();
-    }
-    document.querySelectorAll('[data-fecha]').forEach(function (cell) {
-        cell.addEventListener('click', function () {
-            postForm('/admin/gym/toggle', { fecha: cell.dataset.fecha }).then(function (r) {
-                if (!r.ok) return;
-                cell.classList.remove('si', 'no');
-                if (r.estado === 'si') cell.classList.add('si'); else if (r.estado === 'no') cell.classList.add('no');
-                refresca(r.totales);
-                refrescaMes(r.porMes);
-            });
-        });
-    });
+
+        if (!r.serie) return;
+        serieChart.data.labels = r.serie.labels;
+        serieChart.data.datasets[0].data = r.serie.si;
+        serieChart.data.datasets[1].data = r.serie.no;
+        serieChart.update();
+    };
 })();
 </script>

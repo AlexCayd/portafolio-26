@@ -13,7 +13,7 @@
             <span>Portada <small style="color:var(--muted-2)">— opcional</small></span>
             <div class="upload upload--vj" style="margin-top:8px">
                 <div class="upload-preview vj-prev" id="prev-portada">
-                    <?php if (!empty($editando->portada)) : ?><img src="/build/img/videojuegos/<?php echo s($editando->portada); ?>" alt=""><?php else : ?><span class="vj-ph-ico"><?php echo icono('videojuegos'); ?></span><?php endif; ?>
+                    <?php if (!empty($editando->portada)) : ?><img src="<?php echo urlSubida('videojuegos', $editando->portada); ?>" alt=""><?php else : ?><span class="vj-ph-ico"><?php echo icono('videojuegos'); ?></span><?php endif; ?>
                 </div>
                 <label class="upload-drop"><b>Elige</b> o arrastra la portada<br><small>JPG, PNG, WEBP</small><input type="file" name="portada_file" accept="image/*" data-preview="#prev-portada"></label>
             </div>
@@ -49,7 +49,7 @@
         <?php foreach ($galeria as $vj) : $h = $vj->horas2026(); ?>
             <a class="vj-poster" href="/admin/videojuegos?id=<?php echo $vj->id; ?>" title="Editar <?php echo s($vj->nombre); ?>">
                 <div class="vj-poster-img">
-                    <?php if (!empty($vj->portada)) : ?><img src="/build/img/videojuegos/<?php echo s($vj->portada); ?>" alt="" loading="lazy">
+                    <?php if (!empty($vj->portada)) : ?><img src="<?php echo urlSubida('videojuegos', $vj->portada); ?>" alt="" loading="lazy">
                     <?php else : ?><span class="vj-ph-ico"><?php echo icono('videojuegos'); ?></span><?php endif; ?>
                     <span class="vj-poster-h <?php echo ($h !== null && $h < 0) ? 'neg' : ($h === null ? 'na' : ''); ?>">
                         <?php echo $h === null ? '—' : rtrim(rtrim(number_format($h, 1), '0'), '.') . ' h'; ?>
@@ -72,7 +72,7 @@
                 <tr class="sortable-row" draggable="true" data-id="<?php echo $vj->id; ?>">
                     <td><span class="drag-handle">⠿</span></td>
                     <td class="num-cell"><?php echo $i + 1; ?></td>
-                    <td><?php if (!empty($vj->portada)) : ?><img class="vj-thumb" src="/build/img/videojuegos/<?php echo s($vj->portada); ?>" alt=""><?php else : ?><div class="vj-thumb vj-thumb--ph"><?php echo icono('videojuegos'); ?></div><?php endif; ?></td>
+                    <td><?php if (!empty($vj->portada)) : ?><img class="vj-thumb" src="<?php echo urlSubida('videojuegos', $vj->portada); ?>" alt=""><?php else : ?><div class="vj-thumb vj-thumb--ph"><?php echo icono('videojuegos'); ?></div><?php endif; ?></td>
                     <td><?php echo s($vj->nombre); ?></td>
                     <td><?php echo rtrim(rtrim(number_format((float)$vj->horas_iniciales, 1), '0'), '.'); ?></td>
                     <td><?php echo $vj->horas_totales !== null ? rtrim(rtrim(number_format((float)$vj->horas_totales, 1), '0'), '.') : '—'; ?></td>

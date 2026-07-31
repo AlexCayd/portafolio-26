@@ -7,21 +7,21 @@ use Model\GymDia;
 
 class GymController
 {
+    const MESES = [1=>'Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
     public static function index(Router $router)
     {
         protegerAdmin();
-        $anio = (int) ($_GET['anio'] ?? date('Y'));
-        $mes  = (int) ($_GET['mes']  ?? date('n'));
-        if ($mes < 1 || $mes > 12) $mes = (int) date('n');
-        $vista = ($_GET['vista'] ?? 'mes') === 'anio' ? 'anio' : 'mes';
+        [$anio, $mes, $vista] = self::ambitoPedido();
 
         $router->render('admin/gym', [
             'titulo'   => 'Gym', 'modulo' => 'gym', 'usaCharts' => true,
             'vista'    => $vista,
             'anio'     => $anio, 'mes' => $mes,
             'dias'     => $vista === 'mes' ? GymDia::delMes($anio, $mes) : GymDia::delAnio($anio),
-            'totales'  => GymDia::totales(),
-            'porMes'   => GymDia::porMesAnioActual(),
+            'ambito'   => self::etiqueta($anio, $mes, $vista),
+            'totales'  => self::totalesDelAmbito($anio, $mes, $vista),
+            'serie'    => self::serieDelAmbito($anio, $mes, $vista),
         ], 'admin-layout');
     }
 
@@ -47,12 +47,58 @@ class GymController
             $estado = 'none';
         }
 
+        // Se recalcula en el mismo ámbito que está viendo la página, para que
+        // el refresco sin recarga no salte al año en curso.
+        [$anio, $mes, $vista] = self::ambitoPedido();
+
         echo json_encode([
             'ok'      => true,
             'estado'  => $estado,
-            'totales' => GymDia::totales(),
-            'porMes'  => GymDia::porMesAnioActual(),
+            'totales' => self::totalesDelAmbito($anio, $mes, $vista),
+            'serie'   => self::serieDelAmbito($anio, $mes, $vista),
         ]);
         exit;
+    }
+
+    /* =============================================================== Helpers */
+
+    // Año / mes / vista pedidos, normalizados. Sirve para GET y para POST.
+    private static function ambitoPedido() : array
+    {
+        $datos = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : $_GET;
+        $anio = (int) ($datos['anio'] ?? date('Y'));
+        if ($anio < 1970 || $anio > 2999) $anio = (int) date('Y');
+        $mes  = (int) ($datos['mes'] ?? date('n'));
+        if ($mes < 1 || $mes > 12) $mes = (int) date('n');
+        $vista = ($datos['vista'] ?? 'mes') === 'anio' ? 'anio' : 'mes';
+        return [$anio, $mes, $vista];
+    }
+
+    private static function etiqueta(int $anio, int $mes, string $vista) : string
+    {
+        return $vista === 'mes' ? self::MESES[$mes] . ' ' . $anio : 'Año ' . $anio;
+    }
+
+    // KPIs y dona: del mes seleccionado o del año completo
+    private static function totalesDelAmbito(int $anio, int $mes, string $vista) : array
+    {
+        if ($vista === 'mes') {
+            $inicio = sprintf('%04d-%02d-01', $anio, $mes);
+            return GymDia::totalesRango($inicio, date('Y-m-t', strtotime($inicio)));
+        }
+        return GymDia::totalesRango("{$anio}-01-01", "{$anio}-12-31");
+    }
+
+    // Barras: día a día en la vista de mes, mes a mes en la de año
+    private static function serieDelAmbito(int $anio, int $mes, string $vista) : array
+    {
+        $serie = $vista === 'mes' ? GymDia::porDia($anio, $mes) : GymDia::porMes($anio);
+        $serie['titulo'] = $vista === 'mes'
+            ? 'Asistencias por día — ' . self::MESES[$mes] . ' ' . $anio
+            : 'Asistencias por mes — ' . $anio;
+        $serie['sub'] = $vista === 'mes'
+            ? 'Cada barra es un día del mes'
+            : ($anio === (int) date('Y') ? 'De enero al mes actual' : 'Los doce meses del año');
+        return $serie;
     }
 }

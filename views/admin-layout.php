@@ -225,10 +225,13 @@ document.querySelectorAll('form[data-confirm]').forEach(function (f) {
 })();
 
 // ---- Estrellas reutilizable (.star-rating data-max data-step data-input) ----
+// Se excluye .is-readonly: esas las pinta estrellasHtml() en el servidor y no
+// tienen data-input, así que construirlas aquí duplicaba las estrellas.
 window.initStars = function (root) {
-    (root || document).querySelectorAll('.star-rating').forEach(function (sr) {
+    (root || document).querySelectorAll('.star-rating:not(.is-readonly)').forEach(function (sr) {
         if (sr.dataset.built) return; sr.dataset.built = '1';
         var max = parseInt(sr.dataset.max || '5', 10), input = document.querySelector(sr.dataset.input);
+        if (!input) return;                                            // sin destino no hay widget
         var permiteMedia = parseFloat(sr.dataset.step || '0.5') < 1;   // step=1 => sin decimales
         function media(e, st) { if (!permiteMedia) return 0; var r = st.getBoundingClientRect(); return (e.clientX - r.left) < r.width / 2 ? 0.5 : 0; }
         var SVG = '<svg class="star-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.48 3.5a.56.56 0 011.04 0l2.12 5.11a.56.56 0 00.48.35l5.52.44c.5.04.7.66.32.99l-4.2 3.6a.56.56 0 00-.18.56l1.28 5.39a.56.56 0 01-.84.6l-4.72-2.88a.56.56 0 00-.59 0l-4.72 2.88a.56.56 0 01-.84-.6l1.28-5.39a.56.56 0 00-.18-.56l-4.2-3.6a.56.56 0 01.32-.99l5.52-.44a.56.56 0 00.48-.35z"/></svg>';
@@ -247,6 +250,50 @@ window.initStars = function (root) {
     });
 };
 initStars();
+
+// ---- Fechas dd/mm/aaaa ([data-fecha-dmy] + hidden con el ISO) ----
+// Convierte "dd/mm/aaaa" a ISO "aaaa-mm-dd". '' => '' (limpia). Inválida => null.
+window.fechaISO = function (v) {
+    v = (v || '').trim();
+    if (v === '') return '';
+    var m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!m) return null;
+    var d = +m[1], mo = +m[2], y = +m[3];
+    var dt = new Date(y, mo - 1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+    return y + '-' + ('0' + mo).slice(-2) + '-' + ('0' + d).slice(-2);
+};
+// Máscara dd/mm/aaaa mientras se escribe (también la usan los editores inline)
+window.mascaraFechaDmy = function (inp) {
+    inp.addEventListener('input', function () {
+        var n = inp.value.replace(/\D/g, '').slice(0, 8), out = n.slice(0, 2);
+        if (n.length > 2) out += '/' + n.slice(2, 4);
+        if (n.length > 4) out += '/' + n.slice(4, 8);
+        inp.value = out;
+        inp.classList.remove('is-invalid');
+    });
+};
+window.initFechasDmy = function (root) {
+    (root || document).querySelectorAll('[data-fecha-dmy]').forEach(function (inp) {
+        if (inp.dataset.built) return; inp.dataset.built = '1';
+        window.mascaraFechaDmy(inp);
+        // El hidden hermano es el que viaja en el POST
+        var hidden = inp.parentNode.querySelector('input[type="hidden"][name="' + inp.dataset.fechaDmy + '"]');
+        var form = inp.closest('form');
+        if (!hidden || !form) return;
+        form.addEventListener('submit', function (e) {
+            var iso = window.fechaISO(inp.value);
+            if (iso === null) {
+                e.preventDefault();
+                inp.classList.add('is-invalid'); inp.focus();
+                if (window.toast) toast('Fecha inválida: usa dd/mm/aaaa', 'eliminado');
+                return;
+            }
+            hidden.value = iso;
+        });
+    });
+};
+initFechasDmy();
 
 // ---- Tag-pills (.tag-input data-input) ----
 window.initTagInputs = function () {

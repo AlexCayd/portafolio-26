@@ -1,0 +1,33 @@
+# =====================================================================
+#  Archivos subidos desde el panel (imágenes y CV).
+#  Esta carpeta NO se toca al desplegar: /public/build se reemplaza,
+#  /public/uploads se queda. Respaldar por separado.
+#
+#  Aquí solo se sirven archivos estáticos: nada se ejecuta nunca.
+# =====================================================================
+
+<FilesMatch "\.(php|phtml|php[0-9]|phps|phar|pl|py|cgi|sh|inc)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+# Los nombres de archivo son únicos (prefijo-timestamp-hash), así que la
+# caché larga es segura. El CV se queda fuera: su nombre es siempre el mismo.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg  "access plus 1 year"
+    ExpiresByType image/png   "access plus 1 year"
+    ExpiresByType image/webp  "access plus 1 year"
+    ExpiresByType image/avif  "access plus 1 year"
+    ExpiresByType image/gif   "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+</IfModule>

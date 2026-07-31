@@ -50,7 +50,7 @@
             'repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 13px),linear-gradient(115deg,#0b0b0c 18%,#1a0207 55%,var(--accent) 100%)',
         ];
         function tk_cover($post, $i, $grads) {
-            return !empty($post->cover_img) ? "url('/build/img/blog/" . s($post->cover_img) . "') center/cover no-repeat" : $grads[$i % count($grads)];
+            return !empty($post->cover_img) ? "url('" . urlSubida('blog', $post->cover_img) . "') center/cover no-repeat" : $grads[$i % count($grads)];
         }
         ?>
 
@@ -115,7 +115,7 @@
                     <a class="sel-card" href="/tekhne/pelicula/<?php echo generarSlug($t->titulo); ?>" title="<?php echo s($t->titulo); ?>">
                         <div class="sel-poster">
                             <?php if (!empty($t->poster)) : ?>
-                                <img src="/build/img/peliculas/<?php echo s($t->poster); ?>" alt="<?php echo s($t->titulo); ?>" loading="lazy">
+                                <img src="<?php echo urlSubida('peliculas', $t->poster); ?>" alt="<?php echo s($t->titulo); ?>" loading="lazy">
                             <?php else : ?>
                                 <div class="sel-ph"><?php echo icono('film'); ?></div>
                             <?php endif; ?>
@@ -136,7 +136,7 @@
                 <div>
                     <span class="sel-kicker">/ RECOMENDACIONES</span>
                     <h2 class="sel-title">Para ver más <em>tarde…</em></h2>
-                    <p class="sel-sub">Cine y series con calificación perfecta — mis 10/10 sin concesiones.</p>
+                    <p class="sel-sub">Lo mejor que he visto: mi selección personal de cine y series.</p>
                 </div>
                 <a class="sel-vertodas" href="/tekhne/recomendaciones">Ver todas <span>→</span></a>
             </div>
@@ -145,7 +145,7 @@
                     <a class="sel-card" href="/tekhne/pelicula/<?php echo generarSlug($t->titulo); ?>" title="<?php echo s($t->titulo); ?>">
                         <div class="sel-poster">
                             <?php if (!empty($t->poster)) : ?>
-                                <img src="/build/img/peliculas/<?php echo s($t->poster); ?>" alt="<?php echo s($t->titulo); ?>" loading="lazy">
+                                <img src="<?php echo urlSubida('peliculas', $t->poster); ?>" alt="<?php echo s($t->titulo); ?>" loading="lazy">
                             <?php else : ?>
                                 <div class="sel-ph"><?php echo icono('film'); ?></div>
                             <?php endif; ?>

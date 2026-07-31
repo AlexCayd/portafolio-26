@@ -2,7 +2,7 @@
 <?php
 $ao_dom = 'https://alexanderoliva.com';
 $ao_url = $ao_dom . '/tekhne/' . ($post->slug ?: $post->id);
-$ao_img = $ao_dom . ($post->cover_img ? '/build/img/blog/' . $post->cover_img : '/build/img/profile.png');
+$ao_img = $ao_dom . ($post->cover_img ? urlSubida('blog', $post->cover_img) : '/build/img/profile.png');
 $ao_ld = [
     '@context' => 'https://schema.org',
     '@type'    => 'BlogPosting',
@@ -50,7 +50,7 @@ $ao_bc = [
     <section class="art-hero" id="art-hero">
         <div class="art-hero-media" id="art-hero-media" style="view-transition-name:ao-cover">
             <?php if (!empty($post->cover_img)) : ?>
-                <img src="/build/img/blog/<?php echo s($post->cover_img); ?>" alt="<?php echo s($post->titulo); ?>">
+                <img src="<?php echo urlSubida('blog', $post->cover_img); ?>" alt="<?php echo s($post->titulo); ?>">
             <?php else : ?>
                 <div class="art-hero-grad" style="background:<?php echo $ao_grads[(int) $post->id % count($ao_grads)]; ?>"></div>
             <?php endif; ?>
@@ -83,15 +83,21 @@ $ao_bc = [
             <?php echo $post->contenido; /* HTML saneado al guardar */ ?>
         </article>
 
-        <?php if ($ref) : ?>
-            <div class="pg-ref" data-anim>
-                <?php if ($post->ref_tipo === 'pelicula') : ?>
-                    <?php if (!empty($ref->poster)) : ?><img class="thumb" src="/build/img/peliculas/<?php echo s($ref->poster); ?>" alt=""><?php else : ?><div class="thumb thumb-ph"><?php echo icono('film'); ?></div><?php endif; ?>
-                    <div><div class="rk">RELACIONADO</div><h3><?php echo s($ref->titulo); ?></h3><p><?php echo s($ref->categoria); ?> · <?php echo s($ref->anio); ?> · Nota <?php echo number_format((float)$ref->nota, 0); ?></p></div>
-                <?php else : ?>
-                    <div class="thumb thumb-ph"><?php echo icono('libros'); ?></div>
-                    <div><div class="rk">RELACIONADO</div><h3><?php echo s($ref->titulo); ?></h3><p><?php echo s($ref->autor); ?></p></div>
-                <?php endif; ?>
+        <?php if (!empty($recursos)) : ?>
+            <div class="pg-refs" data-anim>
+                <?php foreach ($recursos as $ao_r) : $ref = $ao_r['obj']; ?>
+                    <?php if ($ao_r['tipo'] === 'pelicula') : ?>
+                        <a class="pg-ref" href="/tekhne/pelicula/<?php echo generarSlug($ref->titulo); ?>">
+                            <?php if (!empty($ref->poster)) : ?><img class="thumb" src="<?php echo urlSubida('peliculas', $ref->poster); ?>" alt=""><?php else : ?><div class="thumb thumb-ph"><?php echo icono('film'); ?></div><?php endif; ?>
+                            <div><div class="rk">RELACIONADO</div><h3><?php echo s($ref->titulo); ?></h3><p><?php echo s($ref->categoria); ?> · <?php echo s($ref->anio); ?> · Nota <?php echo number_format((float)$ref->nota, 0); ?></p></div>
+                        </a>
+                    <?php else : ?>
+                        <div class="pg-ref">
+                            <div class="thumb thumb-ph"><?php echo icono('libros'); ?></div>
+                            <div><div class="rk">RELACIONADO</div><h3><?php echo s($ref->titulo); ?></h3><p><?php echo s($ref->autor); ?></p></div>
+                        </div>
+                    <?php endif; ?>
+                <?php endforeach; ?>
             </div>
         <?php endif; ?>
     </main>

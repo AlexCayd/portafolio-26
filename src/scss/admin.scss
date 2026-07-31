@@ -476,6 +476,9 @@ tr.sortable-row.drop-target td { box-shadow: inset 0 2px 0 var(--accent); }
 .ac-item .ac-t { font-weight: 600; font-size: .9rem; }
 .ac-item .ac-s { font-size: .76rem; color: var(--muted); }
 .ac-empty { padding: 14px; color: var(--muted); font-size: .85rem; text-align: center; }
+/* Recursos asociados a una entrada de Tékhne: varios chips */
+.ref-lista { display: flex; flex-wrap: wrap; gap: 8px; }
+.ref-lista:not(:empty) { margin-top: 10px; }
 .ac-chosen { display: none; align-items: center; gap: 10px; margin-top: 10px; background: var(--surface-2); border: 1px solid var(--line-2); border-radius: var(--radius-xs); padding: 8px 12px; font-size: .85rem; }
 .ac-chosen.show { display: flex; }
 .ac-chosen b { cursor: pointer; margin-left: auto; color: #ff8a95; }
@@ -742,7 +745,7 @@ a.vida-tile:hover { transform: translateY(-2px); border-color: color-mix(in srgb
 /* ===================================================================== */
 
 /* Fix: tarjetas 2ª/3ª en grids no deben heredar margin-top */
-.fin-cols .card, .horario-wrap .card, .dash-grid .card, .chart-grid .card { margin-top: 0; }
+.fin-cols .card, .horario-wrap .card, .dash-grid .card, .chart-grid .card, .gym-wrap .card { margin-top: 0; }
 
 /* Dashboard: stat-item como enlace con fondo de acento */
 a.stat-item { text-decoration: none; color: inherit; transition: transform .12s, border-color .16s, background .16s; }
@@ -820,14 +823,30 @@ a.stat-item:hover .st-go { opacity: 1; }
 .galeria-item .del { position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 6px; background: rgba(10,10,11,.8); border: none; color: #ff8a95; cursor: pointer; display: grid; place-items: center; }
 .galeria-item form { position: absolute; top: 3px; right: 3px; margin: 0; }
 
-/* Libros leídos: colapsado + editor inline con estrellas grandes */
-.leido { flex-direction: column; align-items: stretch; cursor: pointer; gap: 6px; }
-.leido .leido-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* Libros leídos: colapsado + editor inline con estrellas grandes.
+   La ficha se reparte en dos columnas: título/autor a la izquierda y el
+   bloque de reseña + fecha alineado a la derecha, ambos centrados. */
+.leido { cursor: pointer; }
+.leido-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.leido-main { min-width: 0; }
+.leido-meta { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; text-align: right; }
 .leido .leido-stars-static { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
 .leido .leido-stars-num { font-family: var(--mono); font-size: .78rem; color: var(--muted); }
 .star-rating--sm { gap: 2px; }
 .star-rating--sm .star { width: 16px; }
-.leido .sin-resena { font-size: .8rem; color: var(--muted-2); }
+.sin-resena { font-size: .78rem; color: var(--muted-2); }
+/* Fecha de completado en la ficha del libro (leídos y pendientes ya completados) */
+.libro .leido-fecha { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: .74rem; color: var(--muted-2); }
+.libro .leido-fecha .ico { width: 13px; height: 13px; }
+/* Pendiente ya completado: deja libre la esquina de la etiqueta «Completado» */
+.libro.is-completado .leido-meta { padding-top: 13px; }
+@media (max-width: 560px) {
+    .leido-head { flex-direction: column; align-items: flex-start; gap: 9px; }
+    .leido-meta { flex-direction: row; align-items: center; gap: 12px; text-align: left; }
+    .libro.is-completado .leido-meta { padding-top: 0; }
+}
+/* Campo de fecha dd/mm/aaaa con formato inválido */
+input.is-invalid { border-color: var(--c-red, #E51022) !important; }
 .leido .leido-editor { display: none; padding-top: 8px; border-top: 1px solid var(--line); margin-top: 6px; }
 .leido.is-open { cursor: default; }
 .leido.is-open .leido-editor { display: block; }
@@ -1352,6 +1371,39 @@ table.tabla td.acciones > * + * { margin-left: 8px; }
 @media (max-width: 640px) {
   .upload--stack { margin-left: auto; margin-right: auto; }
   .upload--stack, .upload-preview { max-width: 100% !important; }
+}
+
+/* ===================================================================== */
+/*  Películas: duración h/min, marca de selección y póster centrado       */
+/* ===================================================================== */
+
+.upload--poster { max-width: 220px; }
+
+/* Duración partida en horas + minutos */
+.dur-inputs { display: flex; gap: 10px; }
+.dur-inputs label { flex: 1; display: flex; align-items: center; gap: 6px; }
+.dur-inputs input { width: 100%; min-width: 0; }
+.dur-inputs span { font-size: .82rem; color: var(--muted); flex: none; }
+#campo-duracion.is-locked { opacity: .5; }
+#campo-duracion.is-locked input { cursor: not-allowed; }
+
+/* Marca de "va en la Selección del Autor" en el catálogo */
+.sel-marca { display: inline-grid; place-items: center; color: var(--c-amber, #F5B400); }
+.sel-marca .ico { width: 17px; height: 17px; fill: currentColor; stroke: none; }
+
+/* Contador junto al título de una card (p. ej. «Catálogo 30») */
+.card-head .conteo, .card h2 .conteo { font-size: .74rem; font-family: var(--mono); color: var(--muted); background: var(--surface-2); padding: 3px 10px; border-radius: 999px; vertical-align: middle; }
+
+/* Cabecera de gráfica con control a la derecha (selector de año) */
+.chart-box .chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.chart-select { background: var(--surface-2); border: 1px solid var(--line-2); color: var(--text); border-radius: 8px; padding: 8px 12px; font: inherit; font-size: .86rem; }
+
+/* El póster y su dropzone se centran en cuanto el formulario colapsa (768px),
+   conservando el ancho de la tarjeta en lugar de estirarse a todo lo ancho. */
+@media (max-width: 768px) {
+  .pel-form-grid > .campo-poster { align-items: center; }
+  .pel-form-grid .upload--poster { margin-left: auto; margin-right: auto; max-width: 240px !important; width: 100%; }
+  .pel-form-grid .upload--poster .upload-drop { text-align: center; }
 }
 
 /* Mapas curriculares: navegación horizontal cómoda en móvil (snap + swipe) */

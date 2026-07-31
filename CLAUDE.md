@@ -15,11 +15,15 @@ Portafolio + panel de administración de **Alexander Oliva**. Landing pública p
 - `views/` — plantillas PHP. Layouts: `portfolio-layout.php` (público), `admin-layout.php` (panel), `auth-layout.php` (login). Render vía `$router->render('carpeta/vista', [datos], 'layout')` (usa `extract()`).
 - `includes/` — `app.php` (bootstrap: autoload, dotenv, `date_default_timezone_set('America/Mexico_City')`, conexión), `funciones.php` (helpers), `database.php`.
 - `src/scss/` → compila a `public/build/css/`. `src/js/ao-init.js` → `public/build/js/bundle.min.js`.
+- `public/build/` — **assets del repo** (CSS, JS, fuentes, imágenes de diseño). Se reemplaza entera en cada despliegue.
+- `public/uploads/` — **archivos subidos desde el panel** (portadas, pósters, logos de credenciales, galerías, `cv.pdf`). **Nunca se sube ni se reemplaza al desplegar**; se respalda aparte. Subcarpetas: `blog/`, `logos/`, `peliculas/`, `videojuegos/`, `proyectos/portadas/`, `proyectos/galeria/`.
 
 ## Helpers (`includes/funciones.php`)
 - `s($v)` — escapa HTML (usar SIEMPRE al imprimir datos de usuario).
 - `icono($nombre)` — devuelve un `<svg class="ico">` de la paleta de iconos de línea. **Añadir aquí cualquier icono nuevo.**
 - `waLink($mensaje)` — enlace de WhatsApp prellenado.
+- `rutaSubidas($rel)` — ruta física dentro de `public/uploads/` (destino de `subirArchivo()`).
+- `urlSubida($carpeta, $archivo)` — URL pública **ya escapada** de un archivo subido (`''` si no hay archivo). **Único lugar donde se escribe `/uploads`**: nunca armar esas rutas a mano en las vistas.
 - `generarSlug($txt)`, `flash()/obtenerFlash()`, `subirArchivo()`, `sanitizarHtml()`.
 
 ## JS del panel (globals en `views/admin-layout.php`)
@@ -47,8 +51,13 @@ Portafolio + panel de administración de **Alexander Oliva**. Landing pública p
 ./node_modules/.bin/gulp js
 ```
 
+## Despliegue
+Se suben el código y `public/build` (recompilado). **`public/uploads` no se sube nunca**: vive solo en el servidor y ahí están las imágenes y el CV cargados desde el panel. Antes de cada despliegue conviene descargar esa carpeta como respaldo. Las vistas y los controladores tienen que subirse **juntos** con `views/admin-layout.php` e `includes/funciones.php`: los helpers globales (`window.fechaISO`, `icono()`, `urlSubida()`) viven ahí y una subida parcial rompe el panel.
+
 ## Base de datos
-Importar en orden: `database/ddl.sql` (esquema) y luego `database/dml.sql` (datos base: solo el usuario admin + categorías; el resto se carga desde el panel). Visitas se registran solas: `visitas` (total diario) y `visitas_pagina` (por ruta, alimenta la tabla del dashboard).
+`database/ddl.sql` es el **único** archivo que crea tablas; `development.sql` (semilla local) y `deploy.sql` (datos reales de producción) contienen **solo `INSERT`** y se importan después. Orden: `ddl.sql` → `development.sql` *o* `deploy.sql`. Visitas se registran solas: `visitas` (total diario) y `visitas_pagina` (por ruta, alimenta la tabla del dashboard).
+
+**Solo esos tres archivos en `/database`: no se crean migraciones.** Al cambiar el esquema se ajustan los tres (incluidos los `INSERT` de `deploy.sql`). Reglas completas en [`database/CLAUDE.md`](database/CLAUDE.md).
 
 ## Verificación de cambios
 1. `php -l <archivo>` en lo tocado. **Ignorar** los falsos positivos del analizador del IDE: `P1008` (variables inyectadas por `render()`/`extract()`) y `P1014`/`P1132` (props mágicas de ActiveRecord).

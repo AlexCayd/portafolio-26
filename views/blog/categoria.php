@@ -38,7 +38,7 @@
         ?>
         <div class="pg-grid">
             <?php foreach ($posts as $ao_i => $post) :
-                $cover = !empty($post->cover_img) ? "url('/build/img/blog/" . s($post->cover_img) . "') center/cover no-repeat" : $ao_grads[$ao_i % count($ao_grads)];
+                $cover = !empty($post->cover_img) ? "url('" . urlSubida('blog', $post->cover_img) . "') center/cover no-repeat" : $ao_grads[$ao_i % count($ao_grads)];
             ?>
                 <a href="/tekhne/<?php echo s($post->slug ?: $post->id); ?>" data-anim data-vt-cover class="pg-card<?php echo $ao_i === 0 ? ' pg-card--feat' : ''; ?>">
                     <div class="pg-card-cover" data-vt-img style="background:<?php echo $cover; ?>;">

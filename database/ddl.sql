@@ -1,5 +1,15 @@
+-- =====================================================================
+--  ESQUEMA — alexanderoliva.com
+--  Único archivo que crea tablas. `deploy.sql` y `development.sql`
+--  solo contienen INSERT y se importan DESPUÉS de este.
+--
+--    mysql -u root -p <base> < database/ddl.sql
+--    mysql -u root -p <base> < database/development.sql   (o deploy.sql)
+-- =====================================================================
+
 -- Desactiva las claves foráneas mientras se recrea el esquema
 -- (evita el error #1451 al hacer DROP de tablas referenciadas).
+SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ---------------------------------------------------------------------
@@ -17,7 +27,7 @@ CREATE TABLE usuarios (
     confirmado  TINYINT(1)   NOT NULL DEFAULT 0,
     token       VARCHAR(255) NULL,
     creado      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Proyectos (slider del portafolio) — img = archivo con extensión
@@ -33,7 +43,7 @@ CREATE TABLE proyectos (
     descripcion TEXT         NULL,
     orden       INT          NOT NULL DEFAULT 0,
     creado      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Galería de imágenes por proyecto (página interna)
 CREATE TABLE proyecto_imagenes (
@@ -42,7 +52,7 @@ CREATE TABLE proyecto_imagenes (
     img         VARCHAR(160) NOT NULL,
     orden       INT          NOT NULL DEFAULT 0,
     CONSTRAINT fk_pimg_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Servicios (sección "Del problema al producto")
@@ -55,7 +65,7 @@ CREATE TABLE servicios (
     descripcion TEXT         NOT NULL,
     tags        VARCHAR(255) NULL,
     orden       INT          NOT NULL DEFAULT 0
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Credenciales (sección "La curiosidad, certificada")
@@ -69,7 +79,7 @@ CREATE TABLE credenciales (
     titulo      VARCHAR(160) NOT NULL,
     institucion VARCHAR(120) NULL,
     orden       INT          NOT NULL DEFAULT 0
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Blog (sección "Ideas en voz alta") — artículo con cuerpo e imágenes
@@ -85,19 +95,31 @@ CREATE TABLE blog (
     descripcion TEXT         NULL,               -- extracto (tarjeta)
     contenido   MEDIUMTEXT   NULL,               -- cuerpo del artículo (texto + <img>)
     cover_img   VARCHAR(160) NULL,
-    ref_tipo    VARCHAR(20)  NULL,               -- 'libro' | 'pelicula'
-    ref_id      INT          NULL,
+    ref_tipo    VARCHAR(20)  NULL,               -- legado: sustituido por blog_recursos
+    ref_id      INT          NULL,               -- legado: sustituido por blog_recursos
     visitas     INT          NOT NULL DEFAULT 0, -- contador de lecturas
     orden       INT          NOT NULL DEFAULT 0,
     creado      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Categorías del blog (extensible desde el admin)
 DROP TABLE IF EXISTS blog_categorias;
 CREATE TABLE blog_categorias (
     id     INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(60) NOT NULL UNIQUE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Recursos asociados a una entrada (libros / películas). Varios por entrada.
+DROP TABLE IF EXISTS blog_recursos;
+CREATE TABLE blog_recursos (
+    id       INT AUTO_INCREMENT PRIMARY KEY,
+    blog_id  INT         NOT NULL,
+    ref_tipo VARCHAR(20) NOT NULL,            -- 'libro' | 'pelicula'
+    ref_id   INT         NOT NULL,
+    orden    INT         NOT NULL DEFAULT 0,
+    UNIQUE KEY uq_blog_ref (blog_id, ref_tipo, ref_id),
+    CONSTRAINT fk_blogrec_blog FOREIGN KEY (blog_id) REFERENCES blog(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Libros (/admin/libros: pendientes y leídos)
@@ -114,7 +136,7 @@ CREATE TABLE libros (
     comentario  TEXT         NULL,
     fecha_leido DATE         NULL,
     creado      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Categorías de Películas y Series (extensible)
@@ -123,7 +145,7 @@ DROP TABLE IF EXISTS pys_categorias;
 CREATE TABLE pys_categorias (
     id     INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(60) NOT NULL UNIQUE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Películas y Series (solo admin) — autor = director/creador
@@ -135,13 +157,14 @@ CREATE TABLE peliculas_series (
     titulo      VARCHAR(160) NOT NULL,
     autor       VARCHAR(120) NULL,
     anio        INT          NULL,
-    duracion    INT          NULL,
+    duracion    INT          NULL,               -- minutos totales (el form captura h + min)
     nota        DECIMAL(3,1) NOT NULL,
     fecha_vista DATE         NULL,
     poster      VARCHAR(160) NULL,
     comentario  TEXT         NULL,
+    seleccion   TINYINT(1)   NOT NULL DEFAULT 0, -- 1 = va en la "Selección del Autor"
     creado      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Visitas del sitio (una fila por día, contador)
@@ -151,7 +174,7 @@ CREATE TABLE visitas (
     id    INT AUTO_INCREMENT PRIMARY KEY,
     fecha DATE NOT NULL UNIQUE,
     total INT  NOT NULL DEFAULT 0
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Visitas por página (analítica del dashboard) — contador por ruta
@@ -163,7 +186,7 @@ CREATE TABLE visitas_pagina (
     titulo      VARCHAR(200) NOT NULL DEFAULT '',
     total       INT          NOT NULL DEFAULT 0,
     actualizado TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Videojuegos — horas_2026 se calcula (totales - iniciales)
@@ -177,7 +200,7 @@ CREATE TABLE videojuegos (
     portada         VARCHAR(160)  NULL,
     orden           INT           NOT NULL DEFAULT 0,
     creado          TIMESTAMP     DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Gym — un registro por día: asistio 1=Sí, 0=No
@@ -187,7 +210,7 @@ CREATE TABLE gym_dias (
     id      INT AUTO_INCREMENT PRIMARY KEY,
     fecha   DATE       NOT NULL UNIQUE,
     asistio TINYINT(1) NOT NULL DEFAULT 0
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Finanzas: activos, deudas, cuentas por cobrar (activo) + historial neto
@@ -198,7 +221,7 @@ CREATE TABLE activos (
     nombre VARCHAR(120)   NOT NULL,
     monto  DECIMAL(12,2)  NOT NULL DEFAULT 0,
     orden  INT            NOT NULL DEFAULT 0
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 DROP TABLE IF EXISTS deudas;
 CREATE TABLE deudas (
@@ -206,7 +229,7 @@ CREATE TABLE deudas (
     nombre VARCHAR(120)   NOT NULL,
     monto  DECIMAL(12,2)  NOT NULL DEFAULT 0,
     orden  INT            NOT NULL DEFAULT 0
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Cuentas por cobrar: dinero que me deben (se cuenta como activo)
 DROP TABLE IF EXISTS cuentas_por_cobrar;
@@ -215,7 +238,7 @@ CREATE TABLE cuentas_por_cobrar (
     nombre VARCHAR(120)   NOT NULL,
     monto  DECIMAL(12,2)  NOT NULL DEFAULT 0,
     orden  INT            NOT NULL DEFAULT 0
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Snapshot mensual del patrimonio neto (para la gráfica histórica)
 DROP TABLE IF EXISTS patrimonio_snapshots;
@@ -223,7 +246,7 @@ CREATE TABLE patrimonio_snapshots (
     id    INT AUTO_INCREMENT PRIMARY KEY,
     fecha DATE          NOT NULL UNIQUE,   -- primer día del mes
     neto  DECIMAL(12,2) NOT NULL DEFAULT 0
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Horario: materias + bloques (cuadrícula semanal)
@@ -238,7 +261,7 @@ CREATE TABLE materias (
     creditos DECIMAL(3,1) NOT NULL DEFAULT 0,
     color    VARCHAR(9)   NOT NULL DEFAULT '#4267AC',
     orden    INT          NOT NULL DEFAULT 0
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE horario_bloques (
     id          INT AUTO_INCREMENT PRIMARY KEY,
@@ -247,7 +270,7 @@ CREATE TABLE horario_bloques (
     hora_inicio TIME NOT NULL,
     hora_fin    TIME NOT NULL,
     CONSTRAINT fk_bloque_materia FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Criterios de evaluación por materia (simulador de calificaciones)
 DROP TABLE IF EXISTS materia_criterios;
@@ -259,7 +282,7 @@ CREATE TABLE materia_criterios (
     calificacion DECIMAL(4,2) NOT NULL DEFAULT 0,
     orden       INT           NOT NULL DEFAULT 0,
     CONSTRAINT fk_criterio_materia FOREIGN KEY (materia_id) REFERENCES materias(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 --  Mapas curriculares (Anáhuac / UNAM)
@@ -273,7 +296,7 @@ CREATE TABLE curriculum_materias (
     codigo   VARCHAR(20)  NULL,
     nombre   VARCHAR(160) NOT NULL,
     estado   ENUM('completado','cursando','desbloqueada','bloqueada') NOT NULL DEFAULT 'bloqueada'
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Reactiva la comprobación de claves foráneas
 SET FOREIGN_KEY_CHECKS = 1;

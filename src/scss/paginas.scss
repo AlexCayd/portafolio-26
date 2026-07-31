@@ -5,6 +5,9 @@
    Compila a public/build/css/paginas.css
    ===================================================================== */
 
+/* Las reglas de View Transitions viven en portfolio.scss, que se carga en
+   todas las páginas públicas (esta hoja solo se carga en las internas). */
+
 #ao-app { background: var(--bg); color: var(--fg); min-height: 100vh; position: relative; font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; }
 body { background: #0a0a0b; font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; }
 
@@ -58,7 +61,7 @@ body { background: #0a0a0b; font-family: 'Space Grotesk', system-ui, -apple-syst
 /* Meta / kicker */
 .pg-kicker { font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .18em; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 .pg-kicker .acc { color: var(--accent); }
-.pg h1.pg-title { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(2.2rem, 6vw, 4rem); line-height: 1.02; letter-spacing: -.025em; margin: 18px 0 8px; }
+.pg h1.pg-title { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(2.8rem, 7.5vw, 5.4rem); line-height: .98; letter-spacing: -.03em; margin: 18px 0 10px; }
 .pg .pg-lead { color: var(--muted); font-size: 1.15rem; line-height: 1.55; max-width: 680px; margin: 0 0 30px; }
 
 .pg-cover { width: 100%; border-radius: 20px; display: block; margin: 6px 0 40px; box-shadow: var(--sh-lg); }
@@ -106,8 +109,11 @@ body { background: #0a0a0b; font-family: 'Space Grotesk', system-ui, -apple-syst
   .pg-body > p:first-of-type::first-letter { float: none; font-size: inherit; padding: 0; color: inherit; }
 }
 
-/* Tarjeta de recurso relacionado */
-.pg-ref { margin-top: 50px; border: 1px solid var(--line); border-radius: 18px; padding: 22px; display: flex; gap: 20px; align-items: center; background: var(--surface); box-shadow: var(--sh-sm); }
+/* Tarjetas de recursos relacionados (una entrada puede tener varios) */
+.pg-refs { margin-top: 50px; display: grid; gap: 14px; }
+.pg-ref { border: 1px solid var(--line); border-radius: 18px; padding: 22px; display: flex; gap: 20px; align-items: center; background: var(--surface); box-shadow: var(--sh-sm); color: inherit; text-decoration: none; transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s; }
+a.pg-ref:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 42%, var(--line)); }
+a.pg-ref:hover h3 { color: var(--accent); }
 .pg-ref .thumb { width: 74px; height: 106px; border-radius: 10px; object-fit: cover; flex: none; background: #1a1a1e; display: grid; place-items: center; font-size: 26px; }
 .pg-ref .thumb-ph .ico { width: 30px; height: 30px; color: var(--muted); }
 .pg-ref .rk { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .14em; color: var(--accent); }
@@ -171,42 +177,33 @@ body { background: #0a0a0b; font-family: 'Space Grotesk', system-ui, -apple-syst
 .sel-name { font-family: 'Clash Display', sans-serif; font-weight: 600; font-size: .98rem; line-height: 1.15; margin: 12px 0 4px; color: var(--fg); }
 .sel-meta { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .04em; color: var(--muted); margin: 0; }
 
-/* --- Ficha pública de película / serie: portada full-bleed + título que crece (GSAP) --- */
-.film-scroll { position: relative; height: 260vh; }        /* pista de scroll de la coreografía */
-.film-stage { position: sticky; top: 0; height: 100vh; overflow: hidden; isolation: isolate; background: #060607; }
-.film-poster-full { position: absolute; inset: 0; z-index: 0; will-change: clip-path, opacity; }
-.film-poster-full img { width: 100%; height: 100%; object-fit: cover; display: block; will-change: transform; }
+/* --- Ficha pública de película / serie: póster a la izquierda, ficha al lado --- */
+.film-cols { display: grid; grid-template-columns: minmax(0, 320px) 1fr; gap: clamp(28px, 4vw, 56px); align-items: start; margin-top: 10px; }
+.film-poster-col { position: sticky; top: 96px; display: flex; flex-direction: column; gap: 18px; }
+.film-poster-card { aspect-ratio: 2/3; border-radius: 18px; overflow: hidden; background: #1a1a1e; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+.film-poster-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .film-poster-ph { width: 100%; height: 100%; display: grid; place-items: center; color: var(--muted); background: linear-gradient(150deg, #1a1a1e, #101013); }
 .film-poster-ph .ico { width: 70px; height: 70px; }
-/* Rojo con protagonismo: glow rojo + scrim para legibilidad */
-.film-tint { position: absolute; inset: 0; z-index: 1; pointer-events: none;
-    background:
-        radial-gradient(95% 75% at 50% 38%, color-mix(in srgb, var(--accent) 60%, transparent) 0%, transparent 70%),
-        linear-gradient(180deg, rgba(6,6,7,.28) 0%, rgba(6,6,7,.5) 55%, rgba(6,6,7,.92) 100%);
-    opacity: .5; }
-.film-stage-head { position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(92vw, 860px); text-align: center; will-change: transform, opacity; }
-.film-stage-head .pg-kicker { justify-content: center; }
-.film-hero-title { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(3rem, 9vw, 6.4rem); line-height: .98; letter-spacing: -.035em; margin: 14px 0 14px; text-shadow: 0 6px 40px rgba(0,0,0,.55); }
-.film-hero-dir { color: rgba(255,255,255,.82); font-size: 1.05rem; margin: 0 0 14px; }
-.film-hero-dir strong { color: #fff; font-weight: 600; }
-.film-score { display: inline-flex; align-items: center; gap: 12px; }
+
+.film-score { display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .film-score-stars { letter-spacing: 1px; font-size: 1rem; color: rgba(255,255,255,.28); white-space: nowrap; }
 .film-score-stars b { color: inherit; }
 .film-score-stars b.on { color: var(--c-amber, #F5B400); }
 .film-score-num { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 1.2rem; color: var(--c-amber, #F5B400); }
 .film-score-num small { color: rgba(255,255,255,.6); font-weight: 400; font-size: .78em; }
-.film-cue { position: absolute; z-index: 3; bottom: 26px; left: 50%; transform: translateX(-50%); width: 26px; height: 42px; border: 2px solid rgba(255,255,255,.4); border-radius: 20px; }
-.film-cue span { position: absolute; left: 50%; top: 8px; width: 4px; height: 8px; margin-left: -2px; border-radius: 3px; background: var(--accent); animation: film-cue 1.5s ease-in-out infinite; }
-@keyframes film-cue { 0% { transform: translateY(0); opacity: 1; } 70% { transform: translateY(14px); opacity: 0; } 100% { opacity: 0; } }
 
-/* Sin solape negativo: el contenido entra cuando la coreografía ya terminó. */
-.film-main { position: relative; z-index: 4; background: var(--bg, #0b0b0c); padding-top: clamp(28px, 5vh, 46px); border-radius: 26px 26px 0 0; box-shadow: 0 -30px 60px rgba(0,0,0,.55); }
-/* El título reaparece con peso en la ficha técnica */
-.film-lead { margin: 6px 0 30px; will-change: transform, opacity; }
+.film-lead { margin: 0 0 30px; }
 .film-lead-kicker { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
-.film-lead-title { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(2.2rem, 5.2vw, 4rem); line-height: 1; letter-spacing: -.03em; margin: 12px 0 10px; }
+.film-lead-title { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(2.4rem, 5.2vw, 4.2rem); line-height: 1; letter-spacing: -.03em; margin: 12px 0 10px; }
 .film-lead-dir { color: var(--muted); font-size: 1.02rem; margin: 0; }
 .film-lead-dir strong { color: var(--fg); font-weight: 600; }
+
+/* Bajo 860px se apila: el póster se centra y deja de ser sticky */
+@media (max-width: 860px) {
+  .film-cols { grid-template-columns: 1fr; }
+  .film-poster-col { position: static; align-items: center; max-width: 280px; margin: 0 auto; }
+  .film-poster-card { width: 100%; }
+}
 
 .film-sheet { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin: 4px 0 40px; }
 .film-fact { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; background: var(--surface); box-shadow: var(--sh-sm); transition: transform .25s cubic-bezier(.16,1,.3,1), border-color .25s; }
@@ -220,12 +217,6 @@ body { background: #0a0a0b; font-family: 'Space Grotesk', system-ui, -apple-syst
 .film-note-body { color: var(--muted); font-size: 1.08rem; line-height: 1.65; }
 .film-note-body strong { color: var(--fg); }
 .film-cta { margin-top: 44px; }
-
-@media (prefers-reduced-motion: reduce) {
-    .film-scroll { height: auto; }
-    .film-stage { position: relative; height: 86vh; }   /* hero estático a pantalla, título centrado */
-    .film-main { margin-top: 0; }
-}
 
 /* =====================================================================
    FASE 8 — breadcrumb, galería/lightbox, modo focus, categoría
@@ -342,7 +333,7 @@ html.is-focus .pg { max-width: 720px; }
 .art-hero-media { position: absolute; inset: -12% 0; z-index: 0; will-change: transform; }
 .art-hero-media img, .art-hero-grad { width: 100%; height: 100%; object-fit: cover; display: block; }
 .art-hero-scrim { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(10,10,11,.20) 0%, rgba(10,10,11,.10) 34%, rgba(10,10,11,.34) 62%, color-mix(in srgb, var(--bg) 84%, transparent) 86%, var(--bg) 100%); }
-.art-hero-inner { position: relative; z-index: 2; width: 100%; max-width: 1040px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 32px) clamp(48px, 9vh, 96px); }
+.art-hero-inner { position: relative; z-index: 2; width: 100%; max-width: 860px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 32px) clamp(48px, 9vh, 96px); }
 .art-hero-inner .pg-kicker { color: rgba(255,255,255,.82); }
 .art-hero-inner .pg-title { color: #fff; text-shadow: 0 2px 34px rgba(0,0,0,.55); margin: 16px 0 10px; }
 .art-hero-inner .pg-lead { color: rgba(255,255,255,.86); max-width: 720px; margin: 0; text-shadow: 0 1px 20px rgba(0,0,0,.5); }
@@ -353,9 +344,11 @@ html.is-focus .pg { max-width: 720px; }
 .art-hero-cue svg { width: 20px; height: 20px; animation: art-cue-bounce 1.8s ease-in-out infinite; }
 @keyframes art-cue-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
 
-/* Contenedor del artículo: cuerpo alineado a la izquierda con el título del hero */
-.pg--article { max-width: 1040px; }
-.pg--article .pg-body { max-width: 760px; margin-left: 0; margin-right: auto; }
+/* Contenedor del artículo: el ancho lo marca el propio cuerpo, así no queda
+   una franja muerta a la derecha. El hero usa la misma medida para que el
+   título arranque exactamente donde arranca el texto. */
+.pg--article { max-width: 860px; }
+.pg--article .pg-body { max-width: 100%; margin-inline: auto; }
 .pg--article .pg-crumb { margin-top: 30px; }
 
 /* Home de Tékhne más ancho */

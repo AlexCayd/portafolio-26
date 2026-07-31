@@ -18,14 +18,14 @@
 
         <div class="pg-kicker" data-anim><span class="acc">/ RECOMENDACIONES</span></div>
         <h1 class="pg-title" data-anim>Para ver más <em>tarde…</em></h1>
-        <p class="pg-lead" data-anim>Cine y series con calificación perfecta. Mis 10/10, sin concesiones (<?php echo count($seleccion); ?>).</p>
+        <p class="pg-lead" data-anim>Lo mejor que he visto: mi selección personal de cine y series (<?php echo count($seleccion); ?>).</p>
 
         <div class="rec-grid">
             <?php foreach ($seleccion as $t) : ?>
                 <a class="sel-card" href="/tekhne/pelicula/<?php echo generarSlug($t->titulo); ?>" data-anim title="<?php echo s($t->titulo); ?>">
                     <div class="sel-poster">
                         <?php if (!empty($t->poster)) : ?>
-                            <img src="/build/img/peliculas/<?php echo s($t->poster); ?>" alt="<?php echo s($t->titulo); ?>" loading="lazy">
+                            <img src="<?php echo urlSubida('peliculas', $t->poster); ?>" alt="<?php echo s($t->titulo); ?>" loading="lazy">
                         <?php else : ?>
                             <div class="sel-ph"><?php echo icono('film'); ?></div>
                         <?php endif; ?>
@@ -35,7 +35,7 @@
                     <p class="sel-meta"><?php echo s($t->categoria); ?><?php echo $t->anio ? ' · ' . s($t->anio) : ''; ?></p>
                 </a>
             <?php endforeach; ?>
-            <?php if (empty($seleccion)) : ?><p style="color:var(--muted)">Aún no hay títulos con nota 10/10.</p><?php endif; ?>
+            <?php if (empty($seleccion)) : ?><p style="color:var(--muted)">Aún no hay títulos en la selección.</p><?php endif; ?>
         </div>
     </main>
 </div>
