@@ -98,7 +98,7 @@ function fin_bloque($titulo, $tipo, $items, $campo, $total) { ?>
 <script>
 (function () {
     if (typeof Chart === 'undefined') return;
-    var PAL = ['#F5B400','#3A86FF','#E51022','#8AC926','#AA2296','#FC6722','#4267AC','#EA075A','#6A4C93','#34A853'];
+    var PAL = ['#F5B400','#3A86FF','#E51022','#8AC926','#AA2296','#FC6722','#46BDC6','#4267AC','#EA075A','#6A4C93','#34A853'];
     var INK = '#9a9aa4', GRID = 'rgba(255,255,255,.07)', BLUE = '#3A86FF';
     Chart.defaults.color = INK; Chart.defaults.font.family = "'Space Grotesk', sans-serif"; Chart.defaults.borderColor = GRID;
 

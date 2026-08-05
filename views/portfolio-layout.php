@@ -79,6 +79,7 @@ $ao_ogTipo = $ogTipo ?? 'website';
 <!-- Librerías de animación (CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Flip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
@@ -86,75 +87,23 @@ $ao_ogTipo = $ogTipo ?? 'website';
 <!-- Estilos compilados del sitio -->
 <link rel="stylesheet" href="<?php echo asset('/build/css/portfolio.css'); ?>">
 
-<!-- Transición de página: paneles deslizantes (motion graphics) -->
-<style>
-#ao-pagefx { position: fixed; inset: 0; z-index: 99999; display: flex; pointer-events: none; visibility: hidden; }
-#ao-pagefx.on { visibility: visible; }
-/* Franjas alternadas negro/rojo (telón). Se solapan 1px para no dejar costuras. */
-#ao-pagefx .ao-fx-panel { flex: 1 0 auto; width: calc(20% + 1px); margin-left: -1px; background: #0b0b0c; transform: scaleY(0); transform-origin: top; will-change: transform; }
-#ao-pagefx .ao-fx-panel:first-child { margin-left: 0; }
-#ao-pagefx .ao-fx-panel:nth-child(even) { background: var(--accent, #ff0a24); }
-@media (prefers-reduced-motion: reduce) { #ao-pagefx { display: none; } }
-</style>
+<!-- Las transiciones entre páginas las hace View Transitions nativo:
+     las reglas @view-transition / ::view-transition viven en portfolio.css
+     (src/scss/portfolio/_transitions.scss). No hay interceptor de clicks:
+     cualquier JS que llame a preventDefault() las anularía. -->
 </head>
 <body>
-    <div id="ao-pagefx" aria-hidden="true">
-        <div class="ao-fx-panel"></div><div class="ao-fx-panel"></div><div class="ao-fx-panel"></div><div class="ao-fx-panel"></div><div class="ao-fx-panel"></div>
-    </div>
     <script>
-    // Entrada: si venimos de una navegación interna, cubre y revela con las franjas.
+    // Firefox y navegadores sin View Transitions: fundido de entrada equivalente,
+    // sin telones ni barras. Se aplica antes de pintar para no ver el salto.
     (function () {
-        var fx = document.getElementById('ao-pagefx');
-        var panels = fx ? fx.querySelectorAll('.ao-fx-panel') : [];
-        var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (!fx || reduce) { try { sessionStorage.removeItem('ao-nav'); } catch (e) {} }
-        else if (sessionStorage.getItem('ao-nav')) {
-            // Cubrir de inmediato (antes de pintar) y luego retirar hacia abajo
-            fx.classList.add('on');
-            panels.forEach(function (p) { p.style.transformOrigin = 'bottom'; p.style.transform = 'scaleY(1)'; });
-            function salir() {
-                if (!window.anime) { fx.classList.remove('on'); try { sessionStorage.removeItem('ao-nav'); } catch (e) {} return; }
-                anime({ targets: panels, scaleY: [1, 0], duration: 560, delay: anime.stagger(70), easing: 'easeInOutQuart',
-                    complete: function () { fx.classList.remove('on'); panels.forEach(function (p) { p.style.transform = 'scaleY(0)'; p.style.transformOrigin = 'top'; }); } });
-                try { sessionStorage.removeItem('ao-nav'); } catch (e) {}
-            }
-            if (document.readyState === 'complete') salir(); else window.addEventListener('load', salir);
-        }
+        if (document.startViewTransition) return;
+        if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        var st = document.createElement('style');
+        st.textContent = '@keyframes ao-fb-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}' +
+                         'body{animation:ao-fb-in .42s cubic-bezier(.16,1,.3,1) both}';
+        document.head.appendChild(st);
     })();
-    // bfcache: al retroceder, el navegador restaura la página tal como quedó (con el
-    // telón puesto y el contenido tapado). Hay que retirarlo a mano.
-    window.addEventListener('pageshow', function (e) {
-        if (!e.persisted) return;
-        var fx = document.getElementById('ao-pagefx');
-        if (fx) {
-            fx.classList.remove('on');
-            Array.prototype.forEach.call(fx.querySelectorAll('.ao-fx-panel'), function (p) {
-                p.style.transform = 'scaleY(0)'; p.style.transformOrigin = 'top';
-            });
-        }
-        try { sessionStorage.removeItem('ao-nav'); } catch (er) {}
-    });
-    // Salida: intercepta enlaces internos y barre con las franjas antes de navegar.
-    document.addEventListener('click', function (e) {
-        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-        var a = e.target.closest('a[href]'); if (!a) return;
-        var href = a.getAttribute('href') || '';
-        if (a.target || a.hasAttribute('download')) return;
-        if (href.charAt(0) === '#') return;                       // ancla
-        if (a.origin !== location.origin) return;                 // externos / mailto / tel
-        if (/\.(pdf|zip|png|jpe?g|webp|svg)$/i.test(a.pathname)) return;
-        if (a.pathname === location.pathname && a.hash) return;   // ancla en la misma página
-        var fx = document.getElementById('ao-pagefx');
-        var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (!fx || reduce || !window.anime) return; // navegación normal
-        e.preventDefault();
-        try { sessionStorage.setItem('ao-nav', '1'); } catch (er) {}
-        var panels = fx.querySelectorAll('.ao-fx-panel');
-        fx.classList.add('on');
-        panels.forEach(function (p) { p.style.transformOrigin = 'top'; });
-        anime({ targets: panels, scaleY: [0, 1], duration: 520, delay: anime.stagger(64), easing: 'easeInOutQuart',
-            complete: function () { window.location.href = a.href; } });
-    });
     </script>
     <?php echo $contenido; ?>
     <script src="<?php echo asset('/build/js/bundle.min.js'); ?>" defer></script>

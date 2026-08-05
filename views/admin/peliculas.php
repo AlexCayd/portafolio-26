@@ -87,22 +87,13 @@
     <div class="chart-box span-6"><h3>Puntuadas por año</h3><p class="chart-sub">Títulos por año de estreno</p><canvas id="chartAnioCount"></canvas></div>
     <div class="chart-box span-6"><h3>Nota promedio por año visto</h3><p class="chart-sub">Promedio de lo que califiqué cada año</p><canvas id="chartAnioProm"></canvas></div>
     <div class="chart-box span-12">
-        <div class="chart-head">
-            <div><h3>Vistos por mes</h3><p class="chart-sub">Títulos registrados en cada mes</p></div>
-            <select id="vm-anio" class="chart-select">
-                <?php foreach ($vmAnios as $ao_y) : ?>
-                    <option value="<?php echo s($ao_y); ?>" <?php echo $ao_y === $vmSel ? 'selected' : ''; ?>><?php echo s($ao_y); ?></option>
-                <?php endforeach; ?>
-                <option value="Todos" <?php echo $vmSel === 'Todos' ? 'selected' : ''; ?>>Todos los años</option>
-            </select>
-        </div>
+        <h3>Vistos por mes</h3>
+        <p class="chart-sub">Títulos registrados en cada mes, sumando todos los años (pasa el cursor para el desglose)</p>
         <canvas id="chartVistosMes"></canvas>
     </div>
     <div class="chart-box span-4"><h3>Por categoría</h3><p class="chart-sub">Reparto de la colección</p><canvas id="chartCat"></canvas></div>
     <div class="chart-box span-8"><h3>Top directores / creadores</h3><p class="chart-sub">Por número de títulos</p><canvas id="chartAutores"></canvas></div>
-    <div class="chart-box span-6"><h3>Nota promedio por categoría</h3><p class="chart-sub">Qué categoría califico mejor</p><canvas id="chartCatNota"></canvas></div>
-    <div class="chart-box span-6"><h3>Aprobados vs. no aprobados por categoría</h3><p class="chart-sub">Calidad percibida por categoría</p><canvas id="chartAprobCat"></canvas></div>
-    <div class="chart-box span-12"><h3>Vistas acumuladas</h3><p class="chart-sub">Total acumulado por año</p><canvas id="chartAcum"></canvas></div>
+    <div class="chart-box span-12"><h3>Vistas acumuladas</h3><p class="chart-sub">Total acumulado por año en que lo vi</p><canvas id="chartAcum"></canvas></div>
 </div>
 
 <div class="card" id="catalogo" style="margin-top:22px">
@@ -147,7 +138,7 @@
 (function () {
     if (typeof Chart === 'undefined') return;
     var S = <?php echo json_encode($stats, JSON_UNESCAPED_UNICODE); ?>;
-    var PAL = ['#F5B400','#3A86FF','#E51022','#8AC926','#AA2296','#FC6722','#4267AC','#EA075A','#6A4C93','#34A853'];
+    var PAL = ['#F5B400','#3A86FF','#E51022','#8AC926','#AA2296','#FC6722','#46BDC6','#4267AC','#EA075A','#6A4C93','#34A853'];
     var GREEN='#34A853', RED='#E51022', AMBER='#F5B400', BLUE='#3A86FF', MAGENTA='#AA2296';
     var INK='#9a9aa4', GRID='rgba(255,255,255,.07)';
     Chart.defaults.color = INK; Chart.defaults.font.family = "'Space Grotesk', sans-serif"; Chart.defaults.borderColor = GRID;
@@ -159,22 +150,37 @@
     new Chart(chartAnioCount, { type:'bar', data:{ labels:S.aniosLabels, datasets:[{label:'Títulos',data:S.aniosCount,backgroundColor:BLUE,borderRadius:4,borderSkipped:false}] }, options:{responsive:true,plugins:noL,scales:axis} });
     new Chart(chartAnioProm, { type:'line', data:{ labels:S.vistoLabels, datasets:[{label:'Nota',data:S.vistoProm,borderColor:AMBER,backgroundColor:'rgba(245,180,0,.12)',borderWidth:2,fill:true,tension:.3,pointRadius:4,pointBackgroundColor:AMBER}] }, options:{responsive:true,plugins:noL,scales:{y:{min:0,max:10,grid:{color:GRID}},x:{grid:{display:false}}}} });
 
-    // Vistos por mes: el selector recambia la serie sin recargar la página
+    // Vistos por mes: una sola barra con el total de cada mes (todos los años);
+    // el desglose año por año va en el tooltip.
     var VM = <?php echo json_encode($vistosPorMes, JSON_UNESCAPED_UNICODE); ?>;
-    var vmSel = document.getElementById('vm-anio');
-    var vmChart = new Chart(chartVistosMes, {
+    var VM_ANIOS = <?php echo json_encode($vmAnios, JSON_UNESCAPED_UNICODE); ?>;
+    new Chart(chartVistosMes, {
         type:'bar',
-        data:{ labels:<?php echo json_encode($mesesLabels, JSON_UNESCAPED_UNICODE); ?>, datasets:[{label:'Títulos',data:VM[vmSel.value] || [],backgroundColor:MAGENTA,borderRadius:4,borderSkipped:false}] },
-        options:{responsive:true,plugins:noL,scales:axis}
-    });
-    vmSel.addEventListener('change', function () {
-        vmChart.data.datasets[0].data = VM[vmSel.value] || [];
-        vmChart.update();
+        data:{ labels:<?php echo json_encode($mesesLabels, JSON_UNESCAPED_UNICODE); ?>, datasets:[{label:'Títulos',data:VM['Todos'] || [],backgroundColor:MAGENTA,borderRadius:4,borderSkipped:false}] },
+        options:{
+            responsive:true,
+            plugins:{
+                legend:{ display:false },
+                tooltip:{
+                    callbacks:{
+                        label: function (ctx) { return 'Total: ' + ctx.parsed.y; },
+                        afterBody: function (items) {
+                            var i = items[0].dataIndex, filas = [];
+                            VM_ANIOS.forEach(function (y) {
+                                var n = (VM[y] || [])[i] || 0;
+                                if (n) filas.push(y + ' · ' + n);
+                            });
+                            return filas.length ? [''].concat(filas) : [];
+                        }
+                    }
+                }
+            },
+            scales:axis
+        }
     });
     new Chart(chartCat, { type:'doughnut', data:{ labels:S.catLabels, datasets:[{data:S.catCount,backgroundColor:palN(S.catLabels.length),borderColor:'#131316',borderWidth:2}] }, options:{responsive:true,cutout:'58%',plugins:{legend:{position:'bottom'}}} });
     new Chart(chartAutores, { type:'bar', data:{ labels:S.autoresLabels, datasets:[{label:'Títulos',data:S.autoresCount,backgroundColor:BLUE,borderRadius:4,borderSkipped:false}] }, options:{indexAxis:'y',responsive:true,plugins:noL,scales:{x:{beginAtZero:true,grid:{color:GRID},ticks:{precision:0}},y:{grid:{display:false}}}} });
-    new Chart(chartCatNota, { type:'bar', data:{ labels:S.catLabels, datasets:[{label:'Nota',data:S.catNotaProm,backgroundColor:GREEN,borderRadius:4,borderSkipped:false}] }, options:{responsive:true,plugins:noL,scales:{y:{min:0,max:10,grid:{color:GRID}},x:{grid:{display:false}}}} });
-    new Chart(chartAprobCat, { type:'bar', data:{ labels:S.catLabels, datasets:[{label:'Aprobados',data:S.catAprob,backgroundColor:GREEN,borderRadius:4,borderSkipped:false,stack:'s'},{label:'No aprobados',data:S.catNo,backgroundColor:RED,borderRadius:4,borderSkipped:false,stack:'s'}] }, options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,stacked:true,grid:{color:GRID},ticks:{precision:0}},x:{stacked:true,grid:{display:false}}}} });
-    new Chart(chartAcum, { type:'line', data:{ labels:S.aniosLabels, datasets:[{label:'Acumulado',data:S.acumulado,borderColor:MAGENTA,backgroundColor:'rgba(170,34,150,.12)',borderWidth:2,fill:true,tension:.3,pointRadius:3}] }, options:{responsive:true,plugins:noL,scales:axis} });
+    // Acumulado por año en que lo vi (fecha_vista), no por año de estreno
+    new Chart(chartAcum, { type:'line', data:{ labels:S.vistoLabels, datasets:[{label:'Acumulado',data:S.vistoAcum,borderColor:MAGENTA,backgroundColor:'rgba(170,34,150,.12)',borderWidth:2,fill:true,tension:.3,pointRadius:3}] }, options:{responsive:true,plugins:noL,scales:axis} });
 })();
 </script>

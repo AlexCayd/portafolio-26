@@ -48,6 +48,8 @@
             <?php endforeach; ?>
             <?php if (empty($peliculas)) : ?><p style="color:var(--muted)">Aún no hay títulos registrados.</p><?php endif; ?>
         </div>
+
+        <?php echo creditoImdb(); ?>
     </main>
 </div>
 </div>
@@ -61,17 +63,15 @@
     var noneMsg  = document.getElementById('pel-search-none');
     var cards    = Array.prototype.slice.call(document.querySelectorAll('#pel-grid [data-search]'));
 
+    var usaFlip = !!(window.gsap && window.Flip) &&
+        !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    if (usaFlip) gsap.registerPlugin(Flip);
+
     function norm(str) { return (str || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
 
-    function filtrar() {
-        var raw = input.value.trim();
-        clearBtn.hidden = raw === '';
-        var q = norm(raw);
-        if (q === '') {
-            cards.forEach(function (c) { c.style.display = ''; });
-            noneMsg.hidden = true;
-            return;
-        }
+    // Oculta/muestra sin animar; devuelve cuántas quedaron visibles
+    function aplicar(q) {
+        if (q === '') { cards.forEach(function (c) { c.style.display = ''; }); return cards.length; }
         var tokens = q.split(/\s+/), visibles = 0;
         cards.forEach(function (c) {
             var hay = norm(c.getAttribute('data-search'));
@@ -79,6 +79,25 @@
             c.style.display = ok ? '' : 'none';
             if (ok) visibles++;
         });
+        return visibles;
+    }
+
+    function filtrar() {
+        var raw = input.value.trim();
+        clearBtn.hidden = raw === '';
+        var q = norm(raw);
+
+        // GSAP Flip: las tarjetas que se quedan se reacomodan en vez de saltar
+        var estado = usaFlip ? Flip.getState(cards) : null;
+        var visibles = aplicar(q);
+        if (estado) {
+            Flip.from(estado, {
+                duration: .5, ease: 'power2.inOut', absolute: true, stagger: .015,
+                onEnter: function (els) { return gsap.fromTo(els, { opacity: 0, scale: .86 }, { opacity: 1, scale: 1, duration: .4, ease: 'power2.out' }); },
+                onLeave: function (els) { return gsap.to(els, { opacity: 0, scale: .86, duration: .25, ease: 'power2.in' }); }
+            });
+        }
+
         noneMsg.hidden = visibles !== 0;
         if (!noneMsg.hidden) noneMsg.querySelector('span').textContent = raw;
     }

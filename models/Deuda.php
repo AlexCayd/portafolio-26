@@ -19,8 +19,9 @@ class Deuda extends ActiveRecord {
         $this->orden  = $args['orden']  ?? 0;
     }
 
+    // De mayor a menor monto (la columna `orden` ya no se usa para listar)
     public static function ordenados() {
-        return self::consultarSQL("SELECT * FROM " . static::$tabla . " ORDER BY orden ASC, id ASC");
+        return self::consultarSQL("SELECT * FROM " . static::$tabla . " ORDER BY monto DESC, nombre ASC");
     }
 
     public static function total() : float {

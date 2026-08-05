@@ -88,12 +88,23 @@ function esAdmin() : bool {
 // conjunto de etiquetas y elimina atributos de evento y URLs peligrosas.
 function sanitizarHtml(string $html) : string {
     $permitidas = '<h2><h3><p><br><strong><b><em><i><u><ul><ol><li><a><img><blockquote><hr><code><pre>';
+    // Un contenteditable usa <div> como separador de párrafo en varios navegadores.
+    // strip_tags borraría la etiqueta CONSERVANDO el texto y sin dejar separación,
+    // fusionando todos los párrafos en uno. Se convierten a <p> antes de sanear.
+    $html = preg_replace('#<div\b[^>]*>#i', '<p>', $html);
+    $html = str_ireplace('</div>', '</p>', $html);
     $html = strip_tags($html, $permitidas);
     // Quita atributos on* (onclick, onerror, …)
     $html = preg_replace('/\son\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html);
     // Neutraliza javascript: en href/src
     $html = preg_replace('/(href|src)\s*=\s*("|\')\s*javascript:[^"\']*(\2)/i', '$1=$2#$2', $html);
-    return trim($html);
+    $html = trim($html);
+    // Red de seguridad para texto pegado en plano: si no quedó ninguna etiqueta de
+    // bloque pero sí saltos de línea reales, se convierten para que no se colapsen.
+    if ($html !== '' && !preg_match('#<(p|h2|h3|ul|ol|li|blockquote|pre)\b#i', $html) && strpos($html, "\n") !== false) {
+        $html = nl2br($html, false);
+    }
+    return $html;
 }
 
 // Notificación flash (se muestra como toast tras un redirect POST→GET)
@@ -180,6 +191,16 @@ function campoFechaDmy(string $name, ?string $iso, string $label, string $clases
          . 'placeholder="dd/mm/aaaa" autocomplete="off" value="' . s($dmy) . '">'
          . '<input type="hidden" name="' . s($name) . '" value="' . s($iso) . '">'
          . '</label>';
+}
+
+/**
+ * Crédito de los pósters (proceden de IMDb). Se usa en toda vista pública que
+ * los muestre: catálogo, ficha, portada de Tékhne y recomendaciones.
+ */
+function creditoImdb() : string {
+    return '<p class="pg-credito">Los pósters de esta página proceden de '
+         . '<a href="https://www.imdb.com" target="_blank" rel="noopener nofollow">IMDb</a>. '
+         . 'Los derechos pertenecen a sus respectivos titulares.</p>';
 }
 
 /**

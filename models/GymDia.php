@@ -72,6 +72,26 @@ class GymDia extends ActiveRecord {
         return ['labels' => $labels, 'si' => $si, 'no' => $no];
     }
 
+    /**
+     * Asistencias día a día de TODO un año (1 ene → 31 dic; si es el año en curso
+     * corta en hoy). Las etiquetas son la fecha ISO: la vista decide cómo pintarlas.
+     */
+    public static function porDiaAnio(int $anio) : array {
+        $anio  = (int) $anio;
+        $mapa  = self::delAnio($anio);
+        $ini   = strtotime(sprintf('%04d-01-01', $anio));
+        $fin   = $anio === (int) date('Y') ? strtotime(date('Y-m-d')) : strtotime(sprintf('%04d-12-31', $anio));
+        $labels = []; $si = []; $no = [];
+        for ($t = $ini; $t <= $fin; $t = strtotime('+1 day', $t)) {
+            $fecha = date('Y-m-d', $t);
+            $labels[] = $fecha;
+            $estado = $mapa[$fecha] ?? null;
+            $si[] = $estado === 1 ? 1 : 0;
+            $no[] = $estado === 0 ? 1 : 0;
+        }
+        return ['labels' => $labels, 'si' => $si, 'no' => $no];
+    }
+
     // Totales de un rango de fechas (inclusive): ['si'=>, 'no'=>]
     public static function totalesRango(string $desde, string $hasta) : array {
         $desde = self::$db->escape_string($desde);

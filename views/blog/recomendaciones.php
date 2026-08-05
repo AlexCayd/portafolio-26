@@ -37,6 +37,8 @@
             <?php endforeach; ?>
             <?php if (empty($seleccion)) : ?><p style="color:var(--muted)">Aún no hay títulos en la selección.</p><?php endif; ?>
         </div>
+
+        <?php echo creditoImdb(); ?>
     </main>
 </div>
 </div>

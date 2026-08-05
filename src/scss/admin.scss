@@ -1,6 +1,6 @@
 /* =====================================================================
    Admin / Panel premium — Alexander Oliva
-   Acento: rojo de la landing (#ff0a24). Paleta de 10 colores para gráficas.
+   Acento: rojo de la landing (#ff0a24). Paleta de 11 colores para gráficas.
    Compila a public/build/css/admin.css
    ===================================================================== */
 
@@ -16,6 +16,7 @@
   --c-magenta:#AA2296;
   --c-purple: #6A4C93;
   --c-teal:   #34A853;
+  --c-cyan:   #46BDC6;
 
   /* Acento del chrome del admin = rojo de la landing */
   --accent:    #ff0a24;
@@ -151,6 +152,9 @@ html, body { max-width: 100%; overflow-x: clip; }
 .kpi.k-pink::before   { background: var(--c-pink); }
 .kpi.k-purple::before { background: var(--c-purple); }
 .kpi.k-teal::before   { background: var(--c-teal); }
+.kpi.k-cyan::before   { background: var(--c-cyan); }
+.kpi.k-indigo::before { background: var(--c-indigo); }
+.kpi.k-magenta::before{ background: var(--c-magenta); }
 
 /* Grid de gráficas */
 .chart-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; }
@@ -602,6 +606,59 @@ input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.65); curso
 .swatch-opt:hover { transform: scale(1.1); }
 .swatch-opt.sel { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
 
+/* Calendario emergente de los campos dd/mm/aaaa (window.initDatePicker) */
+.dp-wrap { position: relative; display: block; }
+.dp-wrap > input { width: 100%; padding-right: 38px; }
+.dp-btn {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  width: 28px; height: 28px; display: grid; place-items: center;
+  background: none; border: 0; border-radius: 7px; cursor: pointer;
+  color: var(--muted); transition: color .15s, background .15s;
+}
+.dp-btn:hover { color: var(--accent); background: var(--surface-3); }
+.dp-btn svg { width: 16px; height: 16px; }
+
+.dp-pop {
+  position: absolute; z-index: 60; top: calc(100% + 7px); left: 0; width: 268px;
+  background: var(--surface-2); border: 1px solid var(--line-2); border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, .45); padding: 12px;
+  animation: dp-in .16s cubic-bezier(.2, 1, .4, 1) both;
+}
+.dp-pop--arriba { top: auto; bottom: calc(100% + 7px); }
+@keyframes dp-in { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+
+.dp-head { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.dp-nav {
+  width: 27px; height: 27px; flex: none; display: grid; place-items: center;
+  background: var(--surface-3); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--muted); font-size: 17px; line-height: 1; cursor: pointer; transition: all .15s;
+}
+.dp-nav:hover { color: var(--text); border-color: var(--accent); }
+.dp-sel {
+  flex: 1; min-width: 0; background: var(--surface-3); border: 1px solid var(--line);
+  color: var(--text); border-radius: 8px; padding: 5px 6px; font: inherit; font-size: .82rem; cursor: pointer;
+}
+.dp-anio { flex: 0 0 72px; }
+
+.dp-sem, .dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.dp-sem span { text-align: center; font-size: .66rem; color: var(--muted-2); text-transform: uppercase; letter-spacing: .06em; padding: 4px 0; }
+.dp-d {
+  aspect-ratio: 1; display: grid; place-items: center;
+  background: none; border: 1px solid transparent; border-radius: 8px;
+  color: var(--text); font: inherit; font-size: .82rem; cursor: pointer; transition: all .12s;
+}
+.dp-d:hover { background: var(--surface-3); }
+.dp-d--off { pointer-events: none; }
+.dp-d.is-hoy { border-color: var(--line-2); color: var(--muted); font-weight: 700; }
+.dp-d.is-sel { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+
+.dp-foot { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.dp-accion {
+  flex: 1; background: var(--surface-3); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--muted); font: inherit; font-size: .76rem; padding: 6px 0; cursor: pointer; transition: all .15s;
+}
+.dp-accion:hover { color: var(--text); border-color: var(--accent); }
+
 /* Tira compacta de stats (dashboard) */
 /* Resumen de vida (dashboard): clase + lectura/visionado + créditos + neto */
 .vida-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 22px; }
@@ -613,7 +670,8 @@ a.vida-tile:hover { transform: translateY(-2px); border-color: color-mix(in srgb
 .vida-lbl { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; line-height: 1.2; }
 .vida-num { font-size: 1.7rem; font-weight: 700; line-height: 1.05; letter-spacing: -.02em; }
 .vida-num small { font-size: .55em; font-weight: 700; color: var(--muted); margin-left: 1px; }
-.vida-num--sm { font-size: 1.12rem; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Nombres largos de materia: se parten en varias líneas en vez de recortarse */
+.vida-num--sm { font-size: 1.12rem; line-height: 1.25; overflow-wrap: anywhere; hyphens: auto; }
 /* Igual tipografía que .vida-num; solo se encoge en pantallas chicas para no desbordar */
 .vida-num--fit { font-size: clamp(1.2rem, 3.4vw, 1.7rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vida-sub { font-size: .74rem; color: var(--muted); margin-top: 5px; }
@@ -622,8 +680,22 @@ a.vida-tile:hover { transform: translateY(-2px); border-color: color-mix(in srgb
 .vida-delta.flat { color: var(--muted-2); }
 .vida-tile--clase { border-left: 4px solid var(--m-color, var(--accent)); }
 .vida-tile--clase.is-live { box-shadow: 0 0 0 1px color-mix(in srgb, var(--m-color) 55%, transparent), var(--shadow); }
-.vida-tile--clase.is-live .vida-lbl::after { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #57d97b; margin-left: 6px; animation: vida-pulse 1.6s ease-in-out infinite; }
+.vida-tile--clase.is-live .vida-lbl::after { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #fff; margin-left: 6px; animation: vida-pulse 1.6s ease-in-out infinite; }
 @keyframes vida-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
+/* Mosaico coloreado: --v-color lo pone la vista (color de la materia o de la paleta) */
+.vida-tile--tint {
+  background: linear-gradient(135deg, var(--v-color, var(--accent)), color-mix(in srgb, var(--v-color, var(--accent)) 58%, #000));
+  border-color: var(--v-color, var(--accent));
+}
+.vida-tile--tint .vida-num, .vida-tile--tint .vida-num small { color: #fff; }
+.vida-tile--tint .vida-lbl, .vida-tile--tint .vida-sub { color: rgba(255, 255, 255, .82); }
+.vida-tile--tint .vida-ic { background: rgba(255, 255, 255, .16); }
+.vida-tile--tint .vida-ic .ico { color: #fff; }
+.vida-tile--tint .vida-delta.up { color: #d8ffe2; }
+.vida-tile--tint .vida-delta.down { color: #ffdfe3; }
+.vida-tile--tint .vida-delta.flat { color: rgba(255, 255, 255, .7); }
+a.vida-tile--tint:hover { border-color: #fff; }
 
 .stat-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin-bottom: 26px; }
 .stat-item { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 13px 15px; box-shadow: var(--shadow); }
@@ -703,6 +775,7 @@ a.vida-tile:hover { transform: translateY(-2px); border-color: color-mix(in srgb
 .stat-item.s-amber  { background: linear-gradient(135deg, rgba(245,180,0,.30), var(--surface) 80%); border-color: rgba(245,180,0,.5); }
 .stat-item.s-green  { background: linear-gradient(135deg, rgba(138,201,38,.30), var(--surface) 80%); border-color: rgba(138,201,38,.5); }
 .stat-item.s-pink   { background: linear-gradient(135deg, rgba(234,7,90,.30), var(--surface) 80%); border-color: rgba(234,7,90,.5); }
+.stat-item.s-cyan   { background: linear-gradient(135deg, rgba(70,189,198,.30), var(--surface) 80%); border-color: rgba(70,189,198,.5); }
 
 /* Tabs (categorías / materia) */
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -756,6 +829,7 @@ a.stat-item:hover { transform: translateY(-2px); }
 .stat-item.s-amber  { background: linear-gradient(135deg, rgba(245,180,0,.16), var(--surface) 60%); border-color: rgba(245,180,0,.3); }
 .stat-item.s-green  { background: linear-gradient(135deg, rgba(138,201,38,.16), var(--surface) 60%); border-color: rgba(138,201,38,.3); }
 .stat-item.s-pink   { background: linear-gradient(135deg, rgba(234,7,90,.16), var(--surface) 60%); border-color: rgba(234,7,90,.3); }
+.stat-item.s-cyan   { background: linear-gradient(135deg, rgba(70,189,198,.16), var(--surface) 60%); border-color: rgba(70,189,198,.3); }
 .stat-item .st-go { font-size: 1.2rem; opacity: .7; }
 a.stat-item:hover .st-go { opacity: 1; }
 
@@ -1017,9 +1091,10 @@ input.is-invalid { border-color: var(--c-red, #E51022) !important; }
 .stat-item.s-amber  { background: linear-gradient(135deg, #F5B400, #b98800); border-color: #F5B400; }
 .stat-item.s-green  { background: linear-gradient(135deg, #8AC926, #5c9016); border-color: #8AC926; }
 .stat-item.s-pink   { background: linear-gradient(135deg, #EA075A, #a80540); border-color: #EA075A; }
-.stat-item.s-red *, .stat-item.s-orange *, .stat-item.s-blue *, .stat-item.s-amber *, .stat-item.s-green *, .stat-item.s-pink * { color: #fff !important; }
-/* Texto blanco en todas las tarjetas; sombra sutil para legibilidad en las claras (ámbar/verde) */
-.stat-item.s-amber *, .stat-item.s-green * { text-shadow: 0 1px 3px rgba(0,0,0,.42); }
+.stat-item.s-cyan   { background: linear-gradient(135deg, #46BDC6, #2b7f86); border-color: #46BDC6; }
+.stat-item.s-red *, .stat-item.s-orange *, .stat-item.s-blue *, .stat-item.s-amber *, .stat-item.s-green *, .stat-item.s-pink *, .stat-item.s-cyan * { color: #fff !important; }
+/* Texto blanco en todas las tarjetas; sombra sutil para legibilidad en las claras (ámbar/verde/cian) */
+.stat-item.s-amber *, .stat-item.s-green *, .stat-item.s-cyan * { text-shadow: 0 1px 3px rgba(0,0,0,.42); }
 .stat-item .st-num { text-shadow: 0 1px 3px rgba(0,0,0,.3); }
 
 /* --- Libros: sin etiqueta «Completado» --- */
@@ -1429,6 +1504,6 @@ table.tabla td.acciones > * + * { margin-left: 8px; }
 /* Swatches de color: en móvil llenan el ancho; en pantallas grandes se
    mantiene el tamaño original (42px, definido arriba). */
 @media (max-width: 640px) {
-  .color-swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .color-swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(44px, 1fr)); gap: 12px; }
   .color-swatches .swatch-opt { width: 100%; max-width: 60px; height: auto; aspect-ratio: 1; margin: 0 auto; }
 }

@@ -89,15 +89,18 @@ class GymController
         return GymDia::totalesRango("{$anio}-01-01", "{$anio}-12-31");
     }
 
-    // Barras: día a día en la vista de mes, mes a mes en la de año
+    // Barras: día a día de TODO el año en la vista de mes (esta gráfica siempre es
+    // del año completo, aunque el calendario y los KPIs estén en un mes), y mes a
+    // mes en la vista de año.
     private static function serieDelAmbito(int $anio, int $mes, string $vista) : array
     {
-        $serie = $vista === 'mes' ? GymDia::porDia($anio, $mes) : GymDia::porMes($anio);
+        $serie = $vista === 'mes' ? GymDia::porDiaAnio($anio) : GymDia::porMes($anio);
+        $serie['diaria'] = $vista === 'mes';
         $serie['titulo'] = $vista === 'mes'
-            ? 'Asistencias por día — ' . self::MESES[$mes] . ' ' . $anio
+            ? 'Asistencias por día — ' . $anio
             : 'Asistencias por mes — ' . $anio;
         $serie['sub'] = $vista === 'mes'
-            ? 'Cada barra es un día del mes'
+            ? ($anio === (int) date('Y') ? 'Cada barra es un día del año, de enero a hoy' : 'Cada barra es un día del año')
             : ($anio === (int) date('Y') ? 'De enero al mes actual' : 'Los doce meses del año');
         return $serie;
     }

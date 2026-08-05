@@ -158,6 +158,8 @@
             </div>
         </section>
         <?php endif; ?>
+
+        <?php if (!empty($peliculas) || !empty($seleccion)) echo creditoImdb(); ?>
     </main>
 </div>
 </div>

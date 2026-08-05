@@ -277,8 +277,10 @@ window.initFechasDmy = function (root) {
     (root || document).querySelectorAll('[data-fecha-dmy]').forEach(function (inp) {
         if (inp.dataset.built) return; inp.dataset.built = '1';
         window.mascaraFechaDmy(inp);
-        // El hidden hermano es el que viaja en el POST
+        // El hidden hermano es el que viaja en el POST. Se resuelve ANTES de montar
+        // el calendario, que envuelve el input y le cambia el parentNode.
         var hidden = inp.parentNode.querySelector('input[type="hidden"][name="' + inp.dataset.fechaDmy + '"]');
+        window.initDatePicker(inp);
         var form = inp.closest('form');
         if (!hidden || !form) return;
         form.addEventListener('submit', function (e) {
@@ -293,6 +295,144 @@ window.initFechasDmy = function (root) {
         });
     });
 };
+
+// ---- Calendario emergente para los campos dd/mm/aaaa ----
+// Se apoya en window.fechaISO / window.mascaraFechaDmy: el input visible sigue
+// aceptando tecleo y el valor sigue viajando en el hidden hermano.
+window.initDatePicker = function (inp) {
+    if (!inp || inp.dataset.dp) return; inp.dataset.dp = '1';
+    var MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    var DIAS  = ['L','M','M','J','V','S','D'];
+
+    // El input se envuelve para poder anclar el popover y el botón de calendario
+    var wrap = inp.parentNode;
+    if (!wrap.classList.contains('dp-wrap')) {
+        wrap = document.createElement('span');
+        wrap.className = 'dp-wrap';
+        inp.parentNode.insertBefore(wrap, inp);
+        wrap.appendChild(inp);
+    }
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'dp-btn'; btn.tabIndex = -1;
+    btn.setAttribute('aria-label', 'Abrir calendario');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>';
+    wrap.appendChild(btn);
+
+    var pop = null, cursor = null;   // cursor = mes que se está mostrando
+    // El popover vive dentro del <label>, así que al elegir un día el navegador
+    // reenvía la activación de la etiqueta al input y lo vuelve a enfocar. Sin
+    // esta ventana muerta, el calendario se reabriría justo después de cerrarse.
+    var ultimoCierre = 0;
+
+    function hoy0() { var d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+    function seleccionada() {
+        var iso = window.fechaISO(inp.value);
+        if (!iso) return null;
+        var p = iso.split('-');
+        return new Date(+p[0], +p[1] - 1, +p[2]);
+    }
+    function escribir(d) {
+        inp.value = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
+        inp.classList.remove('is-invalid');
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function render() {
+        var sel = seleccionada(), hoy = hoy0();
+        var y = cursor.getFullYear(), m = cursor.getMonth();
+        var primero = new Date(y, m, 1);
+        var offset = (primero.getDay() + 6) % 7;            // semana lun–dom
+        var total  = new Date(y, m + 1, 0).getDate();
+
+        var opts = '';
+        for (var i = 0; i < 12; i++) opts += '<option value="' + i + '"' + (i === m ? ' selected' : '') + '>' + MESES[i] + '</option>';
+        var anios = '';
+        for (var a = y - 8; a <= y + 8; a++) anios += '<option value="' + a + '"' + (a === y ? ' selected' : '') + '>' + a + '</option>';
+
+        var celdas = '';
+        for (var b = 0; b < offset; b++) celdas += '<span class="dp-d dp-d--off"></span>';
+        for (var d = 1; d <= total; d++) {
+            var cls = 'dp-d';
+            if (hoy.getFullYear() === y && hoy.getMonth() === m && hoy.getDate() === d) cls += ' is-hoy';
+            if (sel && sel.getFullYear() === y && sel.getMonth() === m && sel.getDate() === d) cls += ' is-sel';
+            celdas += '<button type="button" class="' + cls + '" data-d="' + d + '">' + d + '</button>';
+        }
+
+        pop.innerHTML =
+            '<div class="dp-head">' +
+                '<button type="button" class="dp-nav" data-nav="-1" aria-label="Mes anterior">&lsaquo;</button>' +
+                '<select class="dp-sel dp-mes" aria-label="Mes">' + opts + '</select>' +
+                '<select class="dp-sel dp-anio" aria-label="Año">' + anios + '</select>' +
+                '<button type="button" class="dp-nav" data-nav="1" aria-label="Mes siguiente">&rsaquo;</button>' +
+            '</div>' +
+            '<div class="dp-sem">' + DIAS.map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div>' +
+            '<div class="dp-grid">' + celdas + '</div>' +
+            '<div class="dp-foot">' +
+                '<button type="button" class="dp-accion" data-accion="hoy">Hoy</button>' +
+                '<button type="button" class="dp-accion" data-accion="limpiar">Limpiar</button>' +
+            '</div>';
+    }
+
+    function abrir() {
+        if (pop || Date.now() - ultimoCierre < 250) return;
+        pop = document.createElement('div');
+        pop.className = 'dp-pop';
+        cursor = seleccionada() || hoy0();
+        wrap.appendChild(pop);
+        render();
+        // Si no cabe abajo, se despliega hacia arriba
+        requestAnimationFrame(function () {
+            if (!pop) return;
+            var r = pop.getBoundingClientRect();
+            if (r.bottom > window.innerHeight - 8) pop.classList.add('dp-pop--arriba');
+        });
+        document.addEventListener('mousedown', fuera, true);
+        document.addEventListener('keydown', teclas, true);
+    }
+    function cerrar() {
+        if (!pop) return;
+        pop.remove(); pop = null;
+        ultimoCierre = Date.now();
+        document.removeEventListener('mousedown', fuera, true);
+        document.removeEventListener('keydown', teclas, true);
+    }
+    function fuera(e) { if (!wrap.contains(e.target)) cerrar(); }
+    function teclas(e) {
+        if (e.key === 'Escape') { e.stopPropagation(); cerrar(); inp.focus(); return; }
+        if (!pop) return;
+        var salto = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+        if (salto === undefined) return;
+        e.preventDefault();
+        var base = seleccionada() || cursor;
+        var d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + salto);
+        cursor = new Date(d.getFullYear(), d.getMonth(), 1);
+        escribir(d); render();
+    }
+
+    btn.addEventListener('click', function (e) { e.preventDefault(); pop ? cerrar() : (inp.focus(), abrir()); });
+    inp.addEventListener('focus', abrir);
+    inp.addEventListener('click', function (e) { e.stopPropagation(); abrir(); });
+
+    wrap.addEventListener('click', function (e) {
+        if (!pop) return;
+        var nav = e.target.closest('.dp-nav');
+        if (nav) { cursor = new Date(cursor.getFullYear(), cursor.getMonth() + (+nav.dataset.nav), 1); render(); return; }
+        var dia = e.target.closest('.dp-d[data-d]');
+        if (dia) { escribir(new Date(cursor.getFullYear(), cursor.getMonth(), +dia.dataset.d)); cerrar(); return; }
+        var acc = e.target.closest('.dp-accion');
+        if (acc) {
+            if (acc.dataset.accion === 'hoy') { var h = hoy0(); cursor = new Date(h.getFullYear(), h.getMonth(), 1); escribir(h); }
+            else { inp.value = ''; inp.dispatchEvent(new Event('change', { bubbles: true })); }
+            cerrar();
+        }
+    });
+    wrap.addEventListener('change', function (e) {
+        if (!pop) return;
+        if (e.target.classList.contains('dp-mes'))  { cursor = new Date(cursor.getFullYear(), +e.target.value, 1); render(); }
+        if (e.target.classList.contains('dp-anio')) { cursor = new Date(+e.target.value, cursor.getMonth(), 1); render(); }
+    });
+};
+
 initFechasDmy();
 
 // ---- Tag-pills (.tag-input data-input) ----

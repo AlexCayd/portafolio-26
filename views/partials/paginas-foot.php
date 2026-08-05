@@ -38,15 +38,111 @@
     }
 
     // ---- Barra de progreso de lectura ----------------------------------
+    // En un artículo es interactiva (se puede arrastrar para navegar el texto) y
+    // mide el cuerpo del artículo, no el documento entero: así el hero a sangre y
+    // los recursos relacionados no falsean cuánto se ha leído.
+    var cuerpo = document.querySelector('main.pg--article .pg-body');
+    var minutos = 0;
+    var kicker = document.querySelector('.pg-kicker');
+    if (kicker) {
+        var mm = (kicker.textContent || '').match(/(\d+)\s*MIN/i);
+        if (mm) minutos = parseInt(mm[1], 10) || 0;
+    }
+
     var bar = document.createElement('div');
-    bar.className = 'pg-progress';
+    bar.className = 'pg-progress' + (cuerpo ? ' pg-progress--live' : '');
+    bar.innerHTML = '<div class="pg-progress-fill"></div>' +
+        (cuerpo ? '<div class="pg-progress-knob"></div><div class="pg-progress-pct"><b>0%</b><span></span></div>' : '');
+    if (cuerpo) {
+        bar.setAttribute('role', 'slider');
+        bar.setAttribute('aria-label', 'Progreso de lectura');
+        bar.setAttribute('aria-valuemin', '0');
+        bar.setAttribute('aria-valuemax', '100');
+        bar.tabIndex = 0;
+    }
     document.body.appendChild(bar);
+    var fill = bar.querySelector('.pg-progress-fill');
+    var knob = bar.querySelector('.pg-progress-knob');
+    var pct  = bar.querySelector('.pg-progress-pct');
+
+    // Rango de scroll que corresponde al 0 % y al 100 % de lectura
+    function rango() {
+        if (!cuerpo) {
+            var h = document.documentElement.scrollHeight - window.innerHeight;
+            return { ini: 0, fin: Math.max(1, h) };
+        }
+        var r = cuerpo.getBoundingClientRect();
+        var top = r.top + window.scrollY;
+        // El artículo se da por leído cuando su final entra en el viewport
+        var fin = top + r.height - window.innerHeight * 0.9;
+        return { ini: top - window.innerHeight * 0.55, fin: Math.max(top + 1, fin) };
+    }
+
+    var progreso = 0, arrastrando = false;
+
+    function pintar(p) {
+        progreso = Math.max(0, Math.min(1, p));
+        fill.style.transform = 'scaleX(' + progreso + ')';
+        if (!cuerpo) return;
+        var n = Math.round(progreso * 100);
+        knob.style.left = progreso * 100 + '%';
+        pct.style.left = progreso * 100 + '%';
+        pct.querySelector('b').textContent = n + '%';
+        pct.querySelector('span').textContent = minutos
+            ? (n >= 99 ? 'terminado' : Math.max(1, Math.round(minutos * (1 - progreso))) + ' min restantes')
+            : '';
+        bar.setAttribute('aria-valuenow', String(n));
+    }
+
     function updateProgress() {
-        var h = document.documentElement.scrollHeight - window.innerHeight;
-        bar.style.transform = 'scaleX(' + (h > 0 ? Math.min(1, window.scrollY / h) : 0) + ')';
+        if (arrastrando) return;                       // durante el arrastre manda el puntero
+        var r = rango();
+        pintar((window.scrollY - r.ini) / (r.fin - r.ini));
     }
     window.addEventListener('scroll', updateProgress, { passive: true });
     window.addEventListener('resize', updateProgress);
+
+    if (cuerpo) {
+        // Ir a una posición concreta del artículo (Lenis si está activo)
+        function irA(p) {
+            var r = rango();
+            var y = r.ini + Math.max(0, Math.min(1, p)) * (r.fin - r.ini);
+            if (window.__aoLenis) { try { window.__aoLenis.scrollTo(y); return; } catch (e) {} }
+            window.scrollTo({ top: y, behavior: arrastrando ? 'auto' : 'smooth' });
+        }
+        function pDelEvento(e) {
+            var r = bar.getBoundingClientRect();
+            return (e.clientX - r.left) / r.width;
+        }
+        bar.addEventListener('pointerdown', function (e) {
+            arrastrando = true;
+            bar.classList.add('is-drag');
+            bar.setPointerCapture(e.pointerId);
+            var p = pDelEvento(e); pintar(p); irA(p);
+        });
+        bar.addEventListener('pointermove', function (e) {
+            if (!arrastrando) return;
+            var p = pDelEvento(e); pintar(p); irA(p);
+        });
+        function soltar(e) {
+            if (!arrastrando) return;
+            arrastrando = false;
+            bar.classList.remove('is-drag');
+            try { bar.releasePointerCapture(e.pointerId); } catch (er) {}
+            updateProgress();
+        }
+        bar.addEventListener('pointerup', soltar);
+        bar.addEventListener('pointercancel', soltar);
+        bar.addEventListener('keydown', function (e) {
+            var p = null;
+            if (e.key === 'ArrowRight') p = progreso + 0.05;
+            else if (e.key === 'ArrowLeft') p = progreso - 0.05;
+            else if (e.key === 'Home') p = 0;
+            else if (e.key === 'End') p = 1;
+            if (p === null) return;
+            e.preventDefault(); pintar(p); irA(p);
+        });
+    }
     function boot() {
         reveal(); updateProgress();
         if (window.ScrollTrigger) ScrollTrigger.refresh();
@@ -87,24 +183,30 @@
         });
     }
 
-    // ---- View transition del póster hacia la ficha de película ----------
-    // Solo un elemento puede llevar un mismo view-transition-name, así que se
-    // marca el póster de la tarjeta clicada justo antes de navegar (y se limpia
-    // al volver atrás desde bfcache).
-    var posterMarcado = null;
-    function limpiarPoster() {
-        if (posterMarcado) { posterMarcado.style.viewTransitionName = ''; posterMarcado = null; }
+    // ---- View transition: la miniatura clicada morfa hacia la página destino ----
+    // Solo un elemento puede llevar un mismo view-transition-name a la vez, así que
+    // se marca la miniatura de la tarjeta clicada justo antes de navegar (y se
+    // limpia al volver atrás desde bfcache).
+    var marcado = null;
+    function limpiarMarca() {
+        if (marcado) { marcado.style.viewTransitionName = ''; marcado = null; }
     }
-    document.querySelectorAll('a.sel-card[href*="/tekhne/pelicula/"]').forEach(function (card) {
-        card.addEventListener('click', function () {
-            limpiarPoster();
-            var poster = card.querySelector('.sel-poster');
-            if (!poster) return;
-            poster.style.viewTransitionName = 'ao-poster';
-            posterMarcado = poster;
+    function morfar(selectorTarjeta, selectorMedia, nombre) {
+        document.querySelectorAll(selectorTarjeta).forEach(function (card) {
+            card.addEventListener('click', function () {
+                limpiarMarca();
+                var media = card.querySelector(selectorMedia);
+                if (!media) return;
+                media.style.viewTransitionName = nombre;
+                marcado = media;
+            });
         });
-    });
-    window.addEventListener('pageshow', limpiarPoster);
+    }
+    // Póster del catálogo / estanterías → ficha de película
+    morfar('a.sel-card[href*="/tekhne/pelicula/"]', '.sel-poster', 'ao-poster');
+    // Portada de la tarjeta de artículo → hero del artículo
+    morfar('a[data-vt-cover]', '[data-vt-img]', 'ao-cover');
+    window.addEventListener('pageshow', limpiarMarca);
 
     // ---- Modo Focus (artículo): limpia la pantalla para leer ------------
     var focusBtn = document.getElementById('pg-focus');

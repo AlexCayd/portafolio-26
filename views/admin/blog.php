@@ -154,8 +154,41 @@
     var editor = document.getElementById('body-editor'), hidden = document.getElementById('body-hidden'), rt = document.getElementById('rt-count');
 
     // --- Editor WYSIWYG (contentEditable → guarda HTML) ---
+    // Enter debe generar <p> y no <div>: <div> no está en la whitelist de
+    // sanitizarHtml() y strip_tags lo borraría fusionando los párrafos.
+    try { document.execCommand('defaultParagraphSeparator', false, 'p'); } catch (e) {}
+
     function calc() { var w = (editor.textContent.trim().match(/\S+/g) || []).length; rt.textContent = Math.max(1, Math.ceil(w / 200)); }
     editor.addEventListener('input', calc);
+
+    // Pegar siempre como texto plano: los dobles saltos se vuelven párrafos y los
+    // sencillos <br>. Así nada del portapapeles llega con etiquetas que se pierdan.
+    editor.addEventListener('paste', function (e) {
+        var texto = (e.clipboardData || window.clipboardData).getData('text/plain');
+        if (!texto) return;
+        e.preventDefault();
+        var frag = document.createDocumentFragment();
+        texto.replace(/\r\n?/g, '\n').split(/\n{2,}/).forEach(function (parrafo) {
+            if (parrafo.trim() === '') return;
+            var p = document.createElement('p');
+            parrafo.split('\n').forEach(function (linea, i) {
+                if (i) p.appendChild(document.createElement('br'));
+                p.appendChild(document.createTextNode(linea));
+            });
+            frag.appendChild(p);
+        });
+        if (!frag.childNodes.length) return;
+        var ultimo = frag.lastChild;
+        var selc = window.getSelection();
+        if (!selc.rangeCount || !editor.contains(selc.anchorNode)) { editor.appendChild(frag); }
+        else {
+            var range = selc.getRangeAt(0);
+            range.deleteContents(); range.insertNode(frag);
+            range.setStartAfter(ultimo); range.collapse(true);
+            selc.removeAllRanges(); selc.addRange(range);
+        }
+        calc();
+    });
     // Sincroniza el HTML al hidden antes de enviar (también al final del script)
     editor.closest('form').addEventListener('submit', function () { hidden.value = editor.innerHTML.trim(); });
 

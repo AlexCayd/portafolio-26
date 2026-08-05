@@ -84,6 +84,8 @@
                 <div class="pg-cta film-cta" data-anim>
                     <a class="pg-back" href="/tekhne/peliculas">Ver más títulos</a>
                 </div>
+
+                <?php echo creditoImdb(); ?>
             </div>
         </div>
     </main>

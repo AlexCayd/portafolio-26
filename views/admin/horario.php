@@ -275,7 +275,7 @@ usort($resumenMaterias, function ($a, $b) {
     });
 
     // Selector de color por swatches (paleta ordenada cromáticamente)
-    var PALETA = ['#E51022','#FC6722','#F5B400','#8AC926','#34A853','#3A86FF','#4267AC','#6A4C93','#AA2296','#EA075A'];
+    var PALETA = ['#E51022','#FC6722','#F5B400','#8AC926','#34A853','#46BDC6','#3A86FF','#4267AC','#6A4C93','#AA2296','#EA075A'];
     var cont = document.getElementById('color-swatches'), colorInput = document.getElementById('color-input');
     if (cont) {
         PALETA.forEach(function (c) {

@@ -1,0 +1,61 @@
+// =====================================================================
+//  Transiciones entre páginas — View Transitions nativo (cross-document)
+//  Se carga en TODAS las páginas públicas (portfolio.css va en el layout),
+//  también en las internas, que además cargan paginas.css.
+//
+//  Los elementos que morfan llevan `view-transition-name` en las vistas:
+//    · ao-poster → póster del catálogo ↔ ficha de película
+//    · ao-cover  → portada de la tarjeta ↔ hero del artículo / del proyecto
+//  El nombre se marca sobre la tarjeta clicada desde paginas-foot.php, porque
+//  solo un elemento del documento puede llevar un mismo nombre a la vez.
+// =====================================================================
+
+@view-transition { navigation: auto; }
+
+// --- Raíz: cross-fade con un empuje y un desenfoque muy sutiles ---------
+// El blur va solo en la entrada: desenfocar también la salida duplica el coste
+// de composición sobre una instantánea a pantalla completa.
+@keyframes ao-vt-out {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-14px) scale(.985); }
+}
+@keyframes ao-vt-in {
+  from { opacity: 0; transform: translateY(22px) scale(1.01); filter: blur(5px); }
+  to   { opacity: 1; transform: none;                         filter: blur(0); }
+}
+
+::view-transition-old(root) { animation: ao-vt-out .34s cubic-bezier(.4, 0, 1, 1) both; }
+::view-transition-new(root) { animation: ao-vt-in .46s cubic-bezier(.16, 1, .3, 1) both; }
+
+// --- Elementos con nombre: morfan por encima de la raíz -----------------
+::view-transition-group(ao-poster),
+::view-transition-group(ao-cover) {
+  animation-duration: .62s;
+  animation-timing-function: cubic-bezier(.16, 1, .3, 1);
+  z-index: 2;
+}
+// Los dos lados se funden mientras la caja interpola: sin destellos ni saltos
+::view-transition-old(ao-poster),
+::view-transition-old(ao-cover) { animation: ao-vt-media-out .3s ease both; }
+::view-transition-new(ao-poster),
+::view-transition-new(ao-cover) { animation: ao-vt-media-in .5s ease both; }
+
+@keyframes ao-vt-media-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes ao-vt-media-in  { from { opacity: 0; } to { opacity: 1; } }
+
+// --- Chrome fijo: se queda quieto en vez de cruzarse con la raíz --------
+.pg-top { view-transition-name: ao-topbar; }
+#ao-nav { view-transition-name: ao-nav; }
+
+::view-transition-group(ao-topbar),
+::view-transition-group(ao-nav) { animation-duration: .3s; z-index: 3; }
+::view-transition-old(ao-topbar),
+::view-transition-old(ao-nav) { animation: none; opacity: 0; }
+::view-transition-new(ao-topbar),
+::view-transition-new(ao-nav) { animation: ao-vt-media-in .3s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}

@@ -37,15 +37,17 @@ class AdminController
         // Clase actual / próxima según día y hora
         $clase = self::claseActualProxima();
 
-        // Lectura/visionado: últimos 30 días vs. 30 previos
-        $hoy      = date('Y-m-d');
-        $hace29   = date('Y-m-d', strtotime('-29 days'));
-        $hace30   = date('Y-m-d', strtotime('-30 days'));
-        $hace59   = date('Y-m-d', strtotime('-59 days'));
-        $librosAhora = Libro::contarPorRango($hace29, $hoy);
-        $librosPrev  = Libro::contarPorRango($hace59, $hace30);
-        $pelisAhora  = Pelicula::contarPorRango($hace29, $hoy);
-        $pelisPrev   = Pelicula::contarPorRango($hace59, $hace30);
+        // Lectura/visionado: año en curso vs. el mismo tramo del año anterior
+        // (comparar contra el año completo dejaría el delta en negativo todo enero).
+        $hoy         = date('Y-m-d');
+        $anioEnCurso = (int) date('Y');
+        $inicioAnio  = $anioEnCurso . '-01-01';
+        $inicioPrev  = ($anioEnCurso - 1) . '-01-01';
+        $mismoDiaPrev = date('Y-m-d', strtotime('-1 year', strtotime($hoy)));
+        $librosAhora = Libro::contarPorRango($inicioAnio, $hoy);
+        $librosPrev  = Libro::contarPorRango($inicioPrev, $mismoDiaPrev);
+        $pelisAhora  = Pelicula::contarPorRango($inicioAnio, $hoy);
+        $pelisPrev   = Pelicula::contarPorRango($inicioPrev, $mismoDiaPrev);
 
         $netoActual = Activo::total() + CuentaPorCobrar::total() - Deuda::total();
 
@@ -72,6 +74,7 @@ class AdminController
             ],
             'vida' => [
                 'clase'       => $clase,
+                'anio'        => $anioEnCurso,
                 'librosAhora' => $librosAhora, 'librosPrev' => $librosPrev,
                 'pelisAhora'  => $pelisAhora,  'pelisPrev'  => $pelisPrev,
                 'gymAhora'    => $gymAhora,    'gymPrev'    => $gymPrev,
@@ -430,10 +433,11 @@ class AdminController
         usort($deEsteAnio, fn($a, $b) => (float) $b->nota <=> (float) $a->nota);
         $topAnio = array_slice($deEsteAnio, 0, 10);
 
-        // Vistos por mes, con selector de año (+ "Todos" acumulando los años)
+        // Vistos por mes: los 12 meses sumando todos los años. Cada año se sigue
+        // pasando aparte porque el tooltip muestra el desglose año por año.
         $vistosPorMes = Pelicula::vistosPorMesPorAnio();
         $vmAnios = array_values(array_filter(array_keys($vistosPorMes), fn($k) => $k !== 'Todos'));
-        $vmSel = in_array((string) $anioActual, $vmAnios, true) ? (string) $anioActual : ($vmAnios[0] ?? 'Todos');
+        rsort($vmAnios);                                  // del más reciente al más antiguo
 
         $router->render('admin/peliculas', [
             'titulo' => 'Películas y Series', 'modulo' => 'peliculas',
@@ -441,7 +445,6 @@ class AdminController
             'mesesLabels'  => Pelicula::MESES,
             'vistosPorMes' => $vistosPorMes,
             'vmAnios'      => $vmAnios,
-            'vmSel'        => $vmSel,
             'peliculas'  => array_slice($todas, ($pagina - 1) * $porPagina, $porPagina),
             'ultimos'    => $ultimos,
             'topAnio'    => $topAnio,
@@ -536,7 +539,7 @@ class AdminController
         $total = count($peliculas);
         $sumaNota = 0; $sumaDur = 0; $countDur = 0; $aprobados = 0;
         $distNotas = array_fill(1, 10, 0);
-        $porAnio = []; $porAnioVisto = []; $cat = []; $catNota = []; $catAprob = []; $catNo = []; $autores = []; $watchlist = [];
+        $porAnio = []; $porAnioVisto = []; $cat = []; $autores = []; $watchlist = [];
 
         foreach ($peliculas as $p) {
             $nota = (float) $p->nota; $sumaNota += $nota;
@@ -556,9 +559,7 @@ class AdminController
             }
 
             $c = $p->categoria ?: 'Sin categoría';
-            $cat[$c] = ($cat[$c] ?? 0) + 1; $catNota[$c][] = $nota;
-            $catAprob[$c] = ($catAprob[$c] ?? 0) + ($aprob ? 1 : 0);
-            $catNo[$c] = ($catNo[$c] ?? 0) + ($aprob ? 0 : 1);
+            $cat[$c] = ($cat[$c] ?? 0) + 1;
             if ($p->duracion) { $sumaDur += (int) $p->duracion; $countDur++; }
             if (!empty($p->autor) && $p->autor !== '—') $autores[$p->autor] = ($autores[$p->autor] ?? 0) + 1;
             if ((int) $p->seleccion === 1) $watchlist[] = ['titulo' => $p->titulo, 'categoria' => $c, 'autor' => $p->autor, 'anio' => $p->anio, 'poster' => $p->poster, 'nota' => $nota];
@@ -569,9 +570,11 @@ class AdminController
         $aniosLabels = array_map('strval', array_keys($porAnio));
         $aniosCount  = array_map(fn($x) => $x['count'], array_values($porAnio));
         $aniosProm   = array_map(fn($x) => round($x['suma'] / max(1, $x['count']), 2), array_values($porAnio));
-        $acum = []; $run = 0; foreach ($aniosCount as $c2) { $run += $c2; $acum[] = $run; }
         $vistoLabels = array_map('strval', array_keys($porAnioVisto));
         $vistoProm   = array_map(fn($x) => round($x['suma'] / max(1, $x['count']), 2), array_values($porAnioVisto));
+        // Acumulado por año en que se vio (no por año de estreno)
+        $vistoCount = array_map(fn($x) => $x['count'], array_values($porAnioVisto));
+        $vistoAcum = []; $runVisto = 0; foreach ($vistoCount as $c3) { $runVisto += $c3; $vistoAcum[] = $runVisto; }
         $catLabels = array_keys($cat);
 
         return [
@@ -580,12 +583,10 @@ class AdminController
             'aprobados' => $aprobados, 'noAprobados' => $total - $aprobados,
             'pctAprobacion' => $total ? round($aprobados / $total * 100, 1) : 0,
             'distNotas' => array_values($distNotas),
-            'aniosLabels' => $aniosLabels, 'aniosCount' => $aniosCount, 'aniosProm' => $aniosProm, 'acumulado' => $acum,
+            'aniosLabels' => $aniosLabels, 'aniosCount' => $aniosCount, 'aniosProm' => $aniosProm,
             'vistoLabels' => $vistoLabels, 'vistoProm' => $vistoProm,
+            'vistoCount' => $vistoCount, 'vistoAcum' => $vistoAcum,
             'catLabels' => $catLabels, 'catCount' => array_values($cat),
-            'catNotaProm' => array_map(fn($c) => round(array_sum($catNota[$c]) / max(1, count($catNota[$c])), 2), $catLabels),
-            'catAprob' => array_map(fn($c) => $catAprob[$c], $catLabels),
-            'catNo'    => array_map(fn($c) => $catNo[$c], $catLabels),
             'autoresLabels' => array_keys($autores), 'autoresCount' => array_values($autores),
             'watchlist' => $watchlist,
         ];

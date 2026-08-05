@@ -42,12 +42,15 @@
                                 <div class="libro-titulo"><?php echo s($l->titulo); ?></div>
                                 <div class="libro-autor"><?php echo s($l->autor); ?></div>
                             </div>
-                            <?php if ($l->completado && $tienePend) : ?>
+                            <?php if ($l->completado) : /* Completado: se muestra su reseña igual que en Leídos */ ?>
                                 <div class="leido-meta">
-                                    <span class="leido-stars-static"><?php
-                                        echo estrellasHtml((float)$l->estrellas);
-                                        echo '<span class="leido-stars-num">' . number_format((float)$l->estrellas, 1) . '</span>';
-                                    ?></span>
+                                    <?php if ($tienePend) : ?>
+                                        <span class="leido-stars-static"><?php
+                                            echo estrellasHtml((float)$l->estrellas);
+                                            echo '<span class="leido-stars-num">' . number_format((float)$l->estrellas, 1) . '</span>';
+                                        ?></span>
+                                    <?php else : ?><span class="sin-resena">Sin reseña</span><?php endif; ?>
+                                    <span class="leido-fecha"><?php echo icono('calendario'); ?><?php echo $l->fecha_leido ? date('d/m/Y', strtotime($l->fecha_leido)) : 'Sin fecha'; ?></span>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -62,7 +65,7 @@
                                 <div class="star-rating star-rating--lg" data-max="5" data-input="#lr-<?php echo $l->id; ?>"></div>
                             </div>
                             <input type="hidden" class="leido-star-input" id="lr-<?php echo $l->id; ?>" value="<?php echo (float)$l->estrellas; ?>">
-                            <label class="campo-mini" style="margin-top:8px"><span>Fecha de completado</span><input type="text" class="edit-fechaleido" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" value="<?php echo $l->fecha_leido ? date('d/m/Y', strtotime($l->fecha_leido)) : ''; ?>"></label>
+                            <label class="campo-mini" style="margin-top:8px"><span>Fecha de completado</span><input type="text" class="edit-fechaleido" inputmode="numeric" maxlength="10" placeholder="dd/mm/aaaa" autocomplete="off" value="<?php echo $l->fecha_leido ? date('d/m/Y', strtotime($l->fecha_leido)) : ''; ?>"></label>
                             <textarea class="edit-opinion" placeholder="Tu opinión..." style="width:100%;margin-top:8px;background:var(--surface-2);border:1px solid var(--line-2);color:var(--text);border-radius:10px;padding:11px;font:inherit;font-size:.9rem;min-height:70px;"><?php echo s($l->comentario); ?></textarea>
                         <?php endif; ?>
                         <label class="alfinal-toggle" style="margin-top:10px">
@@ -74,7 +77,10 @@
                         <div class="row" style="margin-top:10px">
                             <button class="btn btn--sm btn--primary btn-guardar">Guardar</button>
                             <button class="btn btn--sm btn--ghost btn-cancelar">Cancelar</button>
-                            <button type="button" class="btn btn--sm btn--danger btn-eliminar" data-titulo="<?php echo s($l->titulo); ?>" style="margin-left:auto">Eliminar</button>
+                            <?php if ($l->completado) : ?>
+                                <button type="button" class="btn btn--sm btn--ghost btn-descompletar" style="margin-left:auto">↩ Quitar completado</button>
+                            <?php endif; ?>
+                            <button type="button" class="btn btn--sm btn--danger btn-eliminar" data-titulo="<?php echo s($l->titulo); ?>"<?php echo $l->completado ? '' : ' style="margin-left:auto"'; ?>>Eliminar</button>
                         </div>
                     </div>
                     <span class="check"><?php echo icono('ok'); ?></span>
@@ -149,26 +155,29 @@
             .then(function (r) { return r.json(); }).then(cb).catch(function () { alert('Error'); });
     }
 
-    // Máscara dd/mm/aaaa (la conversión a ISO la hace window.fechaISO, global).
-    // Si el layout fuera una versión anterior sin estos helpers, la página sigue
-    // funcionando: solo se queda sin máscara y sin campo de fecha en el guardado.
-    if (window.mascaraFechaDmy) {
-        document.querySelectorAll('.edit-fechaleido').forEach(function (inp) { window.mascaraFechaDmy(inp); });
-    }
+    // Máscara dd/mm/aaaa + calendario emergente (la conversión a ISO la hace
+    // window.fechaISO, global). Si el layout fuera una versión anterior sin estos
+    // helpers, la página sigue funcionando: solo se queda sin máscara ni calendario.
+    document.querySelectorAll('.edit-fechaleido').forEach(function (inp) {
+        if (window.mascaraFechaDmy) window.mascaraFechaDmy(inp);
+        if (window.initDatePicker) window.initDatePicker(inp);
+    });
 
     document.querySelectorAll('.libro-item').forEach(function (libro) {
         var timer = null;
         var esLeido = libro.classList.contains('leido');
+        function abrirEdicion() {
+            libro.classList.add('is-editing');
+            var inp = libro.querySelector('.edit-titulo'); if (inp) inp.focus();
+        }
         libro.addEventListener('click', function (e) {
             if (e.target.closest('.libro-edit') || libro.classList.contains('is-editing') || timer) return;
             // Leídos: un click abre la reseña/puntaje (no regresa a pendientes)
-            if (esLeido) {
-                libro.classList.add('is-editing');
-                var inp = libro.querySelector('.edit-titulo'); if (inp) inp.focus();
-                return;
-            }
+            if (esLeido) { abrirEdicion(); return; }
+            // Pendiente YA completado: un click abre su reseña. Des-completarlo se
+            // hace desde el botón «Quitar completado» del propio panel.
+            if (libro.classList.contains('is-completado')) { abrirEdicion(); return; }
             // Pendientes: un click completa (timer para distinguir del doble click).
-            // La reseña/puntaje NO se pide aquí; solo se edita desde la columna Leídos.
             timer = setTimeout(function () {
                 timer = null;
                 function completar() {
@@ -190,8 +199,7 @@
         libro.addEventListener('dblclick', function (e) {
             if (e.target.closest('.libro-edit')) return;
             clearTimeout(timer); timer = null;
-            libro.classList.add('is-editing');
-            var inp = libro.querySelector('.edit-titulo'); if (inp) inp.focus();
+            abrirEdicion();
         });
         var g = libro.querySelector('.btn-guardar');
         if (g) g.addEventListener('click', function (e) {
@@ -213,6 +221,12 @@
         });
         var c = libro.querySelector('.btn-cancelar');
         if (c) c.addEventListener('click', function (e) { e.stopPropagation(); libro.classList.remove('is-editing'); });
+        // Pendiente completado → volver a marcarlo como no completado
+        var dc = libro.querySelector('.btn-descompletar');
+        if (dc) dc.addEventListener('click', function (e) {
+            e.stopPropagation();
+            post('/admin/libros/estado', { id: libro.dataset.id }, function () { location.reload(); });
+        });
         var rp = libro.querySelector('.btn-rependiente');
         if (rp) rp.addEventListener('click', function (e) {
             e.stopPropagation();

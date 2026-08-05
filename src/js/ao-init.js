@@ -60,6 +60,7 @@
     initMobileNav(app);
     initHovers(app);
     initDataHref(app);
+    initViewTransitions(app);
     window.__aoRecolor(THEME);
     setTimeout(function(){ if (gen === GEN) ScrollTrigger.refresh(); }, 400);
   }
@@ -72,10 +73,17 @@
     applyTheme(app, THEME);
     var btn = document.getElementById('ao-theme');
     if (btn) btn.addEventListener('click', function(){
-      THEME = (THEME === 'dark') ? 'light' : 'dark';
-      try { localStorage.setItem('ao-theme', THEME); } catch(e){}
-      applyTheme(app, THEME);
-      if (window.__aoRecolor) window.__aoRecolor(THEME);
+      var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function cambiar(){
+        THEME = (THEME === 'dark') ? 'light' : 'dark';
+        try { localStorage.setItem('ao-theme', THEME); } catch(e){}
+        applyTheme(app, THEME);
+        if (window.__aoRecolor) window.__aoRecolor(THEME);
+      }
+      // View Transitions también sirve dentro del mismo documento: el cambio de
+      // tema se funde en vez de saltar de golpe.
+      if (document.startViewTransition && !reduce) document.startViewTransition(cambiar);
+      else cambiar();
     });
   }
   function applyTheme(app, t){
@@ -705,6 +713,28 @@
         if (h.indexOf('mailto:') === 0) location.href = h; else window.open(h, '_blank');
       });
     });
+  }
+
+  /* ---------- VIEW TRANSITIONS (cross-document) ----------
+     Solo un elemento puede llevar un mismo view-transition-name a la vez, así que
+     se marca la portada de la tarjeta clicada justo antes de navegar. Las reglas
+     ::view-transition viven en src/scss/portfolio/_transitions.scss. */
+  function initViewTransitions(app){
+    if (!document.startViewTransition) return;
+    var marcado = null;
+    function limpiar(){ if (marcado){ marcado.style.viewTransitionName = ''; marcado = null; } }
+    // Delegación: el slider de proyectos reconstruye sus tarjetas al redimensionar
+    function alClic(e){
+      var a = e.target.closest && e.target.closest('a[data-vt-cover]');
+      if (!a) return;
+      limpiar();
+      var media = a.querySelector('[data-vt-img]'); if (!media) return;
+      media.style.viewTransitionName = 'ao-cover';
+      marcado = media;
+    }
+    app.addEventListener('click', alClic);
+    cleanupFns.push(function(){ app.removeEventListener('click', alClic); limpiar(); });
+    onWin('pageshow', limpiar);
   }
 })();
 
