@@ -38,6 +38,12 @@ Portafolio + panel de administración de **Alexander Oliva**. Landing pública p
 - Imágenes con variantes `avif`/`webp`/`png` en `public/build/img/`.
 - Colores/estados de mapas curriculares por clase `.st-<estado>` (completado=verde, cursando=ámbar, desbloqueada=azul, bloqueada=rojo).
 
+## Todo cambio visual pasa por el subagente `ux-ui`
+
+**Obligatorio**, no opcional: antes de dar por terminado cualquier trabajo que cree o modifique un archivo de `src/scss/`, un JS con animación, scroll o interacción, o el markup de una vista con implicación visual, hay que invocar el subagente **`ux-ui`** (`~/.claude/agents/ux-ui.md`, nivel de usuario: sirve a todos los proyectos) con la lista de archivos tocados y qué debía conseguir la pantalla. Juzga concepto, jerarquía, tipografía, color, movimiento y accesibilidad, y decide si entra tal cual.
+
+Ahí vive el criterio de diseño; aquí, la mecánica de este proyecto. El agente lee este archivo primero, así que las convenciones de arriba —UI en español, **sin emojis**, iconografía por `icono()`, los tres bundles de CSS— mandan sobre cualquier preferencia suya.
+
 ## Build
 ```bash
 # CSS (los tres bundles)
@@ -55,14 +61,14 @@ Portafolio + panel de administración de **Alexander Oliva**. Landing pública p
 Se suben el código y `public/build` (recompilado). **`public/uploads` no se sube nunca**: vive solo en el servidor y ahí están las imágenes y el CV cargados desde el panel. Antes de cada despliegue conviene descargar esa carpeta como respaldo. Las vistas y los controladores tienen que subirse **juntos** con `views/admin-layout.php` e `includes/funciones.php`: los helpers globales (`window.fechaISO`, `icono()`, `urlSubida()`) viven ahí y una subida parcial rompe el panel.
 
 ## Base de datos
-`database/ddl.sql` es el **único** archivo que crea tablas; `development.sql` (semilla local) y `deploy.sql` (datos reales de producción) contienen **solo `INSERT`** y se importan después. Orden: `ddl.sql` → `development.sql` *o* `deploy.sql`. Visitas se registran solas: `visitas` (total diario) y `visitas_pagina` (por ruta, alimenta la tabla del dashboard).
+En `/database` vive **un solo archivo de SQL**: `u277274915_a_oliva.sql`, la última copia de producción descargada de phpMyAdmin (estructura + datos). Es el respaldo y la fuente de verdad del esquema; se reemplaza entera al descargar una nueva y **nunca se edita a mano**. Visitas se registran solas: `visitas` (total diario) y `visitas_pagina` (por ruta, alimenta la tabla del dashboard).
 
-**Solo esos tres archivos en `/database`: no se crean migraciones.** Al cambiar el esquema se ajustan los tres (incluidos los `INSERT` de `deploy.sql`). Reglas completas en [`database/CLAUDE.md`](database/CLAUDE.md).
+**Nada de migraciones ni de archivos auxiliares**: el esquema se cambia en producción y después se descarga el volcado nuevo. Para importar en local hay que recrear la base (el volcado no trae `DROP TABLE`). Reglas completas en [`database/CLAUDE.md`](database/CLAUDE.md).
 
 ## Verificación de cambios
 1. `php -l <archivo>` en lo tocado. **Ignorar** los falsos positivos del analizador del IDE: `P1008` (variables inyectadas por `render()`/`extract()`) y `P1014`/`P1132` (props mágicas de ActiveRecord).
 2. Recompilar el SCSS afectado y `gulp js` si se tocó `ao-init.js`.
-3. Login del panel: usuario **alex**, PIN **000000** (cambiar en producción).
+3. Login del panel: usuario **alex**, con el **mismo PIN que producción** (la base local se importa del volcado, así que el usuario es el real). Para trabajar con otro PIN en local, cambiarlo desde `/admin/cuenta`.
 
 ## SEO
 - Meta/OG/Twitter + JSON-LD en `portfolio-layout.php`; imágenes OG se vuelven absolutas automáticamente. Artículos emiten `BlogPosting` + `BreadcrumbList` (`views/blog/articulo.php`) y `og:type=article`.
