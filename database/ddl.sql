@@ -31,7 +31,19 @@ CREATE TABLE usuarios (
 
 -- ---------------------------------------------------------------------
 --  Proyectos (slider del portafolio) — img = archivo con extensión
+--
+--  La página interna se arma con secciones numeradas 01..0N:
+--    01 Contexto y desafío  (columna `contexto`)
+--    02 Galería             (proyecto_imagenes, si hay)
+--    03 Rol y gestión       (columnas `rol_titulo` + `rol`)
+--    04 Stack               (proyecto_stack)
+--    05..N Secciones extra  (proyecto_secciones)
+--  `descripcion` es LEGADO: el texto plano original del que salieron esas
+--  columnas. Se conserva como red: si un proyecto no tiene `contexto`, la
+--  vista lo sigue pintando con proyectoBloques() como hasta ahora.
 -- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS proyecto_secciones;
+DROP TABLE IF EXISTS proyecto_stack;
 DROP TABLE IF EXISTS proyecto_imagenes;
 DROP TABLE IF EXISTS proyectos;
 CREATE TABLE proyectos (
@@ -40,7 +52,12 @@ CREATE TABLE proyectos (
     slug        VARCHAR(180) NULL,
     anio        VARCHAR(10)  NULL,
     img         VARCHAR(160) NOT NULL,
-    descripcion TEXT         NULL,
+    resumen     VARCHAR(255) NULL,               -- meta description de la ficha
+    contexto    TEXT         NULL,               -- «Contexto y desafío»
+    rol_titulo  VARCHAR(120) NULL,               -- encabezado editable («Rol y Arquitectura»…)
+    rol         TEXT         NULL,               -- «Rol y gestión»
+    enlace      VARCHAR(255) NULL,               -- botón «Visitar sitio»
+    descripcion TEXT         NULL,               -- legado: fuente de las columnas de arriba
     orden       INT          NOT NULL DEFAULT 0,
     creado      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -51,7 +68,30 @@ CREATE TABLE proyecto_imagenes (
     proyecto_id INT          NOT NULL,
     img         VARCHAR(160) NOT NULL,
     orden       INT          NOT NULL DEFAULT 0,
-    CONSTRAINT fk_pimg_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE
+    CONSTRAINT fk_pimg_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE,
+    INDEX idx_pimg_proyecto (proyecto_id, orden)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Stack del proyecto: pares «etiqueta: texto», ordenables desde el panel
+CREATE TABLE proyecto_stack (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    proyecto_id INT          NOT NULL,
+    label       VARCHAR(60)  NOT NULL,           -- «Backend», «Frontend y UX/UI»…
+    texto       TEXT         NOT NULL,
+    orden       INT          NOT NULL DEFAULT 0,
+    CONSTRAINT fk_pstack_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE,
+    INDEX idx_pstack_proyecto (proyecto_id, orden)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Secciones extra del proyecto («Impacto y resultados»…), ordenables
+CREATE TABLE proyecto_secciones (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    proyecto_id INT          NOT NULL,
+    titulo      VARCHAR(120) NOT NULL,
+    cuerpo      TEXT         NULL,
+    orden       INT          NOT NULL DEFAULT 0,
+    CONSTRAINT fk_psec_proyecto FOREIGN KEY (proyecto_id) REFERENCES proyectos(id) ON DELETE CASCADE,
+    INDEX idx_psec_proyecto (proyecto_id, orden)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -148,14 +188,16 @@ CREATE TABLE pys_categorias (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
---  Películas y Series (solo admin) — autor = director/creador
+--  Películas y Series (solo admin)
+--  Los directores / creadores viven en `pelicula_personas` (varios por
+--  título). La antigua columna `autor` ya no existe.
 -- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS pelicula_personas;
 DROP TABLE IF EXISTS peliculas_series;
 CREATE TABLE peliculas_series (
     id          INT AUTO_INCREMENT PRIMARY KEY,
     categoria   VARCHAR(60)  NULL,
     titulo      VARCHAR(160) NOT NULL,
-    autor       VARCHAR(120) NULL,
     anio        INT          NULL,
     duracion    INT          NULL,               -- minutos totales (el form captura h + min)
     nota        DECIMAL(3,1) NOT NULL,
@@ -164,6 +206,18 @@ CREATE TABLE peliculas_series (
     comentario  TEXT         NULL,
     seleccion   TINYINT(1)   NOT NULL DEFAULT 0, -- 1 = va en la "Selección del Autor"
     creado      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Directores / creadores de un título. `orden` 1 = principal.
+-- Los títulos sin dato llevan una sola fila con nombre 'Desconocido'.
+CREATE TABLE pelicula_personas (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    pelicula_id INT          NOT NULL,
+    nombre      VARCHAR(120) NOT NULL,
+    orden       INT          NOT NULL DEFAULT 0,
+    CONSTRAINT fk_pper_pelicula FOREIGN KEY (pelicula_id) REFERENCES peliculas_series(id) ON DELETE CASCADE,
+    INDEX idx_pper_pelicula (pelicula_id, orden),
+    INDEX idx_pper_nombre (nombre)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -177,8 +231,11 @@ CREATE TABLE visitas (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
---  Visitas por página (analítica del dashboard) — contador por ruta
+--  Visitas por página (analítica del dashboard) — acumulado por ruta.
+--  Guarda el título y el total histórico: es la dimensión de la tabla
+--  «Páginas más visitadas» cuando se pide «Todo el histórico».
 -- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS visitas_pagina_dia;
 DROP TABLE IF EXISTS visitas_pagina;
 CREATE TABLE visitas_pagina (
     id          INT AUTO_INCREMENT PRIMARY KEY,
@@ -186,6 +243,18 @@ CREATE TABLE visitas_pagina (
     titulo      VARCHAR(200) NOT NULL DEFAULT '',
     total       INT          NOT NULL DEFAULT 0,
     actualizado TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Desglose por ruta y día: alimenta los periodos (7/30 días, 6/12 meses).
+-- El título no se duplica aquí, se une por `ruta` con visitas_pagina.
+-- Nace vacía: el histórico anterior solo existe como acumulado sin fechas.
+CREATE TABLE visitas_pagina_dia (
+    id    INT          AUTO_INCREMENT PRIMARY KEY,
+    ruta  VARCHAR(191) NOT NULL,
+    fecha DATE         NOT NULL,
+    total INT          NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_vpd_ruta_fecha (ruta, fecha),
+    INDEX idx_vpd_fecha (fecha)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
