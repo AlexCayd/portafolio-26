@@ -42,10 +42,10 @@
 
     <div class="ao-navpill" style="display:flex;align-items:center;gap:2px;">
       <a class="ao-navlink" data-target="core" href="#ao-core" data-cursor style="position:relative;color:var(--fg);text-decoration:none;padding:9px 15px;border-radius:30px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .3s;">Perfil<span class="ao-navline" style="position:absolute;left:15px;right:15px;bottom:5px;height:1.5px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.16,1,.3,1);"></span></a>
-      <a class="ao-navlink" data-target="projects" href="#ao-projects" data-cursor style="position:relative;color:var(--fg);text-decoration:none;padding:9px 15px;border-radius:30px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .3s;">Trabajos<span class="ao-navline" style="position:absolute;left:15px;right:15px;bottom:5px;height:1.5px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.16,1,.3,1);"></span></a>
+      <a class="ao-navlink" data-target="projects" href="#ao-projects" data-cursor style="position:relative;color:var(--fg);text-decoration:none;padding:9px 15px;border-radius:30px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .3s;">Proyectos<span class="ao-navline" style="position:absolute;left:15px;right:15px;bottom:5px;height:1.5px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.16,1,.3,1);"></span></a>
       <a class="ao-navlink" data-target="expertise" href="#ao-expertise" data-cursor style="position:relative;color:var(--fg);text-decoration:none;padding:9px 15px;border-radius:30px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .3s;">Servicios<span class="ao-navline" style="position:absolute;left:15px;right:15px;bottom:5px;height:1.5px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.16,1,.3,1);"></span></a>
-      <a class="ao-navlink" data-target="teaching" href="#ao-teaching" data-cursor style="position:relative;color:var(--fg);text-decoration:none;padding:9px 15px;border-radius:30px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .3s;">Cursos<span class="ao-navline" style="position:absolute;left:15px;right:15px;bottom:5px;height:1.5px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.16,1,.3,1);"></span></a>
       <a class="ao-navlink" data-target="blog" href="#ao-blog" data-cursor style="position:relative;color:var(--fg);text-decoration:none;padding:9px 15px;border-radius:30px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .3s;">Tékhne<span class="ao-navline" style="position:absolute;left:15px;right:15px;bottom:5px;height:1.5px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.16,1,.3,1);"></span></a>
+      <a class="ao-navlink" data-target="teaching" href="#ao-teaching" data-cursor style="position:relative;color:var(--fg);text-decoration:none;padding:9px 15px;border-radius:30px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .3s;">Cursos<span class="ao-navline" style="position:absolute;left:15px;right:15px;bottom:5px;height:1.5px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.16,1,.3,1);"></span></a>
     </div>
 
     <div class="ao-nav-actions" style="display:flex;align-items:center;gap:14px;">
@@ -68,10 +68,10 @@
   <!-- MOBILE MENU OVERLAY -->
   <div id="ao-nav-overlay" style="position:fixed;inset:0;z-index:490;background:var(--bg);display:flex;flex-direction:column;justify-content:center;gap:6px;padding:96px clamp(24px,7vw,48px) 40px;opacity:0;visibility:hidden;transform:translateY(-2%);transition:opacity .4s ease,transform .4s cubic-bezier(.16,1,.3,1),visibility .4s;">
     <a class="ao-mnav" href="#ao-core" style="color:var(--fg);text-decoration:none;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(2rem,10vw,3.4rem);line-height:1.12;letter-spacing:-.02em;">Perfil</a>
-    <a class="ao-mnav" href="#ao-projects" style="color:var(--fg);text-decoration:none;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(2rem,10vw,3.4rem);line-height:1.12;letter-spacing:-.02em;">Trabajos</a>
+    <a class="ao-mnav" href="#ao-projects" style="color:var(--fg);text-decoration:none;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(2rem,10vw,3.4rem);line-height:1.12;letter-spacing:-.02em;">Proyectos</a>
     <a class="ao-mnav" href="#ao-expertise" style="color:var(--fg);text-decoration:none;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(2rem,10vw,3.4rem);line-height:1.12;letter-spacing:-.02em;">Servicios</a>
-    <a class="ao-mnav" href="#ao-teaching" style="color:var(--fg);text-decoration:none;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(2rem,10vw,3.4rem);line-height:1.12;letter-spacing:-.02em;">Cursos</a>
     <a class="ao-mnav" href="#ao-blog" style="color:var(--fg);text-decoration:none;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(2rem,10vw,3.4rem);line-height:1.12;letter-spacing:-.02em;">Tékhne</a>
+    <a class="ao-mnav" href="#ao-teaching" style="color:var(--fg);text-decoration:none;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(2rem,10vw,3.4rem);line-height:1.12;letter-spacing:-.02em;">Cursos</a>
     <div style="margin-top:auto;display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding-top:32px;border-top:1px solid var(--line);">
       <a href="<?php echo waLink('Hola Alexander, vi tu portafolio y me gustaría platicar contigo.'); ?>" target="_blank" rel="noopener" class="ao-mnav" style="flex:1 1 auto;text-align:center;background:var(--accent);color:var(--accent-fg);text-decoration:none;padding:15px 22px;border-radius:40px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:1rem;">Contáctame</a>
       <a href="/uploads/cv.pdf" download style="flex:1 1 auto;text-align:center;border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:15px 22px;border-radius:40px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Descargar CV</a>
@@ -274,9 +274,10 @@
           : $ao_grads[$ao_i % count($ao_grads)];
       ?>
       <a class="ao-post" data-vt-cover href="/tekhne/<?php echo s($post->slug ?: $post->id); ?>" data-cursor data-cursor-label="LEER" style="display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg);text-decoration:none;color:var(--fg);transition:transform .4s cubic-bezier(.16,1,.3,1),border-color .4s,box-shadow .4s;">
-        <div class="ao-post-cover" data-vt-img style="position:relative;aspect-ratio:16/10;background:<?php echo $ao_cover; ?>;">
-          <span style="position:absolute;top:14px;left:14px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--accent-fg);background:rgba(8,8,9,.4);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16);padding:6px 12px;border-radius:30px;"><?php echo s($post->categoria); ?></span>
-          <span style="position:absolute;bottom:14px;right:14px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:#f4f1ea;background:rgba(8,8,9,.5);backdrop-filter:blur(6px);padding:6px 12px;border-radius:30px;"><?php echo s($post->metaTarjeta()); ?></span>
+        <div class="ao-post-cover" data-vt-img style="position:relative;aspect-ratio:16/10;overflow:hidden;background:<?php echo $ao_cover; ?>;">
+          <?php if (empty($post->cover_img)) : ?><canvas class="ao-gas" data-gas aria-hidden="true"></canvas><?php endif; ?>
+          <span style="position:absolute;z-index:2;top:14px;left:14px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:#fff;background:rgba(8,8,9,.66);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.16);padding:6px 12px;border-radius:30px;"><?php echo s($post->categoria); ?></span>
+          <span style="position:absolute;z-index:2;bottom:14px;right:14px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:#f4f1ea;background:rgba(8,8,9,.66);backdrop-filter:blur(6px);padding:6px 12px;border-radius:30px;"><?php echo s($post->metaTarjeta()); ?></span>
         </div>
         <div style="display:flex;flex-direction:column;gap:10px;padding:clamp(18px,1.8vw,22px);flex:1;">
           <h3 style="margin:0;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(1.15rem,1.5vw,1.4rem);line-height:1.14;letter-spacing:-.01em;"><?php echo s($post->titulo); ?></h3>
@@ -293,12 +294,9 @@
   <section id="ao-formacion" style="position:relative;z-index:2;background:var(--bg);padding:clamp(80px,12vh,150px) clamp(20px,4vw,56px);">
     <div data-reveal style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:clamp(28px,5vh,52px);">
       <div>
-        <span style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.24em;color:var(--accent);">/ 05 — CREDENCIALES</span>
+        <span style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.24em;color:var(--accent);">/ 06 — CREDENCIALES</span>
         <h2 style="margin:14px 0 0;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(1.9rem,3.6vw,3rem);letter-spacing:-.02em;">Nunca dejo de <em style="font-style:normal;font-weight:700;color:var(--accent);">aprender</em></h2>
       </div>
-      <?php if (!empty($credenciales)) : ?>
-      <span style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.2em;color:var(--muted);"><?php echo count($credenciales); ?> CREDENCIAL<?php echo count($credenciales) === 1 ? '' : 'ES'; ?> · <?php echo count($instituciones); ?> <?php echo count($instituciones) === 1 ? 'INSTITUCIÓN' : 'INSTITUCIONES'; ?></span>
-      <?php endif; ?>
     </div>
 
     <div data-reveal-stagger style="display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(230px,30vw,320px),1fr));gap:18px;">
@@ -334,7 +332,7 @@
   <section id="ao-teaching" style="position:relative;z-index:2;background:var(--bg);padding:clamp(80px,12vh,150px) clamp(20px,4vw,56px);">
     <div data-reveal style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:clamp(28px,5vh,52px);">
       <div>
-        <span style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.24em;color:var(--accent);">/ 06 — DOCENCIA</span>
+        <span style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.24em;color:var(--accent);">/ 07 — DOCENCIA</span>
         <h2 style="margin:14px 0 0;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(1.9rem,3.6vw,3rem);letter-spacing:-.02em;">También me gusta <em style="font-style:normal;font-weight:700;color:var(--accent);">enseñar</em></h2>
       </div>
       <div class="ao-count-block" style="text-align:right;flex:none;">
@@ -367,24 +365,61 @@
     </div>
 
     <!-- Talleres a la medida para organizaciones -->
-    <div data-reveal style="margin-top:clamp(28px,5vh,52px);position:relative;overflow:hidden;border-radius:24px;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--line));background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,var(--surface)) 0%,var(--surface) 58%);box-shadow:0 30px 60px -30px color-mix(in srgb,var(--accent) 30%,transparent);padding:clamp(30px,4vw,56px);">
-      <div aria-hidden="true" style="position:absolute;top:-42%;right:-6%;width:min(46vw,440px);height:min(46vw,440px);border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--accent) 22%,transparent) 0%,transparent 68%);pointer-events:none;"></div>
-      <div style="position:relative;z-index:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:clamp(26px,4vw,52px);">
-        <div style="flex:1 1 460px;max-width:680px;">
-          <span style="display:inline-flex;align-items:center;gap:10px;">
-            <span style="display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--accent);color:var(--accent-fg);flex:none;"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 6.3L21 9l-5.4 4 2 6.6L12 16l-5.6 3.6 2-6.6L3 9l6.8-.7z"/></svg></span>
-            <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.22em;color:var(--accent);">TALLERES A LA MEDIDA</span>
-          </span>
-          <h3 style="margin:18px 0 0;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(1.7rem,3.2vw,2.8rem);line-height:1.02;letter-spacing:-.02em;">Capacito a tu equipo en lo que <em style="font-style:normal;font-weight:700;color:var(--accent);">viene</em></h3>
-          <p style="margin:18px 0 0;font-size:clamp(1rem,1.3vw,1.18rem);line-height:1.6;color:var(--fg);opacity:.86;">Llevo sesiones prácticas a empresas, escuelas y equipos, siempre a la medida de tu organización. Tu gente sale usando lo aprendido desde el primer día.</p>
-          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;">
-            <?php foreach (['Inteligencia Artificial', 'Microsoft Office', 'Google Workspace & Cloud', 'Automatización', 'Tecnología', 'Más'] as $ao_tema) : ?>
-            <span style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.03em;border:1px solid color-mix(in srgb,var(--accent) 26%,var(--line));border-radius:12px;padding:10px 16px;color:var(--fg);background:var(--bg);box-shadow:0 2px 8px rgba(0,0,0,.04);white-space:nowrap;"><?php echo $ao_tema; ?></span>
-            <?php endforeach; ?>
-          </div>
-        </div>
-        <a class="ao-cta" href="<?php echo waLink('Hola Alexander, me interesa cotizar un taller para mi organización. ¿Podemos platicar?'); ?>" target="_blank" rel="noopener" data-cursor data-magnetic style="flex:none;display:inline-flex;align-items:center;gap:12px;background:var(--accent);color:var(--accent-fg);text-decoration:none;padding:18px 32px;border-radius:50px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(1rem,1.4vw,1.15rem);white-space:nowrap;box-shadow:0 12px 30px color-mix(in srgb,var(--accent) 32%,transparent);">Cotizar un taller <span style="font-size:1.05em;line-height:1;">→</span></a>
+    <?php
+    // Temario base: cinco materias con nombre + un renglón en blanco (el sexto),
+    // que es la idea del bloque: el temario se termina de escribir con el cliente.
+    $ao_temario = [
+        ['tema' => 'Inteligencia Artificial',   'desc' => 'Modelos, prompts y flujos aplicados al trabajo de cada área.'],
+        ['tema' => 'Microsoft Office',          'desc' => 'Excel, Word y PowerPoint al nivel que el puesto exige.'],
+        ['tema' => 'Google Workspace & Cloud',  'desc' => 'Drive, Sheets y colaboración en la nube sin fricción.'],
+        ['tema' => 'Automatización',            'desc' => 'Tareas repetitivas resueltas con herramientas que ya pagas.'],
+        ['tema' => 'Tecnología',                'desc' => 'Alfabetización digital y criterio para elegir herramientas.'],
+    ];
+    ?>
+    <div class="ao-talleres">
+
+      <div class="ao-talleres-rail" data-reveal>
+        <span class="ao-talleres-kicker">TALLERES A LA MEDIDA</span>
+        <h3 class="ao-talleres-titulo">El temario lo escribimos <em>contigo</em></h3>
+        <p class="ao-talleres-texto">Capacito a equipos de empresas y escuelas en las herramientas que están cambiando su trabajo ahora mismo. Cada sesión se arma con tu operación enfrente, y tu gente sale usándola desde el primer día.</p>
+        <a class="ao-cta ao-talleres-cta" href="<?php echo waLink('Hola Alexander, me interesa cotizar un taller para mi organización. ¿Podemos platicar?'); ?>" target="_blank" rel="noopener" data-cursor data-cursor-label="COTIZAR" data-magnetic>Cotizar un taller <span aria-hidden="true">&rarr;</span></a>
+        <p class="ao-talleres-meta">EMPRESAS · ESCUELAS · EQUIPOS</p>
       </div>
+
+      <div class="ao-talleres-hoja">
+        <div class="ao-talleres-hoja-head">
+          <span>Temario base</span>
+          <span>Cinco materias + la tuya</span>
+        </div>
+        <ol class="ao-talleres-lista" data-reveal-stagger>
+
+          <?php foreach ($ao_temario as $ao_i => $ao_t) : ?>
+          <li class="ao-taller">
+            <a class="ao-taller-link" href="<?php echo waLink('Hola Alexander, me interesa un taller de ' . $ao_t['tema'] . ' para mi equipo. ¿Podemos platicar?'); ?>" target="_blank" rel="noopener" data-cursor data-cursor-label="COTIZAR" aria-label="Cotizar un taller de <?php echo s($ao_t['tema']); ?>">
+              <span class="ao-taller-num" aria-hidden="true"><?php echo str_pad((string) ($ao_i + 1), 2, '0', STR_PAD_LEFT); ?></span>
+              <span class="ao-taller-cuerpo">
+                <span class="ao-taller-nombre"><?php echo s($ao_t['tema']); ?></span>
+                <span class="ao-taller-desc"><?php echo s($ao_t['desc']); ?></span>
+              </span>
+              <span class="ao-taller-ir" aria-hidden="true">&rarr;</span>
+            </a>
+          </li>
+          <?php endforeach; ?>
+
+          <li class="ao-taller ao-taller--abierto">
+            <a class="ao-taller-link" href="<?php echo waLink('Hola Alexander, quiero un taller a la medida sobre un tema que no está en tu lista. ¿Podemos platicar?'); ?>" target="_blank" rel="noopener" data-cursor data-cursor-label="PROPONER" aria-label="Proponer un tema para un taller a la medida">
+              <span class="ao-taller-num" aria-hidden="true">06</span>
+              <span class="ao-taller-cuerpo">
+                <span class="ao-taller-nombre">El tema que tu equipo necesite<span class="ao-taller-caret" aria-hidden="true"></span></span>
+                <span class="ao-taller-desc">Si no está en la lista, lo diseñamos juntos.</span>
+              </span>
+              <span class="ao-taller-ir" aria-hidden="true">+</span>
+            </a>
+          </li>
+
+        </ol>
+      </div>
+
     </div>
   </section>
 

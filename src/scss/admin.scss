@@ -4,6 +4,8 @@
    Compila a public/build/css/admin.css
    ===================================================================== */
 
+@use "admin/auth";
+
 :root {
   /* Paleta obligatoria (gráficas / estados) */
   --c-amber:  #F5B400;
@@ -56,6 +58,17 @@ body {
 }
 a { color: inherit; text-decoration: none; }
 ::selection { background: var(--accent); color: #fff; }
+
+/* Texto solo para lectores de pantalla: avisos de estado que en pantalla ya
+   cuentan el número, la posición o el color (reordenar secciones, etc.). */
+.oculto-visual {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* `hidden` tiene que ganar a cualquier display de componente (.tabla-pager,
+   .alfinal-toggle…): sin esto el atributo no ocultaba nada en esos casos. */
+[hidden] { display: none !important; }
 
 /* Scrollbar sutil */
 * { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
@@ -120,6 +133,15 @@ html, body { max-width: 100%; overflow-x: clip; }
 }
 .btn:hover { transform: translateY(-1px); border-color: var(--line-2); }
 .btn:active { transform: translateY(0); }
+/* Foco de teclado propio: el anillo del navegador se pierde sobre el fondo
+   oscuro y cambia de un navegador a otro. Mismo lenguaje que los campos. */
+.btn:focus-visible, .modal-x:focus-visible {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+}
+/* Sin borde propio (pills, paginación) el anillo tiene que pintar solo */
+.range-tabs button:focus-visible, .paginacion a:focus-visible, .auth-back:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
 .btn--primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); box-shadow: 0 4px 16px rgba(255,10,36,.28); }
 .btn--primary:hover { background: var(--accent-2); box-shadow: 0 6px 22px rgba(255,10,36,.36); }
 .btn--ghost { background: transparent; }
@@ -135,6 +157,9 @@ html, body { max-width: 100%; overflow-x: clip; }
 .card h2 { margin: 0 0 18px; font-size: 1.05rem; font-weight: 600; letter-spacing: -.01em; }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
 .card-head h2 { margin: 0; }
+/* Título + subtítulo en dos líneas: el subtítulo no compite en la fila del h2 */
+.card-titulo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.card-sub { margin: 0; font-size: .82rem; line-height: 1.4; color: var(--muted); }
 
 /* KPI tiles */
 .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 24px; }
@@ -198,6 +223,18 @@ table.tabla tbody tr:hover td { background: rgba(255,255,255,.025); }
 .tabla--paginas .pg-ruta { color: var(--muted); font-family: var(--mono); font-size: .8rem; text-decoration: none; }
 .tabla--paginas .pg-ruta:hover { color: var(--accent); }
 .tabla--paginas .pg-visitas { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* Rutas sin desglose por fecha: su cifra es el total histórico, no el del
+   periodo. Van al final, sin puesto, apagadas y con la etiqueta «Acumulado». */
+.pg-acum {
+  display: inline-block; vertical-align: middle; margin-right: 6px; padding: 2px 7px; border-radius: 999px;
+  font-family: var(--mono); font-size: .62rem; letter-spacing: .06em; text-transform: uppercase; line-height: 1.4;
+  color: var(--muted); border: 1px dashed var(--line-2);
+}
+/* Pastilla + cifra en una sola línea: si la ruta es larga, que ceda la columna Ruta, no Visitas */
+.tabla--paginas td:nth-child(4) { white-space: nowrap; }
+.tabla--paginas tr.is-acumulado .pg-titulo,.tabla--paginas tr.is-acumulado .pg-visitas { color: var(--muted); font-weight: 500; }
+.pg-nota { margin: 14px 0 0; color: var(--muted); line-height: 1.5; }
+.pg-nota .pg-acum { margin-right: 4px; }
 .tabla-pager { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 16px; }
 .tabla-pager-info { font-family: var(--mono); font-size: .8rem; color: var(--muted); }
 .tabla-pager button:disabled { opacity: .4; cursor: default; }
@@ -221,6 +258,32 @@ tr.sortable-row.drop-target td { box-shadow: inset 0 2px 0 var(--accent); }
 
 .campo { display: flex; flex-direction: column; gap: 8px; font-size: .84rem; }
 .campo > span { color: var(--muted); font-weight: 500; }
+/* Rótulo con acción a la derecha («Hoy» en las fechas). El botón cabe en la
+   altura de la línea del rótulo: el campo mide lo mismo que sus vecinos. */
+/* Sin min-height: la altura la da la línea de texto, igual que el <span> del
+   vecino (con 1.3em el rótulo crecía ~1px y el input bajaba respecto a «Año»).
+   El botón mide 24px (mínimo táctil AA) y devuelve 12px con margen negativo,
+   así nunca empuja la línea. */
+.campo-rotulo { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fecha-hoy {
+  font: inherit; font-size: .72rem; font-weight: 600; line-height: 1; letter-spacing: .02em;
+  display: inline-flex; align-items: center; height: 24px; padding: 0 10px; margin-block: -6px;
+  border-radius: 999px; cursor: pointer;
+  background: transparent; border: 1px solid var(--line-2); color: var(--muted);
+  transition: color .16s, border-color .16s, background .16s;
+}
+.fecha-hoy:hover { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
+.fecha-hoy:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+/* Casilla con cuerpo de campo: misma altura y borde que un input vecino. Sin
+   altura mágica: la celda de la retícula se estira a la de su vecino y la caja
+   ocupa el resto (flex: 1), así coincide con el input sea cual sea la fuente.
+   44px de suelo para el pulgar cuando queda sola en una columna. */
+.campo-toggle {
+  flex: 1 1 auto; min-height: 44px; padding: 6px 14px; box-sizing: border-box; width: 100%;
+  background: var(--surface-2); border: 1px solid var(--line-2); border-radius: var(--radius-xs);
+}
+.campo-toggle .alfinal-txt small { color: var(--muted-2); }
+.campo-toggle:has(input:checked) { border-color: color-mix(in srgb, var(--accent) 45%, var(--line-2)); }
 .campo input, .campo select, .campo textarea {
   background: var(--surface-2); border: 1px solid var(--line-2); color: var(--text);
   border-radius: var(--radius-xs); padding: 12px 14px; font: inherit; font-size: .92rem;
@@ -263,19 +326,6 @@ tr.sortable-row.drop-target td { box-shadow: inset 0 2px 0 var(--accent); }
 .placeholder h2 { margin: 16px 0 6px; }
 .placeholder p { color: var(--muted); max-width: 460px; margin: 0 auto; }
 
-/* ================================================================ AUTH */
-.auth-body { display: flex; min-height: 100vh; min-height: 100dvh; padding: 24px;
-  background: radial-gradient(60% 60% at 15% 12%, rgba(255,10,36,.12), transparent 60%), radial-gradient(50% 50% at 85% 85%, rgba(255,10,36,.08), transparent 60%), var(--bg); }
-/* margin:auto centra el bloque y, si es más alto que el viewport, permite scroll sin recortar el borde superior */
-.auth-wrap { width: 100%; max-width: 400px; margin: auto; }
-.auth-card { width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 36px; box-shadow: var(--shadow-lg); }
-.auth-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; margin-bottom: 24px; }
-.auth-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
-.auth-title { margin: 0; font-size: 1.4rem; letter-spacing: -.02em; }
-.auth-sub { margin: 8px 0 24px; color: var(--muted); font-size: .9rem; }
-.auth-form { display: flex; flex-direction: column; gap: 16px; }
-.auth-back { display: inline-block; margin-top: 20px; color: var(--muted); font-size: .85rem; }
-.auth-back:hover { color: #ff5364; }
 
 /* ================================================================ LIBROS */
 .libros-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
@@ -286,21 +336,14 @@ tr.sortable-row.drop-target td { box-shadow: inset 0 2px 0 var(--accent); }
 .libro { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: center; gap: 14px; position: relative; box-shadow: var(--shadow); }
 .libro.is-editable { cursor: pointer; transition: border-color .16s, transform .12s; }
 .libro.is-editable:hover { border-color: var(--line-2); transform: translateY(-1px); }
-.libro.is-completado { border-color: rgba(52,168,83,.5); background: linear-gradient(180deg, rgba(52,168,83,.06), transparent); }
+/* El color de estado (verde/ámbar) se define en un único bloque al final */
 .libro .pos { font-family: var(--mono); font-size: .8rem; color: var(--muted-2); width: 22px; text-align: center; }
 .libro .libro-info { flex: 1; min-width: 0; }
 .libro .libro-titulo { font-weight: 600; }
 .libro .libro-autor { font-size: .82rem; color: var(--muted); margin-top: 2px; }
 .libro .check { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--line-2); display: grid; place-items: center; font-size: 14px; line-height: 1; color: transparent; flex: none; transition: transform .2s cubic-bezier(.34,1.56,.64,1), background .2s, border-color .2s, box-shadow .2s; }
 .libro.is-editable:hover .check { border-color: color-mix(in srgb, #34A853 55%, var(--line-2)); }
-.libro.is-completado .check { background: linear-gradient(160deg, #3fbf6a, #2f9e4d); border-color: #34A853; color: #fff; box-shadow: 0 4px 12px rgba(52,168,83,.32); transform: scale(1.06); }
 .libro .hint { font-size: .68rem; color: var(--muted-2); margin-top: 4px; }
-.libro-edit { display: none; flex: 1; gap: 8px; flex-direction: column; }
-.libro.is-editing .libro-info { display: none; }
-.libro.is-editing .libro-edit { display: flex; }
-.libro-edit input { background: var(--surface-2); border: 1px solid var(--line-2); color: var(--text); border-radius: 8px; padding: 9px 11px; font: inherit; font-size: .88rem; min-width: 0; }
-.libro-edit .row { display: flex; gap: 8px; flex-wrap: wrap; }
-.libro-edit .row .btn { flex: 0 0 auto; }
 .libro.is-hit { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
 /* Buscador de libros */
@@ -333,7 +376,7 @@ tr.sortable-row.drop-target td { box-shadow: inset 0 2px 0 var(--accent); }
 .resena .opinion { font-size: .85rem; color: var(--muted); margin-top: 8px; font-style: italic; }
 
 /* ================================================================ MODAL */
-.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.66); backdrop-filter: blur(4px); display: none; place-items: center; z-index: 1000; padding: 20px; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.66); backdrop-filter: blur(4px); display: none; place-items: center; z-index: 1000; padding: 20px; overscroll-behavior: contain; }
 .modal-backdrop.is-open { display: grid; }
 .modal { width: 100%; max-width: 440px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 18px; padding: 28px; box-shadow: var(--shadow-lg); }
 .modal h3 { margin: 0 0 8px; font-size: 1.2rem; }
@@ -509,9 +552,15 @@ tr.sortable-row.drop-target td { box-shadow: inset 0 2px 0 var(--accent); }
 .mini-list .thumb { width: 72px; height: 44px; border-radius: 7px; }
 .dash-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 22px; align-items: start; margin-bottom: 24px; }
 @media (max-width: 1000px) { .dash-grid { grid-template-columns: 1fr; } }
-.range-tabs { display: inline-flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
-.range-tabs button { border: none; background: transparent; color: var(--muted); font: inherit; font-size: .8rem; font-weight: 600; padding: 6px 14px; border-radius: 999px; cursor: pointer; transition: background .16s, color .16s; }
+/* Cinco opciones ya no caben en una línea en pantallas medias: se envuelven */
+.range-tabs { display: inline-flex; flex-wrap: wrap; gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.range-tabs button { border: none; background: transparent; color: var(--muted); font: inherit; font-size: .8rem; font-weight: 600; padding: 6px 14px; border-radius: 999px; cursor: pointer; transition: background .16s, color .16s; white-space: nowrap; }
+.range-tabs button:hover { color: var(--text); }
 .range-tabs button.active { background: var(--accent); color: #fff; }
+@media (max-width: 560px) {
+  .range-tabs { width: 100%; justify-content: center; border-radius: 16px; }
+  .range-tabs button { padding: 6px 11px; font-size: .75rem; }
+}
 .kpi .kpi-label { display: flex; align-items: center; gap: 7px; }
 .kpi .kpi-ico { width: 15px; height: 15px; opacity: .8; }
 
@@ -556,10 +605,6 @@ tr.sortable-row.drop-target td { box-shadow: inset 0 2px 0 var(--accent); }
 /* ---- CV preview ---- */
 .cv-preview { width: 100%; height: 520px; border: 1px solid var(--line-2); border-radius: var(--radius-sm); background: #333; }
 @media (max-width: 640px) { .cv-preview { height: 380px; } }
-
-/* ---- Libros: edición pendiente mejorada ---- */
-.libro-edit .campo-mini { display: flex; flex-direction: column; gap: 4px; }
-.libro-edit .campo-mini span { font-size: .7rem; color: var(--muted-2); text-transform: uppercase; letter-spacing: .05em; }
 
 /* ---- Responsive general ---- */
 @media (max-width: 640px) {
@@ -608,7 +653,8 @@ input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.65); curso
 
 /* Calendario emergente de los campos dd/mm/aaaa (window.initDatePicker) */
 .dp-wrap { position: relative; display: block; }
-.dp-wrap > input { width: 100%; padding-right: 38px; }
+/* El input es de solo lectura: la fecha se elige en el calendario */
+.dp-wrap > input { width: 100%; padding-right: 38px; cursor: pointer; }
 .dp-btn {
   position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
   width: 28px; height: 28px; display: grid; place-items: center;
@@ -633,7 +679,8 @@ input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.65); curso
   background: var(--surface-3); border: 1px solid var(--line); border-radius: 8px;
   color: var(--muted); font-size: 17px; line-height: 1; cursor: pointer; transition: all .15s;
 }
-.dp-nav:hover { color: var(--text); border-color: var(--accent); }
+.dp-nav:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+.dp-nav:disabled { opacity: .35; cursor: default; }
 .dp-sel {
   flex: 1; min-width: 0; background: var(--surface-3); border: 1px solid var(--line);
   color: var(--text); border-radius: 8px; padding: 5px 6px; font: inherit; font-size: .82rem; cursor: pointer;
@@ -712,14 +759,8 @@ a.vida-tile--tint:hover { border-color: #fff; }
 .curr-grid { gap: 7px; }
 .curr-col { gap: 7px; }
 
-/* Libros: contraste de completados + margen (color final definido más abajo) */
+/* Libros: margen de la rejilla (el color de estado va al final del archivo) */
 .libros-cols { margin-top: 26px; }
-.libro.is-completado { border-color: color-mix(in srgb, #34A853 55%, var(--line)); background: linear-gradient(100deg, rgba(52,168,83,.12), rgba(52,168,83,.03) 60%); box-shadow: inset 3px 0 0 0 #34A853; }
-.libro.is-completado::after { content: 'Completado'; position: absolute; top: 12px; right: 46px; font-family: var(--mono); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: #6fd68f; opacity: .9; }
-.libro.is-completado .pos { color: #6fd68f; opacity: .8; }
-.libro.is-completado .libro-titulo { color: #cdeed6; }
-.libro.is-completado .libro-autor { color: color-mix(in srgb, #cdeed6 60%, var(--muted)); }
-@media (max-width: 520px) { .libro.is-completado::after { display: none; } }
 
 /* Finanzas: 3 columnas alineadas */
 .fin-cols { align-items: stretch; }
@@ -754,19 +795,6 @@ a.vida-tile--tint:hover { border-color: #fff; }
 /* ===================================================================== */
 
 /* Login: fondo animado + monograma + PIN */
-.auth-body { overflow-x: hidden; }
-.auth-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-.auth-bg span { position: absolute; border-radius: 50%; filter: blur(72px); opacity: .5; animation: authFloat 16s ease-in-out infinite; }
-.auth-bg span:nth-child(1) { width: 440px; height: 440px; background: #ff0a24; top: -90px; left: -70px; }
-.auth-bg span:nth-child(2) { width: 360px; height: 360px; background: #8a0a17; bottom: -90px; right: -50px; animation-delay: -5s; }
-.auth-bg span:nth-child(3) { width: 300px; height: 300px; background: #45060d; top: 42%; left: 56%; animation-delay: -9s; }
-@keyframes authFloat { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(44px,-30px) scale(1.12); } 66% { transform: translate(-32px,26px) scale(.9); } }
-.auth-card { position: relative; z-index: 1; }
-.auth-mono { width: 34px; height: 34px; border-radius: 10px; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: var(--font); font-weight: 700; font-size: .88rem; letter-spacing: -.02em; box-shadow: 0 4px 14px rgba(255,10,36,.4); }
-.pin-group { display: flex; gap: 10px; }
-.pin-box { flex: 1; min-width: 0; text-align: center; font-family: var(--mono); font-size: 1.5rem; font-weight: 700; padding: 14px 0; background: var(--surface-2); border: 1px solid var(--line-2); color: var(--text); border-radius: 12px; transition: border-color .16s, box-shadow .16s; }
-.pin-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-@media (max-width: 420px) { .pin-box { font-size: 1.2rem; padding: 12px 0; } .pin-group { gap: 7px; } }
 
 /* Dashboard stat-item: más protagonismo del color */
 .stat-item.s-red    { background: linear-gradient(135deg, rgba(255,10,36,.30), var(--surface) 80%); border-color: rgba(255,10,36,.5); }
@@ -912,12 +940,9 @@ a.stat-item:hover .st-go { opacity: 1; }
 /* Fecha de completado en la ficha del libro (leídos y pendientes ya completados) */
 .libro .leido-fecha { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: .74rem; color: var(--muted-2); }
 .libro .leido-fecha .ico { width: 13px; height: 13px; }
-/* Pendiente ya completado: deja libre la esquina de la etiqueta «Completado» */
-.libro.is-completado .leido-meta { padding-top: 13px; }
 @media (max-width: 560px) {
     .leido-head { flex-direction: column; align-items: flex-start; gap: 9px; }
     .leido-meta { flex-direction: row; align-items: center; gap: 12px; text-align: left; }
-    .libro.is-completado .leido-meta { padding-top: 0; }
 }
 /* Campo de fecha dd/mm/aaaa con formato inválido */
 input.is-invalid { border-color: var(--c-red, #E51022) !important; }
@@ -952,29 +977,169 @@ input.is-invalid { border-color: var(--c-red, #E51022) !important; }
 .blog-preview p { margin: 0 0 14px; color: color-mix(in srgb, var(--text) 90%, transparent); }
 .blog-preview img { width: 100%; border-radius: 10px; margin: 8px 0 16px; display: block; }
 
-/* --- Libros: completados (columna Pendientes) con fondo verde lleno --- */
-.libro.is-completado { border-color: #2f9e4d; background: linear-gradient(135deg, #1f7a3f, #176334); box-shadow: 0 6px 18px rgba(31,122,63,.28); }
-.libro.is-completado::after { color: #d6ffe4; opacity: .85; }
-.libro.is-completado .pos { color: #d6ffe4; opacity: .85; }
-.libro.is-completado .libro-titulo { color: #ffffff; }
-.libro.is-completado .libro-autor { color: #d6ffe4; }
-.libro.is-completado .hint { color: rgba(255,255,255,.7); }
-.libro.is-completado .check { background: #fff; border-color: #fff; color: #1f7a3f; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
-
-/* --- Libros: leídos (columna Leídos) con dorado sutil --- */
-.libro.leido { border-color: color-mix(in srgb, var(--c-amber) 30%, var(--line)); background: linear-gradient(100deg, rgba(245,180,0,.07), rgba(245,180,0,.02) 60%); box-shadow: inset 3px 0 0 0 color-mix(in srgb, var(--c-amber) 65%, transparent); }
-.libro.leido .libro-titulo { color: #ffe9bf; }
-
 /* --- Películas: tira horizontal de posters (últimos / mejor puntuados) --- */
-.pel-tira { display: flex; gap: 16px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x proximity; }
-.pel-tira-item { flex: 0 0 132px; display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit; scroll-snap-align: start; }
+/* Tira de pósters: rejilla, no carrusel. Los diez títulos se ven de golpe;
+   con scroll horizontal la mitad quedaba escondida. */
+/* Últimos registros y ranking del año van lado a lado, cada uno en 2 filas de 5.
+   Se apilan por el ancho real del contenido, no del viewport: con la barra
+   lateral de 264px, a 1280px cada tira dejaba pósters de ~69px y la pastilla
+   del ranking no cabía. Cada tarjeta pide 560px (pósters de ~90px) y, si no
+   caben dos, van una sobre otra con la tira en 5; en móvil pasa a 3.
+   Stretch: las dos tarjetas terminan a la misma altura. */
+.pel-duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); gap: 22px; align-items: stretch; }
+.pel-duo .card { margin-top: 0; }
+/* Con la lista de 5 a la izquierda el ranking se queda con dos tercios */
+@media (min-width: 1280px) { .pel-duo { grid-template-columns: minmax(320px, 1fr) minmax(0, 2fr); } }
+.pel-duo .card:first-child { display: flex; flex-direction: column; }
+
+/* Últimos 5: lista vertical que reparte la altura de la tarjeta */
+.pel-recientes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; flex: 1; }
+.pel-recientes li { flex: 1; display: flex; min-height: 0; }
+.pel-recientes li + li { border-top: 1px solid var(--line); }
+.pel-reciente {
+  flex: 1; display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 14px;
+  padding: 10px 8px; margin-inline: -8px; border-radius: var(--radius-sm);
+  color: inherit; text-decoration: none; transition: background .16s ease;
+}
+.pel-reciente:hover { background: var(--surface-2); }
+.pel-reciente:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent); }
+.pel-reciente-poster { display: block; border-radius: 6px; overflow: hidden; border: 1px solid var(--line-2); }
+.pel-reciente-poster img, .pel-reciente-poster .poster-ph { display: block; width: 100%; aspect-ratio: 2/3; object-fit: cover; border: 0; border-radius: 0; }
+.pel-reciente-poster .poster-ph svg { width: 18px; height: 18px; }
+.pel-reciente-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pel-reciente-titulo { font-weight: 600; font-size: .92rem; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
+/* #ff5364 y no --accent: sobre --surface-2 el rojo puro se queda en ~4.4:1 */
+.pel-reciente:hover .pel-reciente-titulo, .pel-reciente:focus-visible .pel-reciente-titulo { color: #ff5364; }
+.pel-reciente-meta { font-size: .76rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pel-reciente-fecha { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: .7rem; color: var(--muted); }
+.pel-reciente-fecha .ico { width: 12px; height: 12px; }
+.pel-tira { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; padding: 4px 2px 10px; }
+.pel-tira-item { display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit; min-width: 0; border-radius: var(--radius-sm); }
+.pel-tira-item:focus-visible { outline: none; }
+@media (max-width: 620px)  { .pel-tira { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; } }
 .pel-tira-poster { position: relative; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--line-2); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
 .pel-tira-item:hover .pel-tira-poster { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 12px 28px rgba(0,0,0,.35); }
+/* Teclado: mismo gesto que el hover y anillo visible sobre el póster */
+.pel-tira-item:focus-visible .pel-tira-poster { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft), 0 12px 28px rgba(0,0,0,.35); }
+.pel-tira-item:focus-visible .pel-tira-titulo { color: var(--accent); }
 .pel-tira-poster img, .pel-tira-poster .poster-ph { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; border-radius: 0; }
-.pel-tira-nota { position: absolute; bottom: 8px; right: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
-.pel-tira-rank { position: absolute; top: 8px; left: 8px; font-family: var(--mono); font-weight: 700; font-size: .78rem; color: #fff; background: rgba(10,10,11,.78); padding: 2px 8px; border-radius: 999px; backdrop-filter: blur(4px); }
+/* La nota va sobre el póster, no sobre una superficie: el fondo translúcido de
+   .nota-badge (16 %) dejaba el número flotando sobre la imagen. Se opaca. */
+.pel-tira-nota { position: absolute; bottom: 8px; right: 8px; background: rgba(10,10,11,.82); backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+.pel-tira-rank { position: absolute; top: 8px; left: 8px; font-family: var(--mono); font-weight: 700; font-size: .78rem; color: #fff; background: rgba(10,10,11,.78); padding: 2px 8px; display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; backdrop-filter: blur(4px); white-space: nowrap; }
+/* Movimiento en el ranking: solo la flecha, pegada al puesto. Color y forma
+   dicen lo mismo (arriba verde, abajo rojo), así el color nunca va solo. */
+.pel-mov { display: inline-flex; align-items: center; line-height: 1; }
+.pel-mov .ico { width: 12px; height: 12px; stroke-width: 2.8; }
+.pel-mov--sube { color: #57d97b; }
+.pel-mov--baja { color: #ff8a95; }
+
+/* Top 5 directores: cada fila es nombre + barra proporcional al líder, y
+   debajo todos sus títulos como pósters mini (scroll horizontal si no caben). */
+.dir-top { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; }
+.dir-top-fila { padding: 16px 0; border-top: 1px solid var(--line); min-width: 0; }
+.dir-top-fila:first-child { border-top: 0; padding-top: 6px; }
+.dir-top-cab { display: grid; grid-template-columns: auto minmax(0, max-content) auto minmax(80px, 1fr); align-items: center; gap: 14px; margin-bottom: 12px; }
+.dir-top-pos { font-family: var(--mono); font-size: .78rem; color: var(--muted-2); }
+.dir-top-nombre { font-weight: 700; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dir-top-total { font-family: var(--mono); font-size: .76rem; color: var(--muted); white-space: nowrap; }
+.dir-top-barra { height: 6px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.dir-top-barra span { display: block; height: 100%; border-radius: inherit; background: var(--c-blue, #3A86FF); }
+.dir-top-fila:first-child .dir-top-barra span { background: var(--c-amber); }
+/* padding-top 6px: deja sitio al translateY(-3px) y al anillo de foco, que el
+   overflow-x:auto recortaría por arriba */
+.dir-top-titulos { list-style: none; margin: 0; padding: 6px 4px 8px; display: flex; gap: 10px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+.dir-top-titulos li { flex: none; }
+.dir-top-titulos a { position: relative; display: block; width: 64px; border-radius: 7px; overflow: hidden; border: 1px solid var(--line-2); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.dir-top-titulos a:hover { transform: translateY(-3px); border-color: var(--accent); }
+.dir-top-titulos a:focus-visible { outline: none; transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.dir-top-titulos img, .dir-top-titulos .poster-ph { display: block; width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 0; border: 0; }
+.dir-top-titulos .poster-ph svg { width: 18px; height: 18px; }
+.dir-top-titulos .nota-badge { position: absolute; right: 3px; bottom: 3px; padding: 1px 5px; font-size: .66rem; border-radius: 5px; background: rgba(10,10,11,.85); }
+@media (max-width: 620px) {
+  .dir-top-cab { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .dir-top-barra { grid-column: 1 / -1; }
+  .dir-top-titulos a { width: 54px; }
+}
 .pel-tira-titulo { font-size: .82rem; font-weight: 600; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
 .pel-tira-item:hover .pel-tira-titulo { color: var(--accent); }
+/* Va después de tiras y top de directores: a igual especificidad gana el último */
+@media (prefers-reduced-motion: reduce) {
+  .pel-tira-poster, .dir-top-titulos a { transition: none; }
+  .pel-tira-item:hover .pel-tira-poster, .pel-tira-item:focus-visible .pel-tira-poster,
+  .dir-top-titulos a:hover, .dir-top-titulos a:focus-visible { transform: none; }
+}
+
+/* Ficha de un proyecto: el formulario va en el mismo orden que la página
+   (contexto, galería y luego las secciones) y los números son los que se
+   verán ahí. Un bloque vacío muestra «—»: no se pinta, no gasta número. */
+.ficha-orden { margin: -8px 0 20px; font-size: .84rem; color: var(--muted); }
+.ficha-orden b { color: var(--text); font-weight: 600; }
+
+/* Portada y datos: las dos columnas miden lo mismo. El resumen se queda con el
+   alto que sobra a la derecha, así su borde cae con el de la zona de subida. */
+.proy-datos-grid { grid-template-columns: 380px 1fr; align-items: stretch; }
+.proy-datos { grid-template-columns: 2fr 1fr; grid-template-rows: auto auto 1fr; }
+.proy-resumen textarea { flex: 1 1 auto; min-height: 96px; resize: none; }
+@media (max-width: 1100px) { .proy-datos-grid { grid-template-columns: 300px 1fr; } }
+@media (max-width: 700px)  { .proy-datos-grid { grid-template-columns: 1fr; } .proy-datos { grid-template-columns: 1fr; } }
+.ficha-num {
+  display: inline-grid; place-items: center; min-width: 26px; height: 20px; padding: 0 6px;
+  border-radius: 6px; background: var(--accent-soft); color: #ff5364;
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .06em;
+}
+.form-section-title .ficha-num { margin-right: 8px; vertical-align: middle; }
+
+/* Una tarjeta por sección: título y acciones arriba, cuerpo libre debajo */
+.filas-repetibles { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+.fila-rep--seccion {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center;
+  padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-3);
+  transition: border-color .16s, background .16s;
+}
+.fila-rep--seccion:focus-within { border-color: var(--line-2); }
+/* El número es el ancla del concepto («esto se publicará como 03»): pide algo
+   más de cuerpo que el badge de los rótulos de sección. */
+.fila-rep--seccion .sec-num { grid-area: 1 / 1; height: 24px; min-width: 30px; font-size: .72rem; }
+.fila-rep--seccion > input { grid-area: 1 / 2; }
+.fila-rep--seccion .fila-rep-acciones { grid-area: 1 / 3; }
+.fila-rep--seccion > textarea { grid-area: 2 / 1 / 3 / -1; min-height: 116px; }
+/* Sin título ni cuerpo la sección no se guarda: se marca como hueco por el
+   borde, no bajando la opacidad de la fila. Apagarla entera hundía justo los
+   placeholders que explican el formato «Etiqueta: texto» (quedaban en 2:1),
+   y son lo único que hay que leer en una fila vacía. */
+.fila-rep--seccion.is-vacia { border-style: dashed; background: color-mix(in srgb, var(--surface-3) 55%, transparent); }
+.fila-rep--seccion.is-vacia:focus-within { border-style: solid; background: var(--surface-3); }
+.fila-rep--seccion.is-vacia .ficha-num { background: var(--surface-2); color: var(--muted); }
+
+.fila-rep-acciones { display: flex; gap: 6px; }
+.fila-rep-acciones .btn { padding: 8px 10px; }
+.fila-rep-acciones .ico { display: block; width: 15px; height: 15px; }
+/* Primera y última fila: el botón que no puede mover se apaga pero sigue
+   enfocable. Con `disabled` de verdad, mover una fila al extremo apagaba el
+   botón recién pulsado y el foco del teclado se caía al body. */
+.fila-rep-acciones .btn[aria-disabled="true"] { opacity: .32; cursor: default; }
+.fila-rep-acciones .btn[aria-disabled="true"]:hover { transform: none; background: transparent; }
+/* La última sección no se puede quitar (siempre queda una): el botón no se
+   enseña activo para luego no hacer nada. */
+.filas-repetibles > .fila-rep:only-child .fila-rep-quitar,
+.autores-lista > .autor-fila:only-child .autor-quitar { visibility: hidden; }
+
+@media (max-width: 720px) {
+  /* El título necesita el ancho entero: número y acciones se van a su fila. */
+  .fila-rep--seccion > input { grid-area: 2 / 1 / 3 / -1; }
+  .fila-rep--seccion > textarea { grid-area: 3 / 1 / 4 / -1; }
+  /* Dedo, no ratón: los tres botones llegan al objetivo táctil de 44px. */
+  .fila-rep-acciones { gap: 8px; }
+  .fila-rep-acciones .btn { min-width: 44px; min-height: 44px; padding: 0; }
+}
+
+/* Directores / creadores: una fila por persona */
+.autores-lista { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.autor-fila { display: flex; align-items: center; gap: 8px; }
+.autor-fila .autocomplete { position: relative; flex: 1; min-width: 0; }
+.autor-fila .autor-quitar { flex: none; padding: 9px 11px; }
+.autor-fila .autor-quitar .ico { width: 15px; height: 15px; }
 
 /* --- Películas: estrellas full-width + buscador de catálogo --- */
 .star-rating--wide { display: flex; width: 100%; justify-content: space-between; gap: 4px; }
@@ -1097,9 +1262,6 @@ input.is-invalid { border-color: var(--c-red, #E51022) !important; }
 .stat-item.s-amber *, .stat-item.s-green *, .stat-item.s-cyan * { text-shadow: 0 1px 3px rgba(0,0,0,.42); }
 .stat-item .st-num { text-shadow: 0 1px 3px rgba(0,0,0,.3); }
 
-/* --- Libros: sin etiqueta «Completado» --- */
-.libro.is-completado::after { content: none; }
-
 /* --- Mapas: celdas más compactas para que entre todo el mapa --- */
 .curr-cell { height: 56px; min-height: 56px; padding-top: 6px; padding-bottom: 6px; }
 .curr-cell .c-nombre { font-size: clamp(.62rem, .82vw, .74rem); line-height: 1.12; }
@@ -1202,10 +1364,6 @@ input.is-invalid { border-color: var(--c-red, #E51022) !important; }
   transition: transform .18s cubic-bezier(.34,1.8,.6,1), background .18s, border-color .18s, color .18s;
 }
 .libro.is-editable:hover .check { transform: rotate(-8deg) scale(1.08); border-color: #34A853; }
-.libro.is-completado .check {
-  background: #34A853; border-color: #1f7a3f; color: #fff;
-  box-shadow: 2px 3px 0 #14532b; transform: rotate(-6deg) scale(1.06);
-}
 
 /* L. Finanzas: cifras geométricas (Space Grotesk, no mono) */
 .kpi--fin .kpi-value { font-family: 'Space Grotesk', system-ui, sans-serif; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
@@ -1223,13 +1381,6 @@ input.is-invalid { border-color: var(--c-red, #E51022) !important; }
 
 /* G. Login: mejor en móvil */
 @media (max-width: 480px) {
-  .auth-body { padding: 14px; }
-  .auth-card { padding: 24px 18px; border-radius: 16px; }
-  .auth-brand { margin-bottom: 16px; }
-  .auth-title { font-size: 1.25rem; }
-  .auth-sub { margin: 6px 0 18px; }
-  .pin-group { gap: 6px; }
-  .pin-box { font-size: 1.1rem; padding: 12px 0; border-radius: 10px; }
 }
 
 /* M. Horario — grilla interactiva de asignación + resumen multi-columna */
@@ -1323,6 +1474,208 @@ table.tabla td.acciones > * + * { margin-left: 8px; }
 .galeria-item { position: relative; cursor: grab; }
 .galeria-item.dragging { opacity: .5; }
 .galeria-drag { position: absolute; top: 3px; left: 3px; z-index: 2; background: rgba(10,10,11,.8); color: var(--muted); border-radius: 6px; padding: 1px 5px; font-size: .8rem; cursor: grab; }
+
+/* =====================================================================
+   LIBROS — color de estado y formulario de edición
+   Único bloque que pinta `.libro.is-completado` y `.libro.leido`: antes
+   había tres declaraciones apiladas peleándose por el fondo. Va al final
+   del archivo a propósito, para que no dependa del orden de las fases.
+   ===================================================================== */
+
+/* Cerrado: el color identifica el estado de un vistazo */
+.libro.is-completado {
+  border-color: #2f9e4d;
+  background: linear-gradient(135deg, #1f7a3f, #176334);
+  box-shadow: 0 6px 18px rgba(31, 122, 63, .28);
+}
+.libro.is-completado .pos { color: #d6ffe4; opacity: .85; }
+.libro.is-completado .libro-titulo { color: #fff; }
+.libro.is-completado .libro-autor,
+.libro.is-completado .leido-fecha,
+.libro.is-completado .sin-resena,
+.libro.is-completado .leido-stars-num { color: #d6ffe4; }
+.libro.is-completado .hint { color: rgba(255, 255, 255, .7); }
+/* Sobre el verde lleno, el check va en blanco (invertido) */
+.libro.is-completado .check { background: #fff; border-color: #fff; color: #1f7a3f; box-shadow: 2px 3px 0 rgba(0, 0, 0, .28); transform: rotate(-6deg) scale(1.06); }
+
+.libro.leido {
+  border-color: color-mix(in srgb, var(--c-amber) 30%, var(--line));
+  background: linear-gradient(100deg, rgba(245, 180, 0, .07), rgba(245, 180, 0, .02) 60%);
+  box-shadow: inset 3px 0 0 0 color-mix(in srgb, var(--c-amber) 65%, transparent);
+}
+.libro.leido .libro-titulo { color: #ffe9bf; }
+
+/* ---- Ficha del libro en modal ----
+   Una sola modal que se puebla con los data-* del registro. Arriba la
+   identidad del libro (portada generada, título y autor editables en sitio, y
+   en qué punto del recorrido va); abajo solo los bloques que aplican.
+   La modal es la que mide: cabecera y acciones fijas, cuerpo con scroll propio
+   (con altura libre el backdrop, que no scrollea, dejaba botones fuera). */
+.modal--libro {
+  max-width: 680px; padding: 0; overflow: hidden;
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 40px);
+  max-height: min(calc(100dvh - 40px), 800px);
+}
+.modal-kicker { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.modal-x {
+  flex: none; width: 34px; height: 34px; display: grid; place-items: center;
+  background: transparent; border: 1px solid var(--line-2); border-radius: 10px;
+  color: var(--muted); font-size: 21px; line-height: 1; cursor: pointer;
+  transition: color .18s, border-color .18s, background .18s;
+}
+.modal-x:hover { color: var(--text); border-color: var(--accent); background: var(--surface-2); }
+
+/* Identidad */
+.lm-hero {
+  position: relative; flex: none;
+  display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 20px; align-items: start;
+  padding: 24px 24px 20px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface-2) 70%, transparent), transparent);
+}
+.lm-portada {
+  --lm-h: 350;
+  position: relative; aspect-ratio: 2 / 3; border-radius: 4px 10px 10px 4px; overflow: hidden;
+  display: grid; place-items: center;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,.38) 0 7px, rgba(255,255,255,.08) 7px 8px, transparent 8px),
+    linear-gradient(155deg, hsl(var(--lm-h) 42% 34%), hsl(calc(var(--lm-h) + 30) 48% 14%));
+  box-shadow: 0 14px 30px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.08);
+  transition: background .3s ease;
+}
+.lm-portada-ini {
+  font-family: 'Clash Display', 'Space Grotesk', sans-serif; font-weight: 700;
+  font-size: 1.9rem; letter-spacing: -.02em; color: rgba(255,255,255,.92); padding-left: 6px;
+  text-shadow: 0 2px 10px rgba(0,0,0,.35);
+}
+.lm-identidad { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lm-identidad .modal-kicker { margin: 0 0 6px; font-weight: 400; }
+/* Título y autor se editan en sitio: sin caja hasta que se tocan */
+.lm-titulo, .lm-autor {
+  width: 100%; background: transparent; border: 1px solid transparent; border-radius: 8px;
+  color: var(--text); font: inherit; margin-left: -9px; padding: 3px 8px;
+  transition: border-color .16s, background .16s;
+}
+.lm-titulo { font-family: 'Clash Display', 'Space Grotesk', sans-serif; font-size: 1.45rem; font-weight: 700; letter-spacing: -.01em; line-height: 1.2; }
+.lm-autor { font-size: .95rem; color: var(--muted); }
+.lm-titulo:hover, .lm-autor:hover { border-color: var(--line-2); }
+.lm-titulo:focus, .lm-autor:focus { outline: none; border-color: var(--accent); background: var(--surface-2); color: var(--text); }
+.lm-titulo::placeholder, .lm-autor::placeholder { color: var(--muted-2); }
+
+/* Estado: tres tarjetas elegibles (radios), todas de la misma altura: icono y
+   nombre en una fila y la descripción debajo. La elegida se enciende; las que
+   no se pueden elegir desde el estado guardado se apagan y dicen por qué. El
+   cambio se aplica al guardar. */
+.lm-estados { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
+.lm-estado-op {
+  position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; row-gap: 8px;
+  align-content: start; align-items: center;
+  padding: 14px; border: 1px solid var(--line-2); border-radius: 12px; background: var(--surface-2);
+  cursor: pointer; transition: border-color .16s, background .16s, box-shadow .16s;
+}
+.lm-estado-op input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.lm-estado-ic {
+  width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center;
+  background: var(--surface-3); color: var(--muted); transition: background .16s, color .16s;
+}
+.lm-estado-ic .ico { width: 16px; height: 16px; }
+.lm-estado-nombre { font-weight: 700; font-size: .92rem; }
+.lm-estado-desc { grid-column: 1 / -1; font-size: .76rem; line-height: 1.35; color: var(--muted); }
+.lm-estado-op:hover:not(.is-bloqueado) { border-color: var(--muted-2); }
+/* Anillo solo con teclado: con :focus-within el clic de ratón dejaba la tarjeta
+   con doble señal (anillo + selección) y parecía que había dos elegidas. */
+.lm-estado-op:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
+.lm-estado-op.is-sel { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--surface-2)); }
+.lm-estado-op.is-sel .lm-estado-ic { background: var(--accent); color: #fff; }
+.lm-estado-op.is-bloqueado { cursor: not-allowed; background: transparent; border-style: dashed; }
+.lm-estado-op.is-bloqueado .lm-estado-nombre, .lm-estado-op.is-bloqueado .lm-estado-ic { opacity: .45; }
+.lm-ayuda--estado { margin-top: 10px; color: var(--text); }
+.lm-ayuda--estado:empty { display: none; }
+
+/* Cuerpo */
+.modal--libro .modal-body { padding: 4px 24px 12px; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.lm-bloque { padding: 20px 0 8px; }
+.lm-bloque + .lm-bloque { border-top: 1px solid var(--line); }
+/* Rótulos y lecturas secundarias en --muted: --muted-2 sobre --surface da ~3.5:1 */
+.lm-bloque-t { margin: 0 0 14px; font-size: .72rem; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.lm-resena-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 18px; align-items: start; margin-bottom: 16px; }
+.lm-campo { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+/* Mismo rótulo que .campo > span: «Calificación» y «Terminado el» van en la misma fila */
+.lm-label { font-size: .84rem; font-weight: 500; color: var(--muted); }
+.lm-contador { color: var(--muted); font-size: .76rem; font-weight: 400; opacity: .85; }
+
+/* Estrellas grandes: son el control principal de la reseña */
+.modal--libro .lm-stars { justify-content: flex-start; gap: 6px; margin-left: -3px; }
+.modal--libro .lm-stars .star { font-size: 44px; width: 44px; }
+.lm-cal-num { font-family: var(--mono); font-size: .86rem; font-weight: 700; color: var(--c-amber); white-space: nowrap; }
+.lm-cal-num.is-vacia { color: var(--muted); font-weight: 400; }
+.lm-fecha { margin: 0; }
+
+.lm-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.lm-chip {
+  background: transparent; border: 1px solid var(--line-2); color: var(--muted);
+  border-radius: 999px; padding: 4px 12px; font: inherit; font-size: .76rem; cursor: pointer;
+  transition: color .16s, border-color .16s, background .16s;
+}
+.lm-chip:hover { color: var(--text); border-color: var(--muted-2); }
+.lm-chip:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); border-color: var(--accent); }
+/* Pulsado: el patrón del enlace activo del menú. Blanco sobre --accent lleno
+   se queda en ~3.9:1 a .76rem; #ff5364 sobre --accent-soft pasa de 5:1. */
+.lm-chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: #ff5364; font-weight: 600; }
+
+/* Lugar en la cola: dónde está, cómo moverlo y qué pasará al guardar */
+.lm-pos { display: flex; align-items: center; flex-wrap: wrap; gap: 14px 22px; }
+.lm-pos-actual { display: flex; align-items: baseline; gap: 8px; min-width: 120px; }
+.lm-pos-num { font-family: 'Clash Display', 'Space Grotesk', sans-serif; font-size: 2rem; font-weight: 700; line-height: 1; letter-spacing: -.02em; transition: color .2s; }
+.lm-pos-num.is-cambio { color: var(--accent); }
+.lm-pos-de { font-size: .8rem; color: var(--muted); }
+.lm-stepper { display: inline-flex; align-items: stretch; border: 1px solid var(--line-2); border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+.lm-step { width: 38px; display: grid; place-items: center; background: transparent; border: 0; color: var(--muted); cursor: pointer; transition: color .16s, background .16s; }
+.lm-step .ico { width: 16px; height: 16px; }
+.lm-step:hover:not(:disabled) { color: var(--text); background: var(--surface-3); }
+.lm-step:disabled { opacity: .35; cursor: default; }
+.lm-step:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); }
+.lm-stepper input {
+  width: 58px; text-align: center; background: transparent; color: var(--text);
+  border: 0; border-inline: 1px solid var(--line-2); padding: 9px 4px; font: inherit; font-size: .92rem;
+  -moz-appearance: textfield; appearance: textfield;
+}
+.lm-stepper input::-webkit-outer-spin-button, .lm-stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.lm-stepper input:focus { outline: none; background: var(--surface-3); }
+.lm-ayuda { margin: 12px 0 0; min-height: 1.2em; font-size: .8rem; color: var(--muted); }
+
+/* Acciones */
+.modal--libro .modal-actions { padding: 16px 24px 20px; border-top: 1px solid var(--line); margin: 0; flex: none; }
+/* Eliminar a la izquierda, lejos de Guardar: no se pulsa por inercia */
+.modal-actions--split { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.modal-actions-main { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.lm-eliminar { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px solid transparent; color: #ff8a95; }
+.lm-eliminar .ico { width: 15px; height: 15px; }
+.lm-eliminar:hover { border-color: color-mix(in srgb, var(--c-red) 55%, transparent); background: color-mix(in srgb, var(--c-red) 12%, transparent); color: #ffb3ba; }
+
+@media (max-width: 620px) {
+  .lm-hero { grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; padding: 18px 18px 16px; }
+  .lm-portada-ini { font-size: 1.3rem; }
+  .lm-titulo { font-size: 1.15rem; }
+  .modal--libro .modal-body, .modal--libro .modal-actions { padding-inline: 18px; }
+  .lm-resena-grid { grid-template-columns: 1fr; }
+  /* Tarjetas de estado apiladas: en 3 columnas no caben nombre y descripción */
+  .lm-estados { grid-template-columns: 1fr; gap: 8px; }
+  /* Apiladas: icono, nombre y descripción en una sola fila compacta */
+  .lm-estado-op { grid-template-columns: auto auto minmax(0, 1fr); padding: 10px 14px; }
+  .lm-estado-desc { grid-column: auto; text-align: right; text-wrap: balance; }
+  .modal--libro .lm-stars .star { font-size: 40px; width: 40px; }
+  /* Objetivos táctiles: chips y pasos del stepper a ~40px en el pulgar */
+  .lm-chip { padding: 9px 14px; }
+  .lm-step { width: 44px; }
+  .modal-actions--split { flex-direction: column-reverse; align-items: stretch; }
+  .modal-actions-main { justify-content: stretch; }
+  .modal-actions-main .btn { flex: 1; }
+  .lm-eliminar { justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lm-portada, .lm-pos-num, .lm-chip, .lm-step, .lm-estado-op, .lm-estado-ic { transition: none; }
+}
 .galeria-preview { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
 .galeria-preview .gp-thumb { width: 74px; height: 46px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line-2); }
 .galeria-preview .gp-count { color: #ff5364; width: 100%; }
@@ -1343,7 +1696,8 @@ table.tabla td.acciones > * + * { margin-left: 8px; }
 .alfinal-toggle .alfinal-box svg { width: 14px; height: 14px; }
 .alfinal-toggle input:checked + .alfinal-box { background: var(--accent); border-color: var(--accent); color: #fff; }
 .alfinal-toggle input:checked ~ .alfinal-txt { color: var(--text); }
-.alfinal-toggle input:focus-visible + .alfinal-box { box-shadow: 0 0 0 3px var(--accent-soft); }
+/* El halo al 14 % solo no se distingue sobre el fondo oscuro: también el borde */
+.alfinal-toggle input:focus-visible + .alfinal-box { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
 /* I. Horario: barra de asignación + celdas interactivas + resumen como selector */
 .assign-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 16px; margin-bottom: 16px; }
@@ -1416,6 +1770,10 @@ table.tabla td.acciones > * + * { margin-left: 8px; }
 @media (max-width: 480px) {
   /* Modales: botones a todo el ancho, el principal arriba */
   .modal { padding: 22px; }
+  /* La ficha del libro maqueta su propio padding por bloques (head/body/actions).
+     Sin esto el .modal genérico de arriba le devolvía 22px y se sumaban los dos:
+     doble sangrado y los filetes separados del borde. */
+  .modal--libro { padding: 0; }
   .modal .modal-actions { flex-direction: column-reverse; }
   .modal .modal-actions .btn { width: 100%; }
 
@@ -1461,6 +1819,37 @@ table.tabla td.acciones > * + * { margin-left: 8px; }
 .dur-inputs span { font-size: .82rem; color: var(--muted); flex: none; }
 #campo-duracion.is-locked { opacity: .5; }
 #campo-duracion.is-locked input { cursor: not-allowed; }
+
+/* Casilla «Es serie» bajo las categorías que la admiten */
+.cat-serie { margin-top: 12px; }
+.nueva-cat { display: grid; gap: 12px; }
+
+/* «¿Te estás refiriendo a…?»: registros con el mismo título */
+.modal--homonimos { max-width: 540px; }
+.modal--homonimos h3 { margin: 6px 0 8px; font-size: 1.25rem; }
+/* Con el prefijo de la modal: `.modal p` (0,1,1) le ganaba margen y tamaño */
+.modal--homonimos .hom-txt { margin: 0 0 16px; font-size: .88rem; line-height: 1.5; color: var(--muted); }
+.hom-lista { list-style: none; margin: 0 0 20px; padding: 0; display: flex; flex-direction: column; gap: 8px; max-height: min(46vh, 380px); overflow-y: auto; }
+.hom-item {
+  display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: 14px;
+  padding: 10px 12px; border: 1px solid var(--line-2); border-radius: var(--radius-sm);
+  background: var(--surface-2); color: inherit; text-decoration: none;
+  transition: border-color .16s, background .16s;
+}
+.hom-item:hover, .hom-item:focus-visible { outline: none; border-color: var(--accent); background: var(--surface-3); }
+.hom-poster { display: grid; place-items: center; width: 46px; aspect-ratio: 2/3; border-radius: 5px; overflow: hidden; background: var(--surface-3); color: var(--muted); }
+.hom-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hom-poster .ico { width: 18px; height: 18px; }
+.hom-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hom-t { font-weight: 700; font-size: .95rem; }
+.hom-s { font-size: .78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hom-accion { font-size: .76rem; font-weight: 600; color: var(--text); white-space: nowrap; }
+.hom-item:hover .hom-accion, .hom-item:focus-visible .hom-accion { color: #ff5364; }
+.modal--homonimos .modal-actions { flex-wrap: wrap; }
+@media (max-width: 520px) {
+  .hom-item { grid-template-columns: 40px minmax(0, 1fr); }
+  .hom-accion { grid-column: 2; }
+}
 
 /* Marca de "va en la Selección del Autor" en el catálogo */
 .sel-marca { display: inline-grid; place-items: center; color: var(--c-amber, #F5B400); }

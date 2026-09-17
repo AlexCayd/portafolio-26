@@ -8,7 +8,7 @@
 $ao_dominio = 'https://alexanderoliva.com';
 $ao_desc = $metaDescripcion ?? 'Alexander Oliva, desarrollador de software y diseñador UX/UI en Ciudad de México. Construyo productos digitales de punta a punta: del código a la experiencia, con criterio humano.';
 $ao_ogTitulo = $ogTitulo ?? ($titulo ?? 'Alexander Oliva - Desarrollador de Software & Diseñador UX/UI');
-$ao_ogImg = $ogImagen ?? '/build/img/profile.png';
+$ao_ogImg = $ogImagen ?? '/build/img/og-default.jpg';
 // Las imágenes OG deben ser URL absolutas para redes sociales
 if (strpos($ao_ogImg, '/') === 0) { $ao_ogImg = $ao_dominio . $ao_ogImg; }
 $ao_canonical = $canonical ?? 'https://alexanderoliva.com/';
@@ -23,9 +23,11 @@ $ao_ogTipo = $ogTipo ?? 'website';
 <meta name="theme-color" content="#0b0b0c">
 <link rel="canonical" href="<?php echo htmlspecialchars($ao_canonical); ?>">
 
-<!-- Favicon -->
-<link rel="icon" type="image/png" href="/build/img/profile.png">
-<link rel="apple-touch-icon" href="/build/img/profile.png">
+<!-- Icono del sitio (monograma AO). Va con asset() para que el ?v=<mtime>
+     invalide la caché del navegador cuando se regenere. -->
+<link rel="icon" type="image/png" sizes="32x32" href="<?php echo asset('/build/img/favicon-32.png'); ?>">
+<link rel="icon" type="image/png" sizes="512x512" href="<?php echo asset('/build/img/favicon-512.png'); ?>">
+<link rel="apple-touch-icon" sizes="180x180" href="<?php echo asset('/build/img/favicon-180.png'); ?>">
 
 <!-- Open Graph / redes sociales -->
 <meta property="og:type" content="<?php echo htmlspecialchars($ao_ogTipo); ?>">
@@ -54,7 +56,7 @@ $ao_ogTipo = $ogTipo ?? 'website';
   "name": "Alexander Oliva",
   "jobTitle": "Desarrollador de Software y Diseñador UX/UI",
   "url": "https://alexanderoliva.com/",
-  "image": "/build/img/profile.png",
+  "image": "https://alexanderoliva.com/build/img/og-default.jpg",
   "address": { "@type": "PostalAddress", "addressLocality": "Ciudad de México", "addressCountry": "MX" },
   "alumniOf": [
     { "@type": "CollegeOrUniversity", "name": "Universidad Anáhuac" },

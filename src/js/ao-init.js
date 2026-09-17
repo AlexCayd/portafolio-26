@@ -54,6 +54,7 @@
     initCursor(app, gen);
     initHeroGL(app, reduced, gen);
     initFooterGL(app, reduced, gen);
+    initGasMiniaturas(app, gen);
     initReveals(app, reduced);
     initExpertise(app, reduced);
     initNav(app, reduced);
@@ -214,67 +215,96 @@
     '}'
   ].join('\n');
 
-  /* ---------- HERO: interactive liquid-silk shader ---------- */
-  function initHeroGL(app, reduced, gen){
-    if (!window.THREE) return;
-    var canvas = document.getElementById('ao-webgl'); if (!canvas) return;
+  /* ---------- GAS: shader de humo rojo interactivo ----------
+     Lo usan el hero de la home y, en Tékhne, la portada por defecto de los
+     artículos sin imagen. Por eso recibe el canvas y unas opciones en vez de
+     ir clavado a #ao-webgl. */
+  var GAS_FRAG = [
+    'precision highp float;',
+    'uniform float uTime; uniform vec2 uRes; uniform vec2 uMouse; uniform float uPtr;',
+    'uniform vec3 uBg; uniform vec3 uC1; uniform vec3 uC2; uniform float uBand; uniform float uHi;',
+    // uSeed desplaza el campo de ruido: con un solo shader, cada miniatura mira
+    // una zona distinta de la misma nube. En el hero y en el artículo vale (0,0).
+    // uEsc = cuántas unidades de ruido caben a lo ancho del lienzo. Vale 1.8 en
+    // hero y artículo. En una miniatura hay que bajarlo: con 1.8 en 340px la veta
+    // sale cuatro veces más pequeña que en el hero y el material deja de ser el
+    // mismo — se vuelve grano. Bajándolo, la tarjeta es un recorte de la misma nube.
+    'uniform float uVig; uniform vec2 uSeed; uniform float uEsc;',
+    'float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }',
+    'float noise(vec2 p){',
+    '  vec2 i = floor(p), f = fract(p);',
+    '  f = f*f*(3.0-2.0*f);',
+    '  return mix(mix(hash(i), hash(i+vec2(1.0,0.0)), f.x), mix(hash(i+vec2(0.0,1.0)), hash(i+vec2(1.0,1.0)), f.x), f.y);',
+    '}',
+    // 6 octavas: el gas gana grano fino y se lee más denso que con 5
+    'float fbm(vec2 p){',
+    '  float v = 0.0, a = 0.5;',
+    '  for (int i = 0; i < 6; i++){ v += a*noise(p); p = p*2.02 + vec2(1.7, 4.1); a *= 0.5; }',
+    '  return v;',
+    '}',
+    'void main(){',
+    '  vec2 uv = gl_FragCoord.xy / uRes;',
+    '  float asp = uRes.x / uRes.y;',
+    '  vec2 p = vec2(uv.x*asp, uv.y) * uEsc + uSeed;',
+    '  vec2 m = vec2(uMouse.x*asp, uMouse.y) * uEsc + uSeed;',
+    '  vec2 md = p - m; float mdl = length(md);',
+    // Campo de influencia más ancho y más fuerte: el gas se siente imantado
+    '  float infl = exp(-mdl*mdl*1.6) * uPtr;',
+    '  p += normalize(md + 1e-4) * infl * 0.85;',          // el humo se abre ante el cursor
+    '  p += vec2(-md.y, md.x) * infl * 1.30;',             // y gira a su alrededor
+    '  float t = uTime*0.09;',
+    '  vec2 q = vec2(fbm(p + t), fbm(p + vec2(5.2, 1.3) - t*0.7));',
+    '  vec2 r = vec2(fbm(p + 3.4*q + vec2(1.7, 9.2) + t*0.5), fbm(p + 3.4*q + vec2(8.3, 2.8) - t*0.35));',
+    '  float f = fbm(p + 3.2*r);',
+    '  vec3 col = uBg;',
+    // Umbrales más bajos = más superficie cubierta de rojo
+    '  col = mix(col, uC1, smoothstep(0.20, 0.86, f) * uBand);',
+    '  col = mix(col, uC2, smoothstep(0.36, 0.92, f*r.x + q.y*0.5) * uHi);',
+    // Vetas brillantes en las crestas: dan cuerpo sin aclarar el conjunto
+    '  col = mix(col, uC2, smoothstep(0.62, 0.99, f*f + r.y*0.35) * uHi * 0.55);',
+    '  col += uC2 * exp(-mdl*mdl*4.0) * 0.32 * uPtr;',     // brillo pegado al cursor
+    '  float edge = smoothstep(1.12, 0.2, length(uv - vec2(0.5, 0.5)));',
+    '  col = mix(uBg, col, uVig + (1.0 - uVig)*edge);',
+    '  gl_FragColor = vec4(col, 1.0);',
+    '}'
+  ].join('\n');
+
+  /**
+   * Monta el gas en un canvas. opts:
+   *   medir()   -> {w, h} del área a cubrir (por defecto, la ventana)
+   *   acento    -> color de realce
+   *   vigneta   -> cuánto color queda en los bordes (0..1)
+   *   raton     -> false para no seguir al cursor
+   * Devuelve {uniforms, render} o null si no hay WebGL.
+   */
+  function montarGas(canvas, opts, reduced, gen){
+    if (!window.THREE || !canvas) return null;
+    opts = opts || {};
+    var medir = opts.medir || function(){ return { w: innerWidth, h: innerHeight }; };
     try {
       var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, alpha: false });
       var PR = Math.min(window.devicePixelRatio || 1, 1.75);
       renderer.setPixelRatio(PR);
-      renderer.setSize(innerWidth, innerHeight, false);
+      var d = medir();
 
       var uniforms = {
         uTime: { value: 0 },
-        uRes: { value: new THREE.Vector2(innerWidth*PR, innerHeight*PR) },
+        uRes: { value: new THREE.Vector2(d.w*PR, d.h*PR) },
         uMouse: { value: new THREE.Vector2(0.5, 0.5) },
         uPtr: { value: 0 },
         uBg: { value: new THREE.Color('#0b0b0c') },
-        uC1: { value: new THREE.Color('#40030e') },
-        uC2: { value: new THREE.Color(accentOf(app)) },
-        uBand: { value: 0.9 },
-        uHi: { value: 0.85 }
+        uC1: { value: new THREE.Color('#5c0413') },
+        uC2: { value: new THREE.Color(opts.acento || '#ff0a24') },
+        uBand: { value: 1.15 },
+        uHi: { value: 1.25 },
+        uVig: { value: opts.vigneta != null ? opts.vigneta : 0.72 },
+        uSeed: { value: new THREE.Vector2(0, 0) },
+        uEsc: { value: 1.8 }
       };
       var mat = new THREE.ShaderMaterial({
         uniforms: uniforms,
         vertexShader: 'void main(){ gl_Position = vec4(position, 1.0); }',
-        fragmentShader: [
-          'precision highp float;',
-          'uniform float uTime; uniform vec2 uRes; uniform vec2 uMouse; uniform float uPtr;',
-          'uniform vec3 uBg; uniform vec3 uC1; uniform vec3 uC2; uniform float uBand; uniform float uHi;',
-          'float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }',
-          'float noise(vec2 p){',
-          '  vec2 i = floor(p), f = fract(p);',
-          '  f = f*f*(3.0-2.0*f);',
-          '  return mix(mix(hash(i), hash(i+vec2(1.0,0.0)), f.x), mix(hash(i+vec2(0.0,1.0)), hash(i+vec2(1.0,1.0)), f.x), f.y);',
-          '}',
-          'float fbm(vec2 p){',
-          '  float v = 0.0, a = 0.5;',
-          '  for (int i = 0; i < 5; i++){ v += a*noise(p); p = p*2.02 + vec2(1.7, 4.1); a *= 0.5; }',
-          '  return v;',
-          '}',
-          'void main(){',
-          '  vec2 uv = gl_FragCoord.xy / uRes;',
-          '  float asp = uRes.x / uRes.y;',
-          '  vec2 p = vec2(uv.x*asp, uv.y) * 1.8;',
-          '  vec2 m = vec2(uMouse.x*asp, uMouse.y) * 1.8;',
-          '  vec2 md = p - m; float mdl = length(md);',
-          '  float infl = exp(-mdl*mdl*3.0) * uPtr;',
-          '  p += normalize(md + 1e-4) * infl * 0.5;',           // silk parts around cursor
-          '  p += vec2(-md.y, md.x) * infl * 0.75;',             // swirl / vortex
-          '  float t = uTime*0.09;',
-          '  vec2 q = vec2(fbm(p + t), fbm(p + vec2(5.2, 1.3) - t*0.7));',
-          '  vec2 r = vec2(fbm(p + 3.4*q + vec2(1.7, 9.2) + t*0.5), fbm(p + 3.4*q + vec2(8.3, 2.8) - t*0.35));',
-          '  float f = fbm(p + 3.2*r);',
-          '  vec3 col = uBg;',
-          '  col = mix(col, uC1, smoothstep(0.30, 0.9, f) * uBand);',
-          '  col = mix(col, uC2, smoothstep(0.46, 0.95, f*r.x + q.y*0.5) * uHi);',
-          '  col += uC2 * exp(-mdl*mdl*5.0) * 0.18 * uPtr;',     // glow follows cursor
-          '  float edge = smoothstep(1.12, 0.2, length(uv - vec2(0.5, 0.5)));',
-          '  col = mix(uBg, col, 0.6 + 0.4*edge);',
-          '  gl_FragColor = vec4(col, 1.0);',
-          '}'
-        ].join('\n')
+        fragmentShader: GAS_FRAG
       });
       var scene = new THREE.Scene();
       var quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
@@ -282,49 +312,322 @@
       var cam = new THREE.Camera();
       cleanupFns.push(function(){ try { quad.geometry.dispose(); mat.dispose(); renderer.dispose(); } catch(e){} });
 
+      function render(){ renderer.render(scene, cam); }
       function size(){
-        renderer.setSize(innerWidth, innerHeight, false);
-        uniforms.uRes.value.set(innerWidth*PR, innerHeight*PR);
-        if (reduced) renderer.render(scene, cam);
+        var s = medir();
+        renderer.setSize(s.w, s.h, false);
+        uniforms.uRes.value.set(s.w*PR, s.h*PR);
+        if (reduced) render();
       }
       size();
       onWin('resize', size);
 
-      recolorFns.push(function(theme){
-        uniforms.uC2.value.set(accentOf(app));
-        if (theme === 'light'){
-          uniforms.uBg.value.set('#f1eee6');
-          uniforms.uC1.value.set('#dcdcdc');
-          uniforms.uBand.value = 0.85; uniforms.uHi.value = 0.72;
-        } else {
-          uniforms.uBg.value.set('#0b0b0c');
-          uniforms.uC1.value.set('#40030e');
-          uniforms.uBand.value = 1.0; uniforms.uHi.value = 1.05;
-        }
-        if (reduced) renderer.render(scene, cam);
-      });
-
       var mT = new THREE.Vector2(0.5, 0.5), ptrT = 0;
-      onWin('mousemove', function(e){
-        mT.set(e.clientX/innerWidth, 1.0 - e.clientY/innerHeight);
-        ptrT = 1.0;
-      });
-      ScrollTrigger.create({ trigger:'#ao-top', start:'top top', end:'bottom top', onUpdate:function(self){ canvas.style.opacity = String(1 - self.progress*0.92); } });
+      if (opts.raton !== false) {
+        onWin('mousemove', function(e){
+          mT.set(e.clientX/innerWidth, 1.0 - e.clientY/innerHeight);
+          ptrT = 1.0;
+        });
+      }
 
-      if (reduced){ uniforms.uTime.value = 8; renderer.render(scene, cam); return; }
+      if (reduced){ uniforms.uTime.value = 8; render(); return { uniforms: uniforms, render: render, activar: function(){} }; }
+
+      // Se puede apagar sin desmontar: la portada de un artículo queda muy por
+      // encima mientras se lee, y seguir pintando un lienzo a pantalla completa
+      // en cada fotograma es el gasto más caro de la página a cambio de nada.
+      var vivo = true;
       var clock = new THREE.Clock();
       (function animate(){
         if (gen !== GEN) return;
-        var dt = Math.min(clock.getDelta(), 0.05);
-        uniforms.uTime.value += dt;
-        uniforms.uMouse.value.lerp(mT, 0.06);
-        uniforms.uPtr.value += (ptrT - uniforms.uPtr.value) * 0.05;
-        ptrT *= 0.97;
-        renderer.render(scene, cam);
         requestAnimationFrame(animate);
+        var dt = Math.min(clock.getDelta(), 0.05);            // se consume igual: evita el salto al volver
+        if (!vivo) return;
+        uniforms.uTime.value += dt;
+        uniforms.uMouse.value.lerp(mT, 0.10);                 // sigue más de cerca
+        uniforms.uPtr.value += (ptrT - uniforms.uPtr.value) * 0.05;
+        ptrT *= 0.985;                                        // y la estela dura más
+        render();
       })();
-    } catch(e){ console.warn('hero webgl', e); }
+      return { uniforms: uniforms, render: render, activar: function(v){ vivo = !!v; } };
+    } catch(e){ console.warn('gas webgl', e); return null; }
   }
+
+  /* ---------- HERO: el gas a pantalla completa ---------- */
+  function initHeroGL(app, reduced, gen){
+    var canvas = document.getElementById('ao-webgl'); if (!canvas) return;
+    var gas = montarGas(canvas, { acento: accentOf(app) }, reduced, gen);
+    if (!gas) return;
+
+    recolorFns.push(function(theme){
+      gas.uniforms.uC2.value.set(accentOf(app));
+      if (theme === 'light'){
+        gas.uniforms.uBg.value.set('#f1eee6');
+        gas.uniforms.uC1.value.set('#dcdcdc');
+        gas.uniforms.uBand.value = 0.85; gas.uniforms.uHi.value = 0.72;
+        gas.uniforms.uVig.value = 0.6;
+      } else {
+        gas.uniforms.uBg.value.set('#0b0b0c');
+        gas.uniforms.uC1.value.set('#5c0413');
+        gas.uniforms.uBand.value = 1.15; gas.uniforms.uHi.value = 1.25;
+        gas.uniforms.uVig.value = 0.72;
+      }
+      if (reduced) gas.render();
+    });
+
+    ScrollTrigger.create({ trigger:'#ao-top', start:'top top', end:'bottom top', onUpdate:function(self){ canvas.style.opacity = String(1 - self.progress*0.92); } });
+  }
+
+  /* Las páginas internas (Tékhne, proyecto) cargan este bundle pero no arrancan
+     boot(), que exige el hero y el footer del home. Se expone el gas para que
+     paginas-foot.php pueda pintarlo en las portadas sin duplicar el shader. */
+  window.aoGas = function(canvas, opts){
+    var reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return montarGas(canvas, opts, reduced, GEN);
+  };
+
+  /* ---------- GAS EN MINIATURAS ----------
+     Las portadas sin imagen (tarjetas de Tékhne) llevan el mismo gas que el
+     hero. Abrir un contexto WebGL por tarjeta no es viable: el navegador corta
+     cerca de los 16 y cada uno arrastra su propio bucle. Aquí hay un único
+     renderer fuera del DOM: en cada fotograma se dibuja una vez por tarjeta
+     visible —con su semilla y su tamaño— y el resultado se copia al canvas 2D
+     de la tarjeta. Un contexto, N copias baratas, y nada se dibuja fuera de la
+     ventana. El degradado de la tarjeta queda debajo como respaldo. */
+  function montarGasMiniaturas(gen){
+    var nodos = [].slice.call(document.querySelectorAll('canvas[data-gas]'));
+    if (!nodos.length || !window.THREE) return null;
+
+    var reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var app = document.getElementById('ao-app');
+    // 1.25 y no 1.75 como el hero: el gas no tiene bordes duros, así que a este
+    // tamaño nadie nota el remuestreo y se ahorra un tercio de relleno de GPU.
+    var PR = Math.min(window.devicePixelRatio || 1, 1.25);
+
+    try {
+      // preserveDrawingBuffer: se dibujan varias tarjetas por fotograma y cada
+      // una se copia con drawImage; sin esto el búfer puede llegar vacío.
+      var renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, preserveDrawingBuffer: true });
+      renderer.setPixelRatio(1);                    // el tamaño en píxeles se calcula a mano
+      var glc = renderer.domElement;
+
+      var uniforms = {
+        uTime: { value: 0 },
+        uRes: { value: new THREE.Vector2(1, 1) },
+        uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+        uPtr: { value: 0 },
+        uBg: { value: new THREE.Color('#0b0b0c') },
+        uC1: { value: new THREE.Color('#5c0413') },
+        uC2: { value: new THREE.Color(app ? accentOf(app) : '#ff0a24') },
+        // Menos banda y menos realce que el hero (1.15 / 1.25): a 190px de alto,
+        // los mismos valores dejan media tarjeta en rojo pleno y la portada le
+        // gana el pulso al titular. Aquí el gas es material de fondo, no escenario.
+        uBand: { value: 0.95 },
+        uHi: { value: 0.90 },
+        uVig: { value: 0.72 },                      // la misma viñeta del hero
+        uSeed: { value: new THREE.Vector2(0, 0) },
+        uEsc: { value: 1.2 }                        // se recalcula por tarjeta en pintar()
+      };
+      var mat = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader: 'void main(){ gl_Position = vec4(position, 1.0); }',
+        fragmentShader: GAS_FRAG
+      });
+      var scene = new THREE.Scene();
+      var quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+      scene.add(quad);
+      var cam = new THREE.Camera();
+      cleanupFns.push(function(){ try { quad.geometry.dispose(); mat.dispose(); renderer.dispose(); } catch(e){} });
+
+      var tarjetas = nodos.map(function(c, i){
+        var t = {
+          lienzo: c,
+          ctx: c.getContext('2d'),
+          // Saltos grandes e irregulares: dos tarjetas contiguas nunca enseñan
+          // la misma veta de humo.
+          semilla: new THREE.Vector2(i * 7.31, i * 4.77),
+          mx: 0.5, my: 0.5, mTx: 0.5, mTy: 0.5, ptr: 0, ptrT: 0,
+          w: 0, h: 0, visible: false, pintada: false
+        };
+        c.__gas = t;
+        return t;
+      });
+
+      function medirTodas(){
+        var maxW = 1, maxH = 1;
+        tarjetas.forEach(function(t){
+          var r = t.lienzo.getBoundingClientRect();
+          t.w = Math.round(r.width * PR);
+          t.h = Math.round(r.height * PR);
+          if (t.w > maxW) maxW = t.w;
+          if (t.h > maxH) maxH = t.h;
+          // Asignar width/height borra el canvas: solo si cambió de verdad
+          if (t.w && t.h && (t.lienzo.width !== t.w || t.lienzo.height !== t.h)){
+            t.lienzo.width = t.w; t.lienzo.height = t.h;
+          }
+        });
+        renderer.setSize(maxW, maxH, false);
+      }
+
+      function pintar(t){
+        if (!t.w || !t.h) return;
+        uniforms.uRes.value.set(t.w, t.h);
+        uniforms.uSeed.value.copy(t.semilla);
+        // Escala atada al ancho real: la tarjeta destacada (≈700px) y las chicas
+        // (≈340px) enseñan la veta del mismo tamaño en pantalla. Sin esto, la
+        // grande se ve suave y las chicas granulosas, y no parecen el mismo humo.
+        uniforms.uEsc.value = Math.max(0.8, Math.min(1.8, (t.w / PR) / 330));
+        uniforms.uMouse.value.set(t.mx, t.my);
+        uniforms.uPtr.value = t.ptr;
+        renderer.setViewport(0, 0, t.w, t.h);
+        renderer.setScissor(0, 0, t.w, t.h);
+        renderer.setScissorTest(true);
+        renderer.render(scene, cam);
+        // El viewport de WebGL nace abajo-izquierda; en el canvas de origen eso
+        // cae en la franja inferior, de ahí el recorte desde glc.height - t.h.
+        t.ctx.drawImage(glc, 0, glc.height - t.h, t.w, t.h, 0, 0, t.w, t.h);
+        if (!t.pintada){ t.pintada = true; t.lienzo.classList.add('is-on'); }
+      }
+
+      function repintar(){ tarjetas.forEach(function(t){ if (t.visible) pintar(t); }); }
+
+      medirTodas();
+
+      var reTimer = null;
+      onWin('resize', function(){
+        clearTimeout(reTimer);
+        reTimer = setTimeout(function(){ if (gen !== GEN) return; medirTodas(); if (reduced) repintar(); }, 160);
+      });
+
+      // Solo se dibuja lo que está en pantalla (o a punto de entrar)
+      if ('IntersectionObserver' in window){
+        var io = new IntersectionObserver(function(entradas){
+          entradas.forEach(function(e){
+            var t = e.target.__gas; if (!t) return;
+            t.visible = e.isIntersecting;
+            // El buscador de Tékhne oculta tarjetas con display:none; al volver
+            // hay que remedirlas antes de dibujar.
+            if (t.visible && !t.w) medirTodas();
+          });
+        }, { rootMargin: '250px 0px' });
+        tarjetas.forEach(function(t){ io.observe(t.lienzo); });
+        cleanupFns.push(function(){ io.disconnect(); });
+      } else {
+        tarjetas.forEach(function(t){ t.visible = true; });
+      }
+
+      // El puntero abre el humo dentro de la tarjeta que se está señalando
+      tarjetas.forEach(function(t){
+        var zona = t.lienzo.parentElement || t.lienzo;
+        zona.addEventListener('mousemove', function(e){
+          var r = zona.getBoundingClientRect();
+          if (!r.width || !r.height) return;
+          t.mTx = (e.clientX - r.left) / r.width;
+          t.mTy = 1 - (e.clientY - r.top) / r.height;
+          // 0.6 y no 1: el desplazamiento del shader está medido para el hero, y
+          // en un campo de tarjeta (la mitad de unidades) a plena fuerza el humo
+          // no se abre, se retuerce.
+          t.ptrT = 0.6;
+        });
+        zona.addEventListener('mouseleave', function(){ t.ptrT = 0; });
+      });
+
+      if (reduced){
+        uniforms.uTime.value = 8;
+        tarjetas.forEach(function(t){ t.visible = true; pintar(t); });
+        return { uniforms: uniforms, repintar: repintar };
+      }
+
+      // Mientras se arrastra, nada compite con el dedo: el gas se congela y
+      // vuelve al parar. Como uTime tampoco avanza, al reanudar sigue donde
+      // estaba y no se ve ningún salto — y nadie mira una textura de fondo
+      // mientras hace scroll.
+      var enScroll = false, tScroll = null;
+      onWin('scroll', function(){
+        enScroll = true;
+        clearTimeout(tScroll);
+        tScroll = setTimeout(function(){ enScroll = false; }, 140);
+      });
+
+      var acum = 0, previo = 0;
+      (function bucle(ts){
+        if (gen !== GEN) return;
+        requestAnimationFrame(bucle);
+        var dt = previo ? Math.min((ts - previo) / 1000, 0.05) : 0.016;
+        previo = ts;
+        if (enScroll) return;
+        acum += dt;
+        if (acum < 1/32) return;          // el gas se mueve lento: 30 fps sobran
+        uniforms.uTime.value += acum;
+        acum = 0;
+        tarjetas.forEach(function(t){
+          if (!t.visible || !t.w) return;
+          t.mx += (t.mTx - t.mx) * 0.12;
+          t.my += (t.mTy - t.my) * 0.12;
+          t.ptr += (t.ptrT - t.ptr) * 0.09;
+          pintar(t);
+        });
+      })(0);
+
+      return { uniforms: uniforms, repintar: repintar };
+    } catch(e){ console.warn('gas miniaturas', e); return null; }
+  }
+
+  /* Paleta de las miniaturas. A diferencia del hero, NO se aclara en tema claro:
+     la miniatura ocupa el lugar de una fotografía de portada, y una foto tampoco
+     cambia con el tema. Además el degradado de respaldo es oscuro en los dos
+     temas (si se aclarara, el fundido de entrada sería un salto de negro a crema)
+     y las píldoras que van encima son de texto blanco: sobre un gas claro caen a
+     3:1. Del tema solo se toma el acento. */
+  function paletaMiniaturas(gas, app){
+    gas.uniforms.uC2.value.set(accentOf(app));
+    gas.uniforms.uBg.value.set('#0b0b0c');
+    gas.uniforms.uC1.value.set('#5c0413');
+    gas.uniforms.uBand.value = 0.95; gas.uniforms.uHi.value = 0.90; gas.uniforms.uVig.value = 0.72;
+  }
+
+  function initGasMiniaturas(app, gen){
+    var gas = montarGasMiniaturas(gen);
+    if (!gas) return;
+    recolorFns.push(function(){
+      paletaMiniaturas(gas, app);
+      gas.repintar();                     // con reduced-motion no hay bucle que lo refresque
+    });
+  }
+
+  /* Las páginas internas no arrancan boot(): se expone igual que window.aoGas. */
+  window.aoGasMiniaturas = function(){ return montarGasMiniaturas(GEN); };
+
+  /* Scroll suave para las páginas internas. initLenis() solo corre dentro de
+     boot(), que exige el hero y el pie del home: Tékhne se quedaba con scroll
+     nativo mientras el home iba suave — dos tactos distintos en el mismo sitio.
+     Se exponen las mismas constantes en vez de duplicarlas en la vista. */
+  window.aoLenis = function(){
+    if (window.__aoLenis) return window.__aoLenis;
+    if (!window.Lenis) return null;
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return null;
+    try {
+      // OJO: si se pasa `lerp`, Lenis IGNORA `duration`/`easing`. El dial real
+      // es lerp y solo lerp; poner los dos hace creer que se está ajustando algo
+      // que no está conectado.
+      // .13 y no el .09 del home: lerp es la fracción del camino que se recorre
+      // por fotograma, así que .09 tarda ~0,53 s en posarse y .13 ~0,36 s. En el
+      // home esa inercia larga es la puesta en escena; aquí se lee texto, y una
+      // línea que todavía se está moviendo cuando el ojo aterriza es la queja
+      // clásica del scroll suave en artículos. Mismo lenguaje, afinado para leer.
+      var lenis = new Lenis({ smoothWheel: true, lerp: 0.13 });
+      window.__aoLenis = lenis;
+      if (window.gsap){
+        // Un solo reloj: con su propio rAF, el scrub del hero iría un fotograma
+        // por detrás del scroll y se vería el desfase en el parallax.
+        if (window.ScrollTrigger) lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
+        gsap.ticker.lagSmoothing(0);
+      } else {
+        requestAnimationFrame(function bucle(t){ lenis.raf(t); requestAnimationFrame(bucle); });
+      }
+      return lenis;
+    } catch(e){ console.warn('lenis', e); return null; }
+  };
 
   /* ---------- FOOTER: flowing silk shader ---------- */
   function initFooterGL(app, reduced, gen){

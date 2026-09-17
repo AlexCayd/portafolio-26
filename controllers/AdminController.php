@@ -5,12 +5,15 @@ namespace Controllers;
 use MVC\Router;
 use Model\Proyecto;
 use Model\ProyectoImagen;
+use Model\ProyectoSeccion;
+use Model\PeliculaPersona;
 use Model\Servicio;
 use Model\Credencial;
 use Model\Blog;
 use Model\BlogRecurso;
 use Model\Libro;
 use Model\Pelicula;
+use Model\Videojuego;
 use Model\Categoria;
 use Model\BlogCategoria;
 use Model\Visita;
@@ -83,12 +86,26 @@ class AdminController
             'ultProyectos'    => array_slice(Proyecto::all(), 0, 5),
             'servicios'       => $servicios,
             'ultCredenciales' => array_slice($credenciales, 0, 5),
-            'paginas'         => Visita::paginasPorVisitas(),
             'visitasTotal'    => Visita::totalGlobal(),
-            'vis7'   => Visita::porDia(7),
-            'vis30'  => Visita::porDia(30),
-            'vis6m'  => Visita::porMes(6),
-            'vis12m' => Visita::porMes(12),
+            // Gráfica y tabla comparten selector de periodo, así que las dos
+            // series se precargan con las mismas claves y el mismo rango.
+            'visSeries' => [
+                '7'    => Visita::porDia(7),
+                '30'   => Visita::porDia(30),
+                '6m'   => Visita::porMes(6),
+                '12m'  => Visita::porMes(12),
+                'todo' => Visita::historico(),
+            ],
+            'paginasSeries' => [
+                '7'    => Visita::paginasPorDias(7),
+                '30'   => Visita::paginasPorDias(30),
+                '6m'   => Visita::paginasPorMeses(6),
+                '12m'  => Visita::paginasPorMeses(12),
+                'todo' => Visita::paginasPorVisitas(),
+            ],
+            // Desde cuándo hay desglose por fecha: lo anterior solo existe como
+            // acumulado por ruta, y la tabla tiene que decirlo.
+            'inicioDetalle' => Visita::inicioDetallePagina(),
         ], 'admin-layout');
     }
 
@@ -99,7 +116,8 @@ class AdminController
         header('Content-Type: application/json');
         $q = trim($_GET['q'] ?? '');
         $tipo = $_GET['tipo'] ?? 'ref';
-        if (mb_strlen($q) < 2) { echo '[]'; exit; }
+        // El aviso de homónimos busca el título exacto, así que acepta títulos de una letra
+        if (mb_strlen($q) < (!empty($_GET['exacto']) ? 1 : 2)) { echo '[]'; exit; }
 
         $out = [];
         if ($tipo === 'ref' || $tipo === 'libro') {
@@ -108,11 +126,26 @@ class AdminController
             }
         }
         if ($tipo === 'ref' || $tipo === 'pelicula') {
-            foreach (Pelicula::buscar($q) as $p) {
+            // exacto=1: solo los homónimos del título (aviso «¿Te estás refiriendo a…?»)
+            $lista = !empty($_GET['exacto']) ? Pelicula::porTituloTodos($q) : Pelicula::buscar($q);
+            foreach ($lista as $p) {
                 $out[] = [
                     'tipo' => 'pelicula', 'id' => $p->id, 'titulo' => $p->titulo,
-                    'sub' => trim(($p->categoria ?: '') . ' · ' . ($p->anio ?: ''), ' ·'),
+                    'sub' => trim($p->categoriaTexto() . ' · ' . ($p->anio ?: ''), ' ·'),
+                    'personas' => !empty($_GET['exacto']) ? $p->personasTexto() : '',
+                    'fecha' => !empty($_GET['exacto']) && $p->fecha_vista ? date('d/m/Y', strtotime((string) $p->fecha_vista)) : '',
                     'poster' => $p->poster ? urlSubida('peliculas', $p->poster) : null,
+                ];
+            }
+        }
+        if ($tipo === 'ref' || $tipo === 'videojuego') {
+            // La columna del título es `nombre`: se normaliza a `titulo` para
+            // que el autocompletar genérico del panel no necesite un caso aparte.
+            foreach (Videojuego::buscar($q) as $v) {
+                $out[] = [
+                    'tipo' => 'videojuego', 'id' => $v->id, 'titulo' => $v->nombre,
+                    'sub' => 'Videojuego',
+                    'poster' => $v->portada ? urlSubida('videojuegos', $v->portada) : null,
                 ];
             }
         }
@@ -168,6 +201,7 @@ class AdminController
             'proyectos' => Proyecto::ordenados(),
             'editando'  => $editando,
             'galeria'   => $editando ? ProyectoImagen::porProyecto((int) $editando->id) : [],
+            'secciones' => $editando ? ProyectoSeccion::porProyecto((int) $editando->id) : [],
         ], 'admin-layout');
     }
 
@@ -205,6 +239,7 @@ class AdminController
         protegerAdmin();
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $editando = !empty($_POST['id']) ? Proyecto::find((int) $_POST['id']) : null;
+            $subidas  = false;
             $proyecto = new Proyecto($_POST);
             $proyecto->id = $editando->id ?? null;
             $proyecto->slug = generarSlug($proyecto->titulo);
@@ -226,10 +261,25 @@ class AdminController
                     $fn = 'gal-' . time() . '-' . bin2hex(random_bytes(3)) . '.' . $ext;
                     if (move_uploaded_file($_FILES['galeria_files']['tmp_name'][$i], $dir . DIRECTORY_SEPARATOR . $fn)) {
                         (new ProyectoImagen(['proyecto_id' => (int) $pid, 'img' => $fn, 'orden' => ++$n]))->guardar();
+                        $subidas = true;
                     }
                 }
             }
+
+            // Las secciones llegan como arreglos paralelos desde las filas
+            // repetibles del formulario, ya en su orden; se reemplazan enteras.
+            if ($pid) {
+                $secTit = (array) ($_POST['sec_titulo'] ?? []);
+                $secCue = (array) ($_POST['sec_cuerpo'] ?? []);
+                $secs   = [];
+                foreach ($secTit as $i => $tt) $secs[] = ['titulo' => $tt, 'cuerpo' => $secCue[$i] ?? ''];
+                ProyectoSeccion::reemplazar((int) $pid, $secs);
+            }
+
             flash($editando ? 'Proyecto actualizado' : 'Proyecto creado', $editando ? 'editado' : 'ok');
+            // Si se crea el proyecto o entran imágenes nuevas se vuelve a la
+            // ficha, que es donde se pueden arrastrar para ordenar la galería.
+            if ($pid && (!$editando || $subidas)) { header('Location: /admin/proyectos?id=' . $pid); exit; }
         }
         header('Location: /admin/proyectos'); exit;
     }
@@ -424,14 +474,30 @@ class AdminController
         $totalPag = max(1, (int) ceil(count($todas) / $porPagina));
         $pagina = max(1, min($totalPag, (int) ($_GET['pagina'] ?? 1)));
 
-        // Últimos 10 registros (más recientes por fecha de visto)
-        $ultimos = array_slice($todas, 0, 10);
+        // Últimos 5 registros (más recientes por fecha de visto)
+        $ultimos = array_slice($todas, 0, 5);
 
-        // Los 10 mejor puntuados de este año (por fecha de visto)
+        // Los 10 mejor puntuados de este año (estrenados Y vistos este año), con
+        // el movimiento de cada uno desde el último cambio del ranking.
         $anioActual = (int) date('Y');
-        $deEsteAnio = array_values(array_filter($todas, fn($p) => (int) date('Y', strtotime((string) $p->fecha_vista)) === $anioActual && !empty($p->fecha_vista)));
-        usort($deEsteAnio, fn($a, $b) => (float) $b->nota <=> (float) $a->nota);
-        $topAnio = array_slice($deEsteAnio, 0, 10);
+        $topAnio = Pelicula::rankingAnio($todas, $anioActual, 10);
+
+        // Top 5 directores / creadores con sus títulos. Sale de $todas, que ya
+        // trae las personas hidratadas: sin consultas extra. «Desconocido» no
+        // es un director, así que no compite.
+        $porDirector = [];
+        foreach ($todas as $p) {
+            foreach ($p->personas() as $nombre) {
+                if ($nombre === PeliculaPersona::DESCONOCIDO) continue;
+                $porDirector[$nombre][] = $p;
+            }
+        }
+        uksort($porDirector, fn($a, $b) => [count($porDirector[$b]), $a] <=> [count($porDirector[$a]), $b]);
+        $topDirectores = [];
+        foreach (array_slice($porDirector, 0, 5, true) as $nombre => $titulos) {
+            usort($titulos, fn($a, $b) => (float) $b->nota <=> (float) $a->nota);
+            $topDirectores[] = ['nombre' => $nombre, 'total' => count($titulos), 'titulos' => $titulos];
+        }
 
         // Vistos por mes: los 12 meses sumando todos los años. Cada año se sigue
         // pasando aparte porque el tooltip muestra el desglose año por año.
@@ -448,6 +514,7 @@ class AdminController
             'peliculas'  => array_slice($todas, ($pagina - 1) * $porPagina, $porPagina),
             'ultimos'    => $ultimos,
             'topAnio'    => $topAnio,
+            'topDirectores' => $topDirectores,
             'anioActual' => $anioActual,
             'pagina'     => $pagina, 'totalPag' => $totalPag,
             'usaCharts'  => true,
@@ -497,36 +564,46 @@ class AdminController
             if ($categoria === '__nueva__') {
                 $categoria = trim($_POST['categoria_nueva'] ?? '');
                 if ($categoria !== '' && !Categoria::where('nombre', $categoria)) {
-                    (new Categoria(['nombre' => $categoria]))->guardar();
+                    (new Categoria(['nombre' => $categoria, 'admite_serie' => !empty($_POST['categoria_admite_serie']) ? 1 : 0]))->guardar();
                 }
             }
 
-            // Nuevo vs revisitado: si el título ya existe, se actualiza ese registro
+            // Sin id siempre es un registro nuevo: puede haber títulos homónimos.
+            // Si ya existía uno con ese nombre, el formulario lo preguntó antes
+            // («¿Te estás refiriendo a…?») y el usuario eligió crear otro.
             $id = !empty($_POST['id']) ? (int) $_POST['id'] : null;
-            if (!$id) {
-                $existente = Pelicula::porTitulo($_POST['titulo'] ?? '');
-                if ($existente) $id = (int) $existente->id;
-            }
 
             $editando = $id ? Pelicula::find($id) : null;
             $pelicula = new Pelicula($_POST);
             $pelicula->id = $id;
             $pelicula->categoria   = $categoria;
+            // «Serie» siempre es serie; otra categoría solo si la admite y se marcó
+            $pelicula->es_serie    = ($categoria === Categoria::SERIE
+                                      || (!empty($_POST['es_serie']) && Categoria::admiteSerie($categoria))) ? 1 : 0;
             $pelicula->anio        = ($_POST['anio'] ?? '') !== '' ? max(0, (int) $_POST['anio']) : null;
 
             // La duración se captura en horas + minutos y se guarda en minutos totales.
-            // Las series no tienen duración (el formulario bloquea los campos).
+            // Las series (de cualquier categoría) no tienen duración: el formulario bloquea los campos.
             $horas   = max(0, (int) ($_POST['duracion_h'] ?? 0));
             $minutos = max(0, min(59, (int) ($_POST['duracion_m'] ?? 0)));
             $total   = $horas * 60 + $minutos;
-            $pelicula->duracion    = ($categoria === 'Serie' || $total === 0) ? null : $total;
+            $pelicula->duracion    = ($pelicula->esSerie() || $total === 0) ? null : $total;
 
             $pelicula->fecha_vista = !empty($_POST['fecha_vista']) ? $_POST['fecha_vista'] : null;
             $pelicula->nota        = max(0, min(10, (float) ($_POST['nota'] ?? 0)));
             $pelicula->seleccion   = !empty($_POST['seleccion']) ? 1 : 0;
             $poster = subirArchivo('poster_file', rutaSubidas('peliculas'), 'poster', ['png','jpg','jpeg','webp','avif']);
             if ($poster) $pelicula->poster = $poster; elseif ($editando) $pelicula->poster = $editando->poster;
-            $pelicula->guardar();
+            // crear() no rellena $this->id: devuelve el insert_id en el arreglo
+            $res = $pelicula->guardar();
+            $idGuardado = $id ?: (int) ($res['id'] ?? 0);
+
+            // Directores / creadores: el formulario manda una fila por persona.
+            // Sin ninguno, PeliculaPersona guarda «Desconocido».
+            if ($idGuardado) {
+                PeliculaPersona::reemplazar($idGuardado, (array) ($_POST['autores'] ?? []));
+            }
+
             flash($editando ? 'Título actualizado' : 'Título agregado', $editando ? 'editado' : 'ok');
         }
         header('Location: /admin/peliculas/gestionar'); exit;
@@ -539,17 +616,13 @@ class AdminController
         $total = count($peliculas);
         $sumaNota = 0; $sumaDur = 0; $countDur = 0; $aprobados = 0;
         $distNotas = array_fill(1, 10, 0);
-        $porAnio = []; $porAnioVisto = []; $cat = []; $autores = []; $watchlist = [];
+        $porAnioVisto = []; $cat = []; $watchlist = [];
 
         foreach ($peliculas as $p) {
             $nota = (float) $p->nota; $sumaNota += $nota;
             $aprob = $nota >= Pelicula::UMBRAL_APROBADO;
             if ($aprob) $aprobados++;
             $distNotas[max(1, min(10, (int) round($nota)))]++;
-
-            // Año de estreno: alimenta "Puntuadas por año" y "Vistas acumuladas"
-            $anio = (int) $p->anio;
-            if ($anio) { $porAnio[$anio]['count'] = ($porAnio[$anio]['count'] ?? 0) + 1; $porAnio[$anio]['suma'] = ($porAnio[$anio]['suma'] ?? 0) + $nota; }
 
             // Año en que se vio: alimenta "Nota promedio por año visto"
             $anioVisto = $p->fecha_vista ? (int) date('Y', strtotime((string) $p->fecha_vista)) : 0;
@@ -561,15 +634,10 @@ class AdminController
             $c = $p->categoria ?: 'Sin categoría';
             $cat[$c] = ($cat[$c] ?? 0) + 1;
             if ($p->duracion) { $sumaDur += (int) $p->duracion; $countDur++; }
-            if (!empty($p->autor) && $p->autor !== '—') $autores[$p->autor] = ($autores[$p->autor] ?? 0) + 1;
-            if ((int) $p->seleccion === 1) $watchlist[] = ['titulo' => $p->titulo, 'categoria' => $c, 'autor' => $p->autor, 'anio' => $p->anio, 'poster' => $p->poster, 'nota' => $nota];
+            if ((int) $p->seleccion === 1) $watchlist[] = ['titulo' => $p->titulo, 'categoria' => $p->categoriaTexto() ?: $c, 'autor' => $p->personasTexto(), 'anio' => $p->anio, 'poster' => $p->poster, 'nota' => $nota];
         }
 
-        ksort($porAnio); ksort($porAnioVisto); arsort($cat); arsort($autores);
-        $autores = array_slice($autores, 0, 8, true);
-        $aniosLabels = array_map('strval', array_keys($porAnio));
-        $aniosCount  = array_map(fn($x) => $x['count'], array_values($porAnio));
-        $aniosProm   = array_map(fn($x) => round($x['suma'] / max(1, $x['count']), 2), array_values($porAnio));
+        ksort($porAnioVisto); arsort($cat);
         $vistoLabels = array_map('strval', array_keys($porAnioVisto));
         $vistoProm   = array_map(fn($x) => round($x['suma'] / max(1, $x['count']), 2), array_values($porAnioVisto));
         // Acumulado por año en que se vio (no por año de estreno)
@@ -583,11 +651,9 @@ class AdminController
             'aprobados' => $aprobados, 'noAprobados' => $total - $aprobados,
             'pctAprobacion' => $total ? round($aprobados / $total * 100, 1) : 0,
             'distNotas' => array_values($distNotas),
-            'aniosLabels' => $aniosLabels, 'aniosCount' => $aniosCount, 'aniosProm' => $aniosProm,
             'vistoLabels' => $vistoLabels, 'vistoProm' => $vistoProm,
             'vistoCount' => $vistoCount, 'vistoAcum' => $vistoAcum,
             'catLabels' => $catLabels, 'catCount' => array_values($cat),
-            'autoresLabels' => array_keys($autores), 'autoresCount' => array_values($autores),
             'watchlist' => $watchlist,
         ];
     }

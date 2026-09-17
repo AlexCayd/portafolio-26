@@ -5,14 +5,26 @@ namespace Model;
 class Categoria extends ActiveRecord {
 
     protected static $tabla = 'pys_categorias';
-    protected static $columnasDB = ['id', 'nombre'];
+    protected static $columnasDB = ['id', 'nombre', 'admite_serie'];
+
+    // La categoría que por sí misma es formato serie
+    const SERIE = 'Serie';
 
     public $id;
     public $nombre;
+    public $admite_serie;   // 1 = sus títulos pueden ser serie (docuserie, reality…)
 
     public function __construct($args = []) {
-        $this->id     = $args['id']     ?? null;
-        $this->nombre = $args['nombre'] ?? '';
+        $this->id           = $args['id']           ?? null;
+        $this->nombre       = $args['nombre']       ?? '';
+        $this->admite_serie = $args['admite_serie'] ?? 0;
+    }
+
+    // ¿Un título de esta categoría puede marcarse como serie?
+    public static function admiteSerie(string $nombre) : bool {
+        $n = self::$db->escape_string($nombre);
+        $r = self::$db->query("SELECT admite_serie FROM " . static::$tabla . " WHERE nombre = '{$n}' LIMIT 1")->fetch_assoc();
+        return $r && (int) $r['admite_serie'] === 1;
     }
 
     public static function todas() {

@@ -2,7 +2,7 @@
 <?php
 $ao_dom = 'https://alexanderoliva.com';
 $ao_url = $ao_dom . '/tekhne/' . ($post->slug ?: $post->id);
-$ao_img = $ao_dom . ($post->cover_img ? urlSubida('blog', $post->cover_img) : '/build/img/profile.png');
+$ao_img = $ao_dom . ($post->cover_img ? urlSubida('blog', $post->cover_img) : '/build/img/og-default.jpg');
 $ao_ld = [
     '@context' => 'https://schema.org',
     '@type'    => 'BlogPosting',
@@ -30,37 +30,32 @@ $ao_bc = [
 <script type="application/ld+json"><?php echo json_encode($ao_bc, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?></script>
 <div id="ao-app" data-theme="dark">
 <div data-barba-namespace="blog-articulo">
-    <header class="pg-top">
-        <a href="/" class="brand">Alexander <span>Oliva</span></a>
-        <div class="pg-actions">
-            <button type="button" id="pg-focus" class="pg-focus-btn pg-focus-fab" aria-pressed="false" title="Modo lectura">◍ Focus</button>
-            <a class="pg-back" href="/tekhne">Tékhne</a>
-            <a class="pg-wa" href="<?php echo waLink('Hola Alexander, leí tu artículo «' . $post->titulo . '».'); ?>" target="_blank" rel="noopener">Contáctame</a>
-        </div>
-    </header>
-
     <?php
-    $ao_grads = [
-        'repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 2px,transparent 2px 15px),linear-gradient(135deg,var(--accent) 0%,#1a0207 55%,#0b0b0c 100%)',
-        'radial-gradient(rgba(255,255,255,.14) 1px,transparent 1.6px) 0 0/17px 17px,radial-gradient(130% 130% at 24% 18%,var(--accent) 0%,#1a0207 52%,#0b0b0c 100%)',
-        'repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 13px),linear-gradient(115deg,#0b0b0c 18%,#1a0207 55%,var(--accent) 100%)',
-    ];
+    $ao_top_volver = ['url' => '/tekhne', 'texto' => 'Tékhne'];
+    $ao_top_wa     = 'Hola Alexander, leí tu artículo «' . $post->titulo . '».';
+    $ao_top_extra  = '<button type="button" id="pg-focus" class="pg-focus-btn pg-focus-fab" aria-pressed="false" title="Modo lectura">'
+                   . icono('focus') . ' Focus</button>';
     ?>
+    <?php include __DIR__ . '/../partials/pg-top.php'; ?>
+
     <!-- Hero a sangre (full-bleed) con GSAP -->
     <section class="art-hero" id="art-hero">
         <div class="art-hero-media" id="art-hero-media" style="view-transition-name:ao-cover">
             <?php if (!empty($post->cover_img)) : ?>
                 <img src="<?php echo urlSubida('blog', $post->cover_img); ?>" alt="<?php echo s($post->titulo); ?>">
             <?php else : ?>
-                <div class="art-hero-grad" style="background:<?php echo $ao_grads[(int) $post->id % count($ao_grads)]; ?>"></div>
+                <!-- Sin portada: el mismo gas interactivo del hero del home.
+                     paginas-foot.php lo monta con window.aoGas. -->
+                <canvas class="art-hero-gl" id="art-hero-gl" aria-hidden="true"></canvas>
+                <div class="art-hero-grad art-hero-grad--fallback" style="background:linear-gradient(135deg,var(--accent) 0%,#1a0207 55%,#0b0b0c 100%)"></div>
             <?php endif; ?>
         </div>
         <div class="art-hero-scrim"></div>
         <div class="art-hero-inner">
             <div class="pg-kicker art-hero-el">
                 <span class="acc"><?php echo s($post->categoria); ?></span>
-                <span><?php echo $post->fecha_pub ? strtoupper(date('d M Y', strtotime($post->fecha_pub))) : ''; ?></span>
-                <span><?php echo $post->tiempoLectura(); ?> MIN DE LECTURA</span>
+                <?php if ($post->fecha_pub) : ?><span><?php echo s(fechaLarga($post->fecha_pub)); ?></span><?php endif; ?>
+                <span><?php echo $post->tiempoLectura(); ?> min de lectura</span>
             </div>
             <h1 class="pg-title art-hero-el"><?php echo s($post->titulo); ?></h1>
             <?php if (!empty($post->descripcion)) : ?><p class="pg-lead art-hero-el"><?php echo s($post->descripcion); ?></p><?php endif; ?>
@@ -79,7 +74,7 @@ $ao_bc = [
             <span class="cur"><?php echo s($post->titulo); ?></span>
         </nav>
 
-        <article class="pg-body" data-anim>
+        <article class="pg-body" data-anim data-min="<?php echo (int) $post->tiempoLectura(); ?>">
             <?php echo $post->contenido; /* HTML saneado al guardar */ ?>
         </article>
 
@@ -91,6 +86,11 @@ $ao_bc = [
                             <?php if (!empty($ref->poster)) : ?><img class="thumb" src="<?php echo urlSubida('peliculas', $ref->poster); ?>" alt=""><?php else : ?><div class="thumb thumb-ph"><?php echo icono('film'); ?></div><?php endif; ?>
                             <div><div class="rk">RELACIONADO</div><h3><?php echo s($ref->titulo); ?></h3><p><?php echo s($ref->categoria); ?> · <?php echo s($ref->anio); ?> · Nota <?php echo number_format((float)$ref->nota, 0); ?></p></div>
                         </a>
+                    <?php elseif ($ao_r['tipo'] === 'videojuego') : /* el título vive en `nombre` */ ?>
+                        <div class="pg-ref">
+                            <?php if (!empty($ref->portada)) : ?><img class="thumb" src="<?php echo urlSubida('videojuegos', $ref->portada); ?>" alt=""><?php else : ?><div class="thumb thumb-ph"><?php echo icono('videojuegos'); ?></div><?php endif; ?>
+                            <div><div class="rk">RELACIONADO</div><h3><?php echo s($ref->nombre); ?></h3><p>Videojuego<?php echo $ref->horas2026() !== null ? ' · ' . number_format($ref->horas2026(), 0) . ' h jugadas' : ''; ?></p></div>
+                        </div>
                     <?php else : ?>
                         <div class="pg-ref">
                             <div class="thumb thumb-ph"><?php echo icono('libros'); ?></div>

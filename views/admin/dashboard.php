@@ -114,12 +114,13 @@ $anioPrev = $anioVida - 1;
 
 <div class="card" style="margin-top:24px">
     <div class="card-head">
-        <div><h2 style="margin:0">Visitas del sitio</h2><span class="mini-s" style="color:var(--muted)"><b id="vis-periodo"></b> en el periodo · <?php echo number_format($visitasTotal); ?> totales</span></div>
+        <div><h2 style="margin:0">Visitas del sitio</h2><span class="mini-s" style="color:var(--muted)"><b id="vis-periodo"></b> <span id="vis-periodo-txt">en los últimos 7 días</span> · <?php echo number_format($visitasTotal); ?> totales</span></div>
         <div class="range-tabs" id="range-tabs">
             <button data-range="7" class="active">7 días</button>
             <button data-range="30">30 días</button>
             <button data-range="6m">6 meses</button>
             <button data-range="12m">12 meses</button>
+            <button data-range="todo">Todo el histórico</button>
         </div>
     </div>
     <canvas id="visitasChart" style="max-height:300px"></canvas>
@@ -127,27 +128,14 @@ $anioPrev = $anioVida - 1;
 
 <div class="card" style="margin-top:24px">
     <div class="card-head">
-        <div><h2 style="margin:0">Páginas más visitadas</h2><span class="mini-s" style="color:var(--muted)">Todas las páginas del sitio, ordenadas por visitas</span></div>
+        <div><h2 style="margin:0">Páginas más visitadas</h2><span class="mini-s" style="color:var(--muted)" id="paginas-sub">Ordenadas por visitas en el periodo</span></div>
     </div>
     <div class="tabla-wrap">
         <table class="tabla tabla--paginas" id="tabla-paginas">
             <thead>
                 <tr><th style="width:44px">#</th><th>Página</th><th>Ruta</th><th style="text-align:right">Visitas</th><th></th></tr>
             </thead>
-            <tbody>
-                <?php foreach ($paginas as $ao_i => $pag) : ?>
-                    <tr>
-                        <td class="mini-s"><?php echo $ao_i + 1; ?></td>
-                        <td><span class="pg-titulo"><?php echo s($pag->titulo ?: '(sin título)'); ?></span></td>
-                        <td><a class="pg-ruta" href="<?php echo s($pag->ruta); ?>" target="_blank" rel="noopener"><?php echo s($pag->ruta); ?></a></td>
-                        <td style="text-align:right"><span class="pg-visitas"><?php echo number_format((int) $pag->total); ?></span></td>
-                        <td class="acciones"><a class="act-btn" href="<?php echo s($pag->ruta); ?>" target="_blank" rel="noopener" title="Ver página pública"><?php echo icono('externo'); ?></a></td>
-                    </tr>
-                <?php endforeach; ?>
-                <?php if (empty($paginas)) : ?>
-                    <tr><td colspan="5" class="mini-s" style="text-align:center;padding:26px 0;color:var(--muted)">Aún no se registran visitas por página.</td></tr>
-                <?php endif; ?>
-            </tbody>
+            <tbody id="paginas-body"></tbody>
         </table>
     </div>
     <div class="tabla-pager" id="paginas-pager" hidden>
@@ -155,60 +143,103 @@ $anioPrev = $anioVida - 1;
         <span class="tabla-pager-info" id="paginas-pager-info"></span>
         <button type="button" class="btn btn--sm btn--ghost" data-dir="next">Siguiente ›</button>
     </div>
+    <!-- Solo se muestra si en el periodo hay rutas sin desglose por fecha -->
+    <p class="mini-s pg-nota" id="paginas-nota" hidden>
+        <span class="pg-acum">Acumulado</span>
+        Rutas visitadas en este periodo que aún no tienen desglose por fecha<?php echo !empty($inicioDetalle) ? ' (empezó el ' . s(fechaLarga($inicioDetalle)) . ')' : ''; ?>: la cifra es su total histórico, no las visitas del periodo.
+    </p>
 </div>
 
 <script>
 (function () {
-    // Paginación en cliente de la tabla de páginas (8 filas por página).
-    var tabla = document.getElementById('tabla-paginas');
-    if (!tabla) return;
-    var filas = Array.prototype.slice.call(tabla.querySelectorAll('tbody tr')).filter(function (tr) { return tr.querySelector('.pg-ruta'); });
-    var pager = document.getElementById('paginas-pager');
-    var info  = document.getElementById('paginas-pager-info');
-    var POR = 8, actual = 0, total = Math.ceil(filas.length / POR);
-    if (filas.length <= POR) return;              // sin paginación si cabe todo
-    pager.hidden = false;
+    if (typeof Chart === 'undefined') return;
 
-    function render() {
-        var ini = actual * POR, fin = ini + POR;
-        filas.forEach(function (tr, i) { tr.style.display = (i >= ini && i < fin) ? '' : 'none'; });
+    // Una sola fuente para las dos vistas: el selector de periodo manda sobre
+    // la gráfica y sobre la tabla de páginas.
+    var series  = <?php echo json_encode($visSeries, JSON_UNESCAPED_UNICODE); ?>;
+    var paginas = <?php echo json_encode($paginasSeries, JSON_UNESCAPED_UNICODE); ?>;
+    var ETIQUETA = { '7': 'en los últimos 7 días', '30': 'en los últimos 30 días',
+                     '6m': 'en los últimos 6 meses', '12m': 'en los últimos 12 meses',
+                     'todo': 'en todo el histórico' };
+    var RANGO = '7';
+
+    var RED = '#ff0a24', INK = '#9a9aa4', GRID = 'rgba(255,255,255,.07)';
+    Chart.defaults.color = INK; Chart.defaults.font.family = "'Space Grotesk', sans-serif";
+
+    var periodoEl  = document.getElementById('vis-periodo');
+    var periodoTxt = document.getElementById('vis-periodo-txt');
+    function fmt(n) { return n.toLocaleString('es-MX') + ' visitas'; }
+
+    var chart = new Chart(document.getElementById('visitasChart'), {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: 'Visitas', data: [], borderColor: RED, backgroundColor: 'rgba(255,10,36,.12)', borderWidth: 2, fill: true, tension: .32, pointRadius: 3, pointBackgroundColor: RED }] },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: GRID } }, x: { grid: { display: false } } } }
+    });
+
+    /* ---- Tabla de páginas: se repinta con el periodo ---- */
+    var cuerpo = document.getElementById('paginas-body');
+    var pager  = document.getElementById('paginas-pager');
+    var info   = document.getElementById('paginas-pager-info');
+    var nota   = document.getElementById('paginas-nota');
+    var ICO_EXT = <?php echo json_encode(icono('externo'), JSON_HEX_TAG); ?>;
+    var POR = 8, actual = 0, filas = [];
+
+    function esc(s) {
+        return String(s === null || s === undefined ? '' : s)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function pintarTabla() {
+        var total = Math.ceil(filas.length / POR) || 1;
+        if (actual >= total) actual = total - 1;
+        if (!filas.length) {
+            cuerpo.innerHTML = '<tr><td colspan="5" class="mini-s" style="text-align:center;padding:26px 0;color:var(--muted)">Sin visitas registradas en este periodo.</td></tr>';
+            pager.hidden = true;
+            return;
+        }
+        var ini = actual * POR;
+        cuerpo.innerHTML = filas.slice(ini, ini + POR).map(function (p, i) {
+            var ruta = esc(p.ruta);
+            // Las acumuladas no compiten en el ranking del periodo: sin puesto
+            return '<tr' + (p.acumulado ? ' class="is-acumulado"' : '') + '>' +
+                '<td class="mini-s">' + (p.acumulado ? '—' : (ini + i + 1)) + '</td>' +
+                '<td><span class="pg-titulo">' + esc(p.titulo || '(sin título)') + '</span></td>' +
+                '<td><a class="pg-ruta" href="' + ruta + '" target="_blank" rel="noopener">' + ruta + '</a></td>' +
+                '<td style="text-align:right">' + (p.acumulado ? '<span class="pg-acum" title="Total histórico: esta ruta aún no tiene visitas por fecha">Acumulado</span> ' : '') +
+                    '<span class="pg-visitas">' + Number(p.total).toLocaleString('es-MX') + '</span></td>' +
+                '<td class="acciones"><a class="act-btn" href="' + ruta + '" target="_blank" rel="noopener" title="Ver página pública">' + ICO_EXT + '</a></td>' +
+                '</tr>';
+        }).join('');
+
+        pager.hidden = filas.length <= POR;
         info.textContent = 'Página ' + (actual + 1) + ' de ' + total;
         pager.querySelector('[data-dir="prev"]').disabled = actual === 0;
         pager.querySelector('[data-dir="next"]').disabled = actual >= total - 1;
     }
-    pager.querySelector('[data-dir="prev"]').addEventListener('click', function () { if (actual > 0) { actual--; render(); } });
-    pager.querySelector('[data-dir="next"]').addEventListener('click', function () { if (actual < total - 1) { actual++; render(); } });
-    render();
-})();
-</script>
+    pager.querySelector('[data-dir="prev"]').addEventListener('click', function () { if (actual > 0) { actual--; pintarTabla(); } });
+    pager.querySelector('[data-dir="next"]').addEventListener('click', function () { actual++; pintarTabla(); });
 
-<script>
-(function () {
-    if (typeof Chart === 'undefined') return;
-    var series = {
-        '7':   <?php echo json_encode($vis7, JSON_UNESCAPED_UNICODE); ?>,
-        '30':  <?php echo json_encode($vis30, JSON_UNESCAPED_UNICODE); ?>,
-        '6m':  <?php echo json_encode($vis6m, JSON_UNESCAPED_UNICODE); ?>,
-        '12m': <?php echo json_encode($vis12m, JSON_UNESCAPED_UNICODE); ?>
-    };
-    var RED = '#ff0a24', INK = '#9a9aa4', GRID = 'rgba(255,255,255,.07)';
-    Chart.defaults.color = INK; Chart.defaults.font.family = "'Space Grotesk', sans-serif";
-    var periodoEl = document.getElementById('vis-periodo');
-    function fmt(n) { return n.toLocaleString('es-MX') + ' visitas'; }
-    periodoEl.textContent = fmt(series['7'].total);
-    var chart = new Chart(document.getElementById('visitasChart'), {
-        type: 'line',
-        data: { labels: series['7'].labels, datasets: [{ label: 'Visitas', data: series['7'].data, borderColor: RED, backgroundColor: 'rgba(255,10,36,.12)', borderWidth: 2, fill: true, tension: .32, pointRadius: 3, pointBackgroundColor: RED }] },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: GRID } }, x: { grid: { display: false } } } }
-    });
+    function aplicar(rango) {
+        RANGO = rango;
+        var s = series[rango] || { labels: [], data: [], total: 0 };
+        chart.data.labels = s.labels;
+        chart.data.datasets[0].data = s.data;
+        chart.update();
+        periodoEl.textContent = fmt(s.total);
+        periodoTxt.textContent = ETIQUETA[rango] || '';
+
+        filas = paginas[rango] || [];
+        actual = 0;                                  // el periodo nuevo empieza en la página 1
+        pintarTabla();
+        nota.hidden = !filas.some(function (p) { return p.acumulado; });
+    }
+
     document.querySelectorAll('#range-tabs button').forEach(function (b) {
         b.addEventListener('click', function () {
             document.querySelectorAll('#range-tabs button').forEach(function (x) { x.classList.remove('active'); });
             b.classList.add('active');
-            var s = series[b.dataset.range];
-            chart.data.labels = s.labels; chart.data.datasets[0].data = s.data; chart.update();
-            periodoEl.textContent = fmt(s.total);
+            aplicar(b.dataset.range);
         });
     });
+    aplicar('7');
 })();
 </script>

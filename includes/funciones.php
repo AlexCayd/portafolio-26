@@ -159,9 +159,28 @@ function icono(string $n) : string {
         'trash' => '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
         'descargar' => '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',
         'documento' => '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>',
+        'expandir' => '<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>',
+        'focus' => '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/>',
+        'ojo' => '<path d="M1.6 12S5.6 5.2 12 5.2 22.4 12 22.4 12 18.4 18.8 12 18.8 1.6 12 1.6 12z"/><circle cx="12" cy="12" r="3.1"/>',
+        'arriba' => '<path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>',
+        'abajo' => '<path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/>',
     ];
     $inner = $p[$n] ?? '';
     return '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' . $inner . '</svg>';
+}
+
+/**
+ * Fecha larga en español: '2025-06-01' → '1 de junio de 2025'.
+ * date() devuelve los meses en inglés, así que se traducen aquí.
+ */
+function fechaLarga(?string $fecha) : string {
+    $fecha = trim((string) $fecha);
+    if ($fecha === '') return '';
+    $t = strtotime($fecha);
+    if (!$t) return '';
+    $meses = ['enero','febrero','marzo','abril','mayo','junio',
+              'julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    return (int) date('j', $t) . ' de ' . $meses[(int) date('n', $t) - 1] . ' de ' . date('Y', $t);
 }
 
 /**
@@ -182,15 +201,24 @@ function asset(string $ruta) : string {
  * hidden antes de enviar, de modo que el controlador sigue recibiendo
  * "aaaa-mm-dd" en $_POST[$name].
  */
-function campoFechaDmy(string $name, ?string $iso, string $label, string $clases = 'campo') : string {
+function campoFechaDmy(string $name, ?string $iso, string $label, string $clases = 'campo', bool $conHoy = false) : string {
     $iso = trim((string) $iso);
     $dmy = $iso !== '' ? date('d/m/Y', strtotime($iso)) : '';
-    return '<label class="' . s($clases) . '">'
-         . '<span>' . s($label) . '</span>'
-         . '<input type="text" data-fecha-dmy="' . s($name) . '" inputmode="numeric" maxlength="10" '
+    // $conHoy: atajo «Hoy» en la fila del rótulo (lo engancha initFechasDmy). No
+    // va junto al input para no cambiar la altura del campo frente a sus vecinos.
+    // Con botón el contenedor NO puede ser <label>: el botón sería su primer control
+    // etiquetable, y un clic en el rótulo (o en el hueco del calendario, que vive
+    // dentro) lo activaría y pisaría la fecha con la de hoy. El input conserva su
+    // nombre accesible con aria-label.
+    $hoy  = $conHoy ? '<button type="button" class="fecha-hoy" data-fecha-hoy title="Poner la fecha de hoy">Hoy</button>' : '';
+    $tag  = $conHoy ? 'div' : 'label';
+    $aria = $conHoy ? 'aria-label="' . s($label) . '" ' : '';
+    return '<' . $tag . ' class="' . s($clases) . '">'
+         . '<span class="campo-rotulo">' . s($label) . $hoy . '</span>'
+         . '<input type="text" ' . $aria . 'data-fecha-dmy="' . s($name) . '" inputmode="numeric" maxlength="10" '
          . 'placeholder="dd/mm/aaaa" autocomplete="off" value="' . s($dmy) . '">'
          . '<input type="hidden" name="' . s($name) . '" value="' . s($iso) . '">'
-         . '</label>';
+         . '</' . $tag . '>';
 }
 
 /**

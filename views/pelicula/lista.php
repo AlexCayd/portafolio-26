@@ -1,13 +1,8 @@
 <link rel="stylesheet" href="/build/css/paginas.css">
 <div id="ao-app" data-theme="dark">
 <div data-barba-namespace="peliculas-lista">
-    <header class="pg-top">
-        <a href="/" class="brand">Alexander <span>Oliva</span></a>
-        <div class="pg-actions">
-            <a class="pg-back" href="/tekhne">Tékhne</a>
-            <a class="pg-wa" href="<?php echo waLink('Hola Alexander, quiero platicar contigo.'); ?>" target="_blank" rel="noopener">Contáctame</a>
-        </div>
-    </header>
+    <?php $ao_top_volver = ['url' => '/tekhne', 'texto' => 'Tékhne']; ?>
+    <?php include __DIR__ . '/../partials/pg-top.php'; ?>
 
     <main class="pg pg--wide">
         <nav class="pg-crumb" data-anim aria-label="Ruta de navegación">
@@ -33,7 +28,7 @@
         <div class="rec-grid" id="pel-grid">
             <?php foreach ($peliculas as $p) : $n = (float) $p->nota; $tiene = !empty(trim((string) $p->comentario)); ?>
                 <a class="sel-card" href="/tekhne/pelicula/<?php echo generarSlug($p->titulo); ?>" data-anim title="<?php echo s($p->titulo); ?>"
-                   data-search="<?php echo s($p->titulo . ' ' . $p->categoria . ' ' . $p->autor . ' ' . $p->anio); ?>">
+                   data-search="<?php echo s($p->titulo . ' ' . $p->categoriaTexto() . ' ' . $p->personasTexto() . ' ' . $p->anio); ?>">
                     <div class="sel-poster">
                         <?php if (!empty($p->poster)) : ?>
                             <img src="<?php echo urlSubida('peliculas', $p->poster); ?>" alt="<?php echo s($p->titulo); ?>" loading="lazy">
@@ -43,7 +38,7 @@
                         <?php if ($tiene && $n > 0) : ?><span class="sel-badge"><?php echo icono('estrella'); ?><?php echo number_format($n, 0); ?></span><?php endif; ?>
                     </div>
                     <h3 class="sel-name"><?php echo s($p->titulo); ?></h3>
-                    <p class="sel-meta"><?php echo s($p->categoria); ?><?php echo $p->anio ? ' · ' . s($p->anio) : ''; ?></p>
+                    <p class="sel-meta"><?php echo s($p->categoriaTexto()); ?><?php echo $p->anio ? ' · ' . s($p->anio) : ''; ?></p>
                 </a>
             <?php endforeach; ?>
             <?php if (empty($peliculas)) : ?><p style="color:var(--muted)">Aún no hay títulos registrados.</p><?php endif; ?>
@@ -92,7 +87,10 @@
         var visibles = aplicar(q);
         if (estado) {
             Flip.from(estado, {
-                duration: .5, ease: 'power2.inOut', absolute: true, stagger: .015,
+                // stagger por reparto y no por elemento: con `each: .015` y un
+                // catálogo de 300 títulos la cascada duraba 4,5 segundos. Con
+                // `amount` el total es siempre .35 s, haya 12 fichas o 400.
+                duration: .5, ease: 'power2.inOut', absolute: true, stagger: { amount: .35 },
                 onEnter: function (els) { return gsap.fromTo(els, { opacity: 0, scale: .86 }, { opacity: 1, scale: 1, duration: .4, ease: 'power2.out' }); },
                 onLeave: function (els) { return gsap.to(els, { opacity: 0, scale: .86, duration: .25, ease: 'power2.in' }); }
             });
@@ -102,9 +100,18 @@
         if (!noneMsg.hidden) noneMsg.querySelector('span').textContent = raw;
     }
 
-    input.addEventListener('input', filtrar);
-    clearBtn.addEventListener('click', function () { input.value = ''; filtrar(); input.focus(); });
-    input.addEventListener('keydown', function (e) { if (e.key === 'Escape') { input.value = ''; filtrar(); } });
+    // Cada pulsación disparaba un Flip completo: dos pasadas de medición sobre
+    // TODAS las tarjetas del catálogo, más una tween por tarjeta, más el borrado
+    // de las anteriores 80 ms después. Teclear era el trabajo más caro de la
+    // página. Se espera a que la persona pare; 140 ms no se notan al escribir.
+    var tFiltro = null;
+    input.addEventListener('input', function () {
+        clearBtn.hidden = input.value.trim() === '';   // esto sí, al instante
+        clearTimeout(tFiltro);
+        tFiltro = setTimeout(filtrar, 140);
+    });
+    clearBtn.addEventListener('click', function () { clearTimeout(tFiltro); input.value = ''; filtrar(); input.focus(); });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Escape') { clearTimeout(tFiltro); input.value = ''; filtrar(); } });
 })();
 </script>
 

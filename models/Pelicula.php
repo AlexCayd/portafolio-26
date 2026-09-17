@@ -5,15 +5,15 @@ namespace Model;
 class Pelicula extends ActiveRecord {
 
     protected static $tabla = 'peliculas_series';
-    protected static $columnasDB = ['id', 'categoria', 'titulo', 'autor', 'anio', 'duracion', 'nota', 'fecha_vista', 'poster', 'comentario', 'seleccion'];
+    protected static $columnasDB = ['id', 'categoria', 'es_serie', 'titulo', 'anio', 'duracion', 'nota', 'fecha_vista', 'poster', 'comentario', 'seleccion'];
 
     // Umbral de aprobación: nota >= 6
     const UMBRAL_APROBADO = 6;
 
     public $id;
     public $categoria;
+    public $es_serie;       // 1 = formato serie (también un documental o reality que es serie)
     public $titulo;
-    public $autor;
     public $anio;
     public $duracion;
     public $nota;
@@ -22,11 +22,15 @@ class Pelicula extends ActiveRecord {
     public $comentario;
     public $seleccion;
 
+    // Directores / creadores. No es columna: vive en `pelicula_personas` y se
+    // rellena con hidratarPersonas() o personas().
+    public $personas = null;
+
     public function __construct($args = []) {
         $this->id          = $args['id']          ?? null;
         $this->categoria   = $args['categoria']   ?? '';
+        $this->es_serie    = $args['es_serie']    ?? 0;
         $this->titulo      = $args['titulo']      ?? '';
-        $this->autor       = $args['autor']       ?? '';
         $this->anio        = $args['anio']        ?? null;
         $this->duracion    = $args['duracion']    ?? null;
         $this->nota        = $args['nota']        ?? 0;
@@ -36,25 +40,115 @@ class Pelicula extends ActiveRecord {
         $this->seleccion   = $args['seleccion']   ?? 0;
     }
 
-    // Busca un título existente por nombre exacto (case-insensitive)
-    public static function porTitulo(string $titulo) {
-        $t = self::$db->escape_string(trim($titulo));
-        $r = self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE LOWER(titulo) = LOWER('{$t}') LIMIT 1");
-        return array_shift($r);
+    /* ------------------------------------------------- Directores / creadores */
+
+    // Nombres de este título (consulta perezosa; para listas usa hidratarPersonas)
+    public function personas() : array {
+        if ($this->personas === null) {
+            $this->personas = $this->id ? PeliculaPersona::porPelicula((int) $this->id) : [];
+        }
+        return $this->personas;
     }
 
-    // Búsqueda para autocompletar
+    // «A», «A y B», «A, B y C»
+    public function personasTexto() : string {
+        $n = $this->personas();
+        if (!$n) return '';
+        if (count($n) === 1) return $n[0];
+        $ultimo = array_pop($n);
+        return implode(', ', $n) . ' y ' . $ultimo;
+    }
+
+    // ¿Se conoce al director/creador?
+    public function personaConocida() : bool {
+        $n = $this->personas();
+        return $n && $n[0] !== PeliculaPersona::DESCONOCIDO;
+    }
+
+    /**
+     * Rellena `personas` de una lista completa con UNA sola consulta.
+     * Obligatorio en catálogos y tablas: evita mil consultas sueltas.
+     */
+    public static function hidratarPersonas(array $peliculas) : array {
+        if (!$peliculas) return $peliculas;
+        $mapa = PeliculaPersona::mapa();
+        foreach ($peliculas as $p) {
+            $p->personas = $mapa[(int) $p->id] ?? [];
+        }
+        return $peliculas;
+    }
+
+    /**
+     * Top N del año (estrenado Y visto en $anio) con su movimiento.
+     *
+     * El «antes» es el ranking de lo visto hasta el día anterior al último día
+     * con fecha vista: todo lo visto ese día cuenta junto. Si ese día no movió
+     * nada, el ranking entero sale sin cambios.
+     *
+     * Devuelve [['peli' => Pelicula, 'mov' => 'nuevo'|int], …] donde int > 0 es
+     * que subió esos puestos, < 0 que bajó y 0 que no se movió.
+     */
+    public static function rankingAnio(array $todas, int $anio, int $n = 10) : array {
+        $delAnio = array_values(array_filter($todas, fn($p) =>
+            !empty($p->fecha_vista)
+            && (int) date('Y', strtotime((string) $p->fecha_vista)) === $anio
+            && (int) $p->anio === $anio
+        ));
+
+        // Un solo criterio para el ranking actual y los intermedios: nota, y a
+        // igualdad, lo visto más recientemente primero.
+        $orden = fn($a, $b) => [(float) $b->nota, (string) $b->fecha_vista, (int) $b->id]
+                           <=> [(float) $a->nota, (string) $a->fecha_vista, (int) $a->id];
+        $top = function (array $lista) use ($orden, $n) {
+            usort($lista, $orden);
+            return array_map(fn($p) => (int) $p->id, array_slice($lista, 0, $n));
+        };
+
+        $ultimoDia = $delAnio ? max(array_map(fn($p) => (string) $p->fecha_vista, $delAnio)) : '';
+        $antes = $top(array_filter($delAnio, fn($p) => (string) $p->fecha_vista < $ultimoDia));
+
+        $actual = $delAnio;
+        usort($actual, $orden);
+        $posAntes = array_flip($antes);
+        $out = [];
+        foreach (array_slice($actual, 0, $n) as $i => $p) {
+            $id = (int) $p->id;
+            $out[] = ['peli' => $p, 'mov' => isset($posAntes[$id]) ? $posAntes[$id] - $i : 'nuevo'];
+        }
+        return $out;
+    }
+
+    /**
+     * Todos los registros con ese título exacto (sin distinguir mayúsculas).
+     * Puede haber varios: remakes, series y películas homónimas. El formulario
+     * los ofrece en «¿Te estás refiriendo a…?» antes de crear uno nuevo.
+     */
+    public static function porTituloTodos(string $titulo) : array {
+        $t = self::$db->escape_string(trim($titulo));
+        return self::hidratarPersonas(
+            self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE LOWER(titulo) = LOWER('{$t}') ORDER BY anio DESC, fecha_vista DESC, id DESC")
+        );
+    }
+
+    // Búsqueda para autocompletar (por título o por director/creador)
     public static function buscar(string $q) {
         $q = self::$db->escape_string($q);
-        return self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE titulo LIKE '%{$q}%' OR autor LIKE '%{$q}%' ORDER BY titulo ASC LIMIT 8");
+        return self::consultarSQL("SELECT * FROM " . static::$tabla . "
+                                   WHERE titulo LIKE '%{$q}%'
+                                      OR id IN (SELECT pelicula_id FROM pelicula_personas WHERE nombre LIKE '%{$q}%')
+                                   ORDER BY titulo ASC LIMIT 8");
     }
 
     // Autores/creadores distintos (autocompletar director)
     public static function buscarAutores(string $q) : array {
         $q = self::$db->escape_string($q);
-        $res = self::$db->query("SELECT DISTINCT autor FROM " . static::$tabla . " WHERE autor LIKE '%{$q}%' AND autor <> '' AND autor <> '—' ORDER BY autor ASC LIMIT 8");
+        $desconocido = PeliculaPersona::DESCONOCIDO;
+        $res = self::$db->query("SELECT DISTINCT nombre FROM pelicula_personas
+                                 WHERE nombre LIKE '%{$q}%' AND nombre <> '{$desconocido}'
+                                 ORDER BY nombre ASC LIMIT 8");
         $out = [];
-        while ($r = $res->fetch_assoc()) { $out[] = $r['autor']; }
+        while ($r = $res->fetch_assoc()) { $out[] = $r['nombre']; }
+        $res->free();
         return $out;
     }
 
@@ -63,13 +157,37 @@ class Pelicula extends ActiveRecord {
         return (float) $this->nota >= self::UMBRAL_APROBADO;
     }
 
-    // Etiqueta de la persona: "Creador" para series, "Director" para el resto
-    public function personaLabel() : string {
-        return $this->categoria === 'Serie' ? 'Creador' : 'Director';
+    /* ------------------------------------------------- Categoría y formato */
+
+    /**
+     * ¿Es serie? La categoría «Serie» siempre lo es; el resto solo si se marcó
+     * (un documental o un reality en formato serie). Las series no llevan
+     * duración y su persona es «Creador».
+     */
+    public function esSerie() : bool {
+        return $this->categoria === Categoria::SERIE || (int) $this->es_serie === 1;
     }
 
+    // «Documental · Serie» cuando la categoría se combina con serie; si no, la categoría sola
+    public function categoriaTexto() : string {
+        $cat = (string) $this->categoria;
+        if ($cat !== Categoria::SERIE && (int) $this->es_serie === 1) return trim($cat . ' · Serie', ' ·');
+        return $cat;
+    }
+
+    // Etiqueta de la persona: "Creador" para series, "Director" para el resto.
+    // Se pluraliza sola cuando el título tiene más de una.
+    public function personaLabel() : string {
+        $plural = count($this->personas()) > 1;
+        if ($this->esSerie()) return $plural ? 'Creadores' : 'Creador';
+        return $plural ? 'Directores' : 'Director';
+    }
+
+    // Listas completas: se hidratan los directores de una sola consulta
     public static function ordenadas() {
-        return self::consultarSQL("SELECT * FROM " . static::$tabla . " ORDER BY fecha_vista DESC, id DESC");
+        return self::hidratarPersonas(
+            self::consultarSQL("SELECT * FROM " . static::$tabla . " ORDER BY fecha_vista DESC, id DESC")
+        );
     }
 
     // Ficha pública por slug del título (no hay columna slug: se compara generado)
@@ -94,7 +212,9 @@ class Pelicula extends ActiveRecord {
 
     // Selección del autor: títulos marcados a mano desde el panel
     public static function perfectas() {
-        return self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE seleccion = 1 ORDER BY fecha_vista DESC, id DESC");
+        return self::hidratarPersonas(
+            self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE seleccion = 1 ORDER BY fecha_vista DESC, id DESC")
+        );
     }
 
     // Distribución de la selección por mes (Ene→Dic) de un año dado

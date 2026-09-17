@@ -1,0 +1,171 @@
+/* =====================================================================
+   Login del panel — /login
+   Concepto: una puerta, no un formulario. La pantalla se parte en dos: a la
+   izquierda la marca sobre el mismo humo rojo del sitio público (aquí resuelto
+   con gradientes, sin WebGL: una pantalla de acceso no debe cargar Three.js);
+   a la derecha, lo único que hay que hacer. El PIN es el protagonista.
+   Se carga desde admin.scss.
+   ===================================================================== */
+
+.auth-body {
+  min-height: 100vh; min-height: 100dvh;
+  margin: 0; padding: 0;
+  background: var(--bg); color: var(--text);
+  display: grid; grid-template-columns: 1.05fr .95fr;
+}
+
+/* ---------------------------------------------------- Panel de marca */
+.auth-aside {
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: clamp(32px, 4vw, 56px);
+  background: #08080a;
+  isolation: isolate;
+}
+
+/* El humo: tres capas que respiran a distinto ritmo */
+.auth-humo { position: absolute; inset: -20%; z-index: -2; pointer-events: none; }
+.auth-humo span {
+  position: absolute; border-radius: 50%; filter: blur(70px);
+  animation: auth-deriva 22s ease-in-out infinite;
+}
+.auth-humo span:nth-child(1) { width: 62%; height: 62%; top: -6%;  left: -8%;  background: rgba(255,10,36,.55); }
+.auth-humo span:nth-child(2) { width: 54%; height: 54%; bottom: -4%; right: -6%; background: rgba(138,10,23,.65); animation-delay: -7s; }
+.auth-humo span:nth-child(3) { width: 46%; height: 46%; top: 38%;  left: 48%;  background: rgba(92,4,19,.75);  animation-delay: -13s; }
+
+/* Trama fina encima: le quita el aire de «degradado de plantilla» */
+.auth-aside::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 1px, transparent 1px 7px),
+    radial-gradient(120% 90% at 20% 10%, transparent 40%, rgba(8,8,10,.86) 100%);
+}
+
+@keyframes auth-deriva {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(6%, -5%) scale(1.14); }
+  66%      { transform: translate(-5%, 4%) scale(.9); }
+}
+
+.auth-marca { display: flex; align-items: center; gap: 12px; }
+.auth-mono {
+  width: 40px; height: 40px; flex: none; display: grid; place-items: center;
+  border-radius: 12px; background: var(--accent); color: #fff;
+  font-weight: 700; font-size: .95rem; letter-spacing: -.02em;
+  box-shadow: 0 6px 20px rgba(255,10,36,.45);
+}
+.auth-marca-txt { font-weight: 700; font-size: 1rem; letter-spacing: -.01em; }
+.auth-marca-txt span { color: var(--accent); }
+
+.auth-lema {
+  max-width: 18ch; margin: 0;
+  font-size: clamp(2rem, 3.6vw, 3.4rem); font-weight: 700;
+  line-height: 1.02; letter-spacing: -.03em;
+}
+.auth-lema em { font-style: normal; color: var(--accent); }
+.auth-pie {
+  display: flex; gap: 10px; align-items: center;
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .18em;
+  text-transform: uppercase; color: rgba(255,255,255,.5);
+}
+.auth-pie::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+
+/* ---------------------------------------------------- Panel del formulario */
+.auth-wrap {
+  display: grid; place-items: center;
+  padding: clamp(28px, 4vw, 56px);
+  background: var(--bg);
+}
+.auth-card { width: 100%; max-width: 380px; }
+
+.auth-kicker { font-family: var(--mono); font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
+.auth-title { margin: 12px 0 6px; font-size: 1.7rem; letter-spacing: -.02em; }
+.auth-sub { margin: 0 0 26px; color: var(--muted); font-size: .92rem; line-height: 1.5; }
+
+.auth-form { display: flex; flex-direction: column; gap: 20px; }
+/* El rótulo del PIN no es hijo directo de .campo (va dentro de .auth-pin-head):
+   sin esta segunda selección se quedaba a 16px sin versalitas, desalineado
+   con «Usuario». */
+.auth-form .campo > span,
+.auth-form .auth-pin-head > span { display: block; font-size: .72rem; letter-spacing: .07em; text-transform: uppercase; color: var(--muted-2); margin-bottom: 8px; }
+.auth-form input[type="text"] {
+  width: 100%; background: var(--surface-2); border: 1px solid var(--line-2); color: var(--text);
+  border-radius: 12px; padding: 13px 15px; font: inherit; font-size: .95rem;
+  transition: border-color .18s, box-shadow .18s;
+}
+.auth-form input[type="text"]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* ---------------------------------------------------- PIN */
+.auth-pin-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+/* Margen a cero: el margin-bottom del rótulo lo pone ya .auth-pin-head */
+.auth-form .auth-pin-head > span { margin-bottom: 0; }
+.auth-pin-head { margin-bottom: 8px; }
+.auth-ojo {
+  background: none; border: 1px solid transparent; cursor: pointer;
+  /* 24px de alto real: antes el botón medía lo que el icono (16px) */
+  min-height: 28px; padding: 4px 8px; margin-right: -8px; border-radius: 8px;
+  color: var(--muted); display: inline-flex; align-items: center; gap: 6px;
+  font: inherit; font-size: .7rem; letter-spacing: .06em; text-transform: uppercase;
+  transition: color .18s, border-color .18s, background .18s;
+}
+.auth-ojo:hover { color: var(--text); background: var(--surface-2); }
+.auth-ojo:focus-visible { outline: none; color: var(--text); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.auth-ojo .ico { width: 16px; height: 16px; }
+
+.pin-group { display: flex; gap: 10px; }
+.pin-box {
+  flex: 1; min-width: 0; text-align: center;
+  font-family: var(--mono); font-size: 1.45rem; font-weight: 700;
+  padding: 15px 0; color: var(--text);
+  background: var(--surface-2); border: 1px solid var(--line-2); border-radius: 12px;
+  transition: border-color .18s, box-shadow .18s, background .18s, transform .18s cubic-bezier(.16,1,.3,1);
+}
+/* Casilla ya escrita: se marca sin gritar */
+.pin-box.is-full { border-color: color-mix(in srgb, var(--accent) 45%, var(--line-2)); background: var(--surface-3); }
+.pin-box:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  transform: translateY(-2px);
+}
+/* Los seis dígitos puestos: el formulario se envía solo, así que se avisa */
+.pin-group.is-listo .pin-box { border-color: var(--accent); }
+
+.auth-form .btn--block { padding: 14px; border-radius: 12px; font-size: .95rem; }
+.auth-form .btn[disabled] { opacity: .6; pointer-events: none; }
+
+/* Error: el aviso y un temblor corto, que es lo que se entiende sin leer */
+.alerta--error { animation: auth-temblor .4s ease; }
+.pin-group.is-error .pin-box { border-color: var(--c-red); box-shadow: 0 0 0 3px rgba(229,16,34,.16); }
+.pin-group.is-error { animation: auth-temblor .4s ease; }
+@keyframes auth-temblor {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-6px); }
+  40%, 60% { transform: translateX(6px); }
+}
+
+.auth-back {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 26px;
+  color: var(--muted); text-decoration: none; font-size: .85rem;
+  transition: color .18s;
+}
+.auth-back:hover { color: var(--accent); }
+
+/* ---------------------------------------------------- Responsive */
+@media (max-width: 900px) {
+  .auth-body { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .auth-aside { padding: 26px 22px 30px; gap: 22px; min-height: 230px; }
+  .auth-lema { font-size: clamp(1.7rem, 7vw, 2.3rem); max-width: 14ch; }
+  .auth-wrap { padding: 30px 22px 44px; align-items: start; }
+  .auth-card { max-width: 420px; }
+}
+@media (max-width: 420px) {
+  .pin-group { gap: 7px; }
+  .pin-box { font-size: 1.15rem; padding: 13px 0; border-radius: 10px; }
+  .auth-title { font-size: 1.45rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-humo span { animation: none; }
+  .pin-box, .alerta--error, .pin-group.is-error { transition: none; animation: none; }
+}

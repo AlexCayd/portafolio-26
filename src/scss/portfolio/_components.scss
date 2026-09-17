@@ -7,18 +7,35 @@
 // Credenciales: elevar sin solaparse con las vecinas
 #ao-app .ao-cert { position: relative; }
 
-// Tékhne en la landing: la sección muestra como mucho 3 entradas.
-// Las columnas son fijas (no auto-fit) para que con una o dos entradas la
-// tarjeta conserve su ancho en vez de estirarse a lo ancho de la sección.
+// Tékhne en la landing: la sección muestra como mucho 6 entradas (dos filas
+// de tres). Las columnas ocupan todo el ancho disponible de la sección.
 #ao-app .ao-posts {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 420px));
-  justify-content: start;
-  align-items: start;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
   gap: clamp(16px, 2.4vw, 24px);
 }
-@media (max-width: 1080px) { #ao-app .ao-posts { grid-template-columns: repeat(2, minmax(0, 420px)); } }
-@media (max-width: 720px)  { #ao-app .ao-posts { grid-template-columns: minmax(0, 420px); } }
+@media (max-width: 1080px) { #ao-app .ao-posts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px)  { #ao-app .ao-posts { grid-template-columns: minmax(0, 1fr); } }
+
+// Portadas sin imagen (tarjetas de Tékhne, aquí y en las páginas internas):
+// el gas del hero, pintado por un único renderer compartido —ao-init.js—
+// sobre el canvas 2D de cada tarjeta. Esta hoja se carga en todo el sitio
+// público, así que la regla vale también para .pg-card.
+// Arranca transparente y se funde al recibir su primer fotograma: hasta
+// entonces se ve el degradado de respaldo, que es lo que queda si no hay WebGL.
+#ao-app .ao-gas {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  // .55s y no .8s: debajo hay un degradado del mismo tono, así que el fundido no
+  // se lee como transición sino como retardo, y en la home coincide con el
+  // reveal de la propia tarjeta (820 ms). Dos fundidos encima del mismo elemento
+  // no son coreografía.
+  opacity: 0; transition: opacity .55s ease;
+}
+#ao-app .ao-gas.is-on { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  #ao-app .ao-gas { transition: none; }
+}
 
 // Portada de curso: overlay rojo al hacer hover
 #ao-app .ao-course-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 12px; padding: clamp(22px, 2.6vw, 30px); background: var(--accent); color: var(--accent-fg); opacity: 0; transition: opacity .4s ease; }

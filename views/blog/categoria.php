@@ -1,13 +1,8 @@
 <link rel="stylesheet" href="/build/css/paginas.css">
 <div id="ao-app" data-theme="dark">
 <div data-barba-namespace="blog-categoria">
-    <header class="pg-top">
-        <a href="/" class="brand">Alexander <span>Oliva</span></a>
-        <div class="pg-actions">
-            <a class="pg-back" href="/tekhne">Tékhne</a>
-            <a class="pg-wa" href="<?php echo waLink('Hola Alexander, quiero platicar contigo.'); ?>" target="_blank" rel="noopener">Contáctame</a>
-        </div>
-    </header>
+    <?php $ao_top_volver = ['url' => '/tekhne', 'texto' => 'Tékhne']; ?>
+    <?php include __DIR__ . '/../partials/pg-top.php'; ?>
 
     <main class="pg pg--wide">
         <!-- Masthead editorial (como la portada de Tékhne) -->
@@ -42,6 +37,7 @@
             ?>
                 <a href="/tekhne/<?php echo s($post->slug ?: $post->id); ?>" data-anim data-vt-cover class="pg-card<?php echo $ao_i === 0 ? ' pg-card--feat' : ''; ?>">
                     <div class="pg-card-cover" data-vt-img style="background:<?php echo $cover; ?>;">
+                        <?php if (empty($post->cover_img)) : ?><canvas class="ao-gas" data-gas aria-hidden="true"></canvas><?php endif; ?>
                         <span class="pg-cat"><?php echo s($post->categoria); ?></span>
                     </div>
                     <div class="pg-card-body">

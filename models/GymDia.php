@@ -92,6 +92,30 @@ class GymDia extends ActiveRecord {
         return ['labels' => $labels, 'si' => $si, 'no' => $no];
     }
 
+    /**
+     * Asistencias por día de la semana (lunes → domingo) de un año.
+     * Responde a «¿qué días voy al gym?», que es lo que se quiere saber:
+     * una barra por cada día del año no se lee.
+     * DAYOFWEEK() de MySQL empieza en domingo=1, así que se reordena.
+     */
+    public static function porDiaSemana(int $anio) : array {
+        $anio = (int) $anio;
+        $res = self::$db->query("SELECT DAYOFWEEK(fecha) AS d,
+                                        SUM(asistio = 1) AS si,
+                                        SUM(asistio = 0) AS no
+                                 FROM " . static::$tabla . "
+                                 WHERE YEAR(fecha) = {$anio} GROUP BY d");
+        $si = []; $no = [];
+        while ($r = $res->fetch_assoc()) { $si[(int) $r['d']] = (int) $r['si']; $no[(int) $r['d']] = (int) $r['no']; }
+
+        // De domingo=1..sábado=7 a lunes..domingo
+        $orden  = [2, 3, 4, 5, 6, 7, 1];
+        $labels = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        $dSi = []; $dNo = [];
+        foreach ($orden as $d) { $dSi[] = $si[$d] ?? 0; $dNo[] = $no[$d] ?? 0; }
+        return ['labels' => $labels, 'si' => $dSi, 'no' => $dNo];
+    }
+
     // Totales de un rango de fechas (inclusive): ['si'=>, 'no'=>]
     public static function totalesRango(string $desde, string $hasta) : array {
         $desde = self::$db->escape_string($desde);

@@ -123,52 +123,35 @@ function mini_mes(int $anio, int $mes, array $dias) : void {
     if (typeof Chart === 'undefined') return;
     var GREEN = '#34A853', RED = '#E51022', GRID = 'rgba(255,255,255,.07)';
 
-    // Barras del ámbito: día a día de todo el año si la vista es de mes, mes a mes
-    // si es de año. En la diaria las etiquetas son fechas ISO (una por día).
+    // Barras del ámbito: por día de la semana si la vista es de mes (cuántas
+    // veces fui cada lunes, cada martes…), mes a mes si es de año.
     var S = <?php echo json_encode($serie, JSON_UNESCAPED_UNICODE); ?>;
-    var MES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    function etiquetaDia(iso) {                       // '2026-03-07' → '07/03/2026'
-        var p = String(iso).split('-');
-        return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
-    }
-    // En la serie diaria solo se rotula el día 1 de cada mes: 365 etiquetas no caben
-    function ejeX(diaria) {
-        if (!diaria) return { stacked: true, grid: { display: false } };
-        return {
-            stacked: true, grid: { display: false },
-            ticks: {
-                autoSkip: false, maxRotation: 0, minRotation: 0,
-                callback: function (v, i) {
-                    var iso = String(this.getLabelForValue(v));
-                    var p = iso.split('-');
-                    return (p.length === 3 && p[2] === '01') ? MES_CORTO[(+p[1]) - 1] : '';
-                }
-            }
-        };
-    }
-    function barrasDe(diaria) {
-        return diaria
-            ? { borderRadius: 0, borderSkipped: false, categoryPercentage: 1, barPercentage: 1 }
-            : { borderRadius: 5, borderSkipped: false };
-    }
     var serieChart = new Chart(document.getElementById('gymMesChart'), {
         type: 'bar',
         data: {
             labels: S.labels,
             datasets: [
-                Object.assign({ label: 'Fui',    data: S.si, backgroundColor: GREEN }, barrasDe(S.diaria)),
-                Object.assign({ label: 'No fui', data: S.no, backgroundColor: RED   }, barrasDe(S.diaria))
+                { label: 'Fui',    data: S.si, backgroundColor: GREEN, borderRadius: 5, borderSkipped: false },
+                { label: 'No fui', data: S.no, backgroundColor: RED,   borderRadius: 5, borderSkipped: false }
             ]
         },
         options: {
             responsive: true,
             plugins: {
                 legend: { position: 'bottom', labels: { color: '#9a9aa4' } },
-                tooltip: S.diaria ? { callbacks: { title: function (items) { return etiquetaDia(items[0].label); } } } : {}
+                tooltip: {
+                    callbacks: {
+                        // «3 de 8 lunes» dice mucho más que un 3 suelto
+                        afterBody: function (items) {
+                            var i = items[0].dataIndex, total = S.si[i] + S.no[i];
+                            return total ? 'De ' + total + ' registrados' : '';
+                        }
+                    }
+                }
             },
             scales: {
                 y: { beginAtZero: true, stacked: true, grid: { color: GRID }, ticks: { precision: 0 } },
-                x: ejeX(S.diaria)
+                x: { stacked: true, grid: { display: false } }
             }
         }
     });
@@ -190,9 +173,10 @@ function mini_mes(int $anio, int $mes, array $dias) : void {
         chart.data.datasets[0].data = [t.si, t.no]; chart.update();
 
         if (!r.serie) return;
-        serieChart.data.labels = r.serie.labels;
-        serieChart.data.datasets[0].data = r.serie.si;
-        serieChart.data.datasets[1].data = r.serie.no;
+        S = r.serie;                                  // el tooltip lee de aquí
+        serieChart.data.labels = S.labels;
+        serieChart.data.datasets[0].data = S.si;
+        serieChart.data.datasets[1].data = S.no;
         serieChart.update();
     };
 })();

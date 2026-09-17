@@ -14,59 +14,40 @@ body { background: #0a0a0b; font-family: 'Space Grotesk', system-ui, -apple-syst
 .pg { max-width: 920px; margin: 0 auto; padding: clamp(90px, 14vh, 150px) clamp(20px, 5vw, 28px) 120px; }
 .pg--wide { max-width: 1100px; }
 
-/* Barra de progreso de lectura (inyectada por paginas-foot.php) */
+/* Barra de progreso de lectura (inyectada por paginas-foot.php).
+   Va colgada del borde inferior de la cabecera, no del borde de la ventana:
+   pegada a top:0 y con z-index por encima del header quedaba delante del nav,
+   su zona de agarre invisible se comía los clics y cualquier clic ahí
+   arrancaba un arrastre que tiraba del scroll. Aquí además se lee mejor —
+   es el subrayado de la cabecera llenándose. */
 .pg-progress {
-  position: fixed; top: 0; left: 0; width: 100%; height: 3px; z-index: 600;
+  position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; z-index: 2;
   pointer-events: none;
 }
+/* Respaldo para una vista sin cabecera: se cuelga de la ventana */
+.pg-progress--suelta { position: fixed; top: 0; bottom: auto; width: 100%; z-index: 600; }
 .pg-progress-fill {
   position: absolute; inset: 0;
   transform: scaleX(0); transform-origin: 0 50%;
-  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #fff));
-  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 78%, #000), var(--accent) 62%, color-mix(in srgb, var(--accent) 45%, #fff));
+  /* Halo corto y hacia abajo. Con 0 0 18px, un resplandor de 18px sobre una
+     barra de 4 lo lavaba todo hacia ARRIBA, por detrás de los enlaces del nav:
+     bruma roja bajo el texto de la cabecera mientras se lee. */
+  box-shadow: 0 1px 10px color-mix(in srgb, var(--accent) 55%, transparent), 0 1px 3px rgba(0,0,0,.4);
   will-change: transform;
 }
 
-/* Variante interactiva (solo en el artículo): se puede arrastrar para navegar */
+/* Variante del artículo: más alta y con carril, porque aquí el dato importa.
+   Es un INDICADOR, no un control. El arrastre para navegar se retiró: 4px de
+   alto (13 con la zona de agarre invisible) están muy por debajo de cualquier
+   objetivo aceptable, ya estaba apagado en puntero grueso —o sea, no existía en
+   la mitad de las sesiones— y fue el origen del «de repente el scroll se traba»
+   que reportó el usuario. Nadie rebobina un cuento de ocho minutos: el beneficio
+   era cero y el riesgo, permanente. El minutaje restante va en aria-valuetext,
+   para quien no puede ver la barra. */
 .pg-progress--live {
-  height: 4px; pointer-events: auto; cursor: pointer; touch-action: none;
-  background: color-mix(in srgb, var(--fg) 10%, transparent);
-  transition: height .18s cubic-bezier(.16, 1, .3, 1);
-}
-.pg-progress--live::before {                       /* zona de agarre más generosa */
-  content: ''; position: absolute; left: 0; right: 0; top: -8px; bottom: -12px;
-}
-.pg-progress--live:hover, .pg-progress--live:focus-visible, .pg-progress--live.is-drag { height: 9px; outline: none; }
-
-.pg-progress-knob {
-  position: absolute; top: 50%; left: 0; width: 13px; height: 13px; margin-left: -6.5px;
-  border-radius: 50%; background: var(--accent); border: 2px solid var(--bg);
-  transform: translateY(-50%) scale(0);
-  transition: transform .18s cubic-bezier(.16, 1, .3, 1);
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 60%, transparent);
-  pointer-events: none;
-}
-.pg-progress--live:hover .pg-progress-knob,
-.pg-progress--live:focus-visible .pg-progress-knob,
-.pg-progress--live.is-drag .pg-progress-knob { transform: translateY(-50%) scale(1); }
-
-.pg-progress-pct {
-  position: absolute; top: 16px; left: 0; transform: translateX(-50%) translateY(-6px);
-  display: flex; align-items: baseline; gap: 7px; white-space: nowrap;
-  padding: 5px 10px; border-radius: 999px;
-  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-md);
-  font-family: 'Space Mono', monospace; font-size: 11px; line-height: 1;
-  opacity: 0; pointer-events: none;
-  transition: opacity .18s ease, transform .18s cubic-bezier(.16, 1, .3, 1);
-}
-.pg-progress-pct b { font-weight: 700; color: var(--fg); }
-.pg-progress-pct span { color: var(--muted); }
-.pg-progress--live:hover .pg-progress-pct,
-.pg-progress--live:focus-visible .pg-progress-pct,
-.pg-progress--live.is-drag .pg-progress-pct { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-@media (prefers-reduced-motion: reduce) {
-  .pg-progress--live, .pg-progress-knob, .pg-progress-pct { transition: none; }
+  height: 4px;
+  background: color-mix(in srgb, var(--fg) 14%, transparent);
 }
 
 /* Top bar */
@@ -74,14 +55,112 @@ body { background: #0a0a0b; font-family: 'Space Grotesk', system-ui, -apple-syst
   position: fixed; top: 0; left: 0; width: 100%; z-index: 500;
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px clamp(18px, 4vw, 48px);
-  background: color-mix(in srgb, var(--bg) 68%, transparent);
-  backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  /* 82 % y no 68 %: la barra flota sobre portadas que pueden ser muy claras y
+     el texto de 11-13px tiene que seguir cumpliendo AA sobre cualquiera. */
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  /* 12px y no 16: el coste del desenfoque crece con el radio y esta banda se
+     recompone en CADA fotograma de scroll, a todo lo ancho. Entre 12 y 16 no
+     hay diferencia visible sobre una barra de 60px; en la factura sí. */
+  backdrop-filter: blur(12px) saturate(1.4); -webkit-backdrop-filter: blur(12px) saturate(1.4);
   border-bottom: 1px solid var(--line);
+}
+/* Pasado el hero solo hay fondo liso detrás de la cabecera: el desenfoque
+   estaría recomponiendo una banda entera para difuminar un color plano durante
+   los diez minutos que dura la lectura. Se apaga y la barra se vuelve opaca —
+   visualmente es idéntico (el velo del hero termina justo en var(--bg)) y el
+   contraste sube. Lo conmuta el mismo IntersectionObserver del artículo. */
+.pg-top.is-plana {
+  background: var(--bg);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
 }
 .pg-top .brand { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: -.01em; color: var(--fg); text-decoration: none; transition: opacity .2s; }
 .pg-top .brand:hover { opacity: .82; }
 .pg-top .brand span { color: var(--accent); }
 .pg-top .pg-actions { display: flex; align-items: center; gap: 10px; }
+
+/* Navegación del sitio dentro de las páginas internas (mismas opciones que el home) */
+.pg-nav { display: flex; align-items: center; gap: 2px; }
+.pg-nav a {
+  position: relative; color: var(--fg); text-decoration: none; padding: 9px 14px; border-radius: 30px;
+  font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  opacity: .78; transition: opacity .25s;
+}
+.pg-nav a::after {
+  content: ''; position: absolute; left: 14px; right: 14px; bottom: 5px; height: 1.5px;
+  background: var(--accent); transform: scaleX(0); transform-origin: left;
+  transition: transform .35s cubic-bezier(.16,1,.3,1);
+}
+.pg-nav a:hover, .pg-nav a:focus-visible { opacity: 1; }
+.pg-nav a:hover::after, .pg-nav a:focus-visible::after { transform: scaleX(1); }
+
+/* Foco de teclado: anillo propio, no el del navegador. Se diseña una vez y
+   vale para toda la cabecera, el menú y los enlaces editoriales. */
+.pg-top a:focus-visible,
+.pg-menu a:focus-visible,
+.pg-crumb a:focus-visible,
+.pg-burger:focus-visible,
+.pg-focus-btn:focus-visible,
+.tk-cat:focus-visible,
+.pg-card:focus-visible,
+a.pg-ref:focus-visible,
+.sel-card:focus-visible,
+.sel-vertodas:focus-visible,
+.film-playlist-link:focus-visible,
+.film-playlist-cta:focus-visible,
+.proj-visit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Hamburguesa: dos trazos que se cruzan al abrir */
+.pg-burger {
+  display: none; align-items: center; justify-content: center; flex-direction: column; gap: 5px;
+  width: 44px; height: 44px; flex: none; padding: 0; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 50%; color: var(--fg);
+  transition: border-color .25s, background .25s;
+}
+.pg-burger span { display: block; width: 16px; height: 1.6px; background: currentColor; border-radius: 2px; transition: transform .32s cubic-bezier(.16,1,.3,1), opacity .2s; }
+.pg-burger:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.pg-burger.is-open span:first-child { transform: translateY(3.3px) rotate(45deg); }
+.pg-burger.is-open span:last-child { transform: translateY(-3.3px) rotate(-45deg); }
+
+/* Menú a pantalla completa.
+   Centrado con márgenes automáticos, no con justify-content: en móvil apaisado
+   el bloque no cabe y `center` recortaría la primera opción fuera del scroll. */
+.pg-menu {
+  position: fixed; inset: 0; z-index: 490; background: var(--bg);
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 104px clamp(24px, 7vw, 48px) 40px;
+  overflow-y: auto; overscroll-behavior: contain;
+  opacity: 0; visibility: hidden; transform: translateY(-2%);
+  transition: opacity .4s ease, transform .4s cubic-bezier(.16,1,.3,1), visibility .4s;
+}
+.pg-menu.is-open { opacity: 1; visibility: visible; transform: none; }
+.pg-menu nav { display: flex; flex-direction: column; gap: 4px; margin-top: auto; }
+.pg-menu nav a {
+  color: var(--fg); text-decoration: none;
+  font-family: 'Clash Display', sans-serif; font-weight: 700;
+  font-size: clamp(2rem, min(10vw, 7.5vh), 3.4rem); line-height: 1.12; letter-spacing: -.02em;
+  transition: color .25s, transform .3s cubic-bezier(.16,1,.3,1);
+}
+.pg-menu nav a:hover, .pg-menu nav a:focus-visible { color: var(--accent); transform: translateX(6px); }
+.pg-menu .pg-menu-cta { margin: 30px 0 auto; align-self: flex-start; padding: 15px 26px; font-size: 1rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-menu, .pg-menu nav a, .pg-burger span { transition: none; }
+}
+
+/* Bajo 1000px la barra se queda con marca + acciones y el menú pasa al overlay */
+@media (max-width: 1000px) {
+  .pg-nav { display: none; }
+  .pg-burger { display: flex; }
+}
+@media (max-width: 560px) {
+  .pg-top { padding: 10px 16px; }
+  .pg-top .pg-actions { gap: 8px; }
+  .pg-top .pg-back { display: none; }       /* el menú ya lleva a todas partes */
+  .pg-wa { padding: 9px 15px; font-size: 12px; }
+}
 
 .pg-wa {
   display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
@@ -104,11 +183,30 @@ body { background: #0a0a0b; font-family: 'Space Grotesk', system-ui, -apple-syst
 .pg-back:hover::before { transform: translateX(-3px); }
 .pg-back { white-space: nowrap; }
 
-/* Meta / kicker */
-.pg-kicker { font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .18em; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-.pg-kicker .acc { color: var(--accent); }
-.pg h1.pg-title { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(2.8rem, 7.5vw, 5.4rem); line-height: .98; letter-spacing: -.03em; margin: 18px 0 10px; }
-.pg .pg-lead { color: var(--muted); font-size: 1.15rem; line-height: 1.55; max-width: 680px; margin: 0 0 30px; }
+/* Meta / kicker — datos generales del artículo (categoría · fecha · lectura).
+   Usa la tipografía de texto del proyecto, no el monoespaciado: la categoría
+   manda y los separadores los pone el CSS. */
+.pg-kicker {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  /* .84/400 y no .9/500: la jerarquía se consigue BAJANDO el dato, no subiendo
+     la etiqueta. A .9rem/500 la caja en versalita de .acc y la minúscula de la
+     fecha pesaban lo mismo ópticamente (la altura de versal de 12px iguala a la
+     altura de x de 14,4px) y las tres quedaban al mismo nivel. */
+  font-size: .84rem; font-weight: 400; letter-spacing: .01em; color: var(--muted);
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline;
+}
+.pg-kicker > * + *::before { content: '·'; margin-right: 10px; color: color-mix(in srgb, currentColor 55%, transparent); }
+/* Tres niveles, no tres etiquetas iguales: la categoría es una ETIQUETA
+   (versalita corta, muy espaciada, con peso) y la fecha y el tiempo de lectura
+   son metadato corrido. El contraste lo hacen caja, tracking y peso, no el
+   tamaño: así la jerarquía aguanta también sobre la portada del hero, donde el
+   color no se puede usar para separarlos. */
+.pg-kicker .acc { color: var(--accent); font-weight: 700; letter-spacing: .16em; text-transform: uppercase; font-size: .75rem; }
+
+/* El título vive tanto dentro de .pg como en el hero a sangre, así que la
+   escala no puede colgar del contenedor. */
+h1.pg-title { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(2.8rem, 7.5vw, 5.4rem); line-height: .98; letter-spacing: -.03em; margin: 18px 0 10px; text-wrap: balance; }
+.pg .pg-lead { color: var(--muted); font-size: 1.15rem; line-height: 1.55; max-width: 680px; margin: 0 0 30px; text-wrap: pretty; }
 
 .pg-cover { width: 100%; border-radius: 20px; display: block; margin: 6px 0 40px; box-shadow: var(--sh-lg); }
 
@@ -177,7 +275,11 @@ a.pg-ref:hover h3 { color: var(--accent); }
 .pg-card .pg-card-cover { aspect-ratio: 16/9; position: relative; overflow: hidden; }
 .pg-card .pg-card-cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, color-mix(in srgb, var(--surface) 70%, transparent) 100%); opacity: 0; transition: opacity .35s; }
 .pg-card:hover .pg-card-cover::after { opacity: 1; }
-.pg-card .pg-cat { position: absolute; top: 14px; left: 14px; z-index: 2; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #fff; background: rgba(8,8,9,.5); backdrop-filter: blur(6px); padding: 6px 12px; border-radius: 30px; }
+/* La píldora vive sobre material que no controlamos: una foto subida desde el
+   panel o el gas, que tiene crestas de rojo pleno. Con .5 el texto blanco cae a
+   ~4:1 sobre una portada clara; .66 lo deja por encima de 7:1 pase lo que pase
+   debajo, y a 11px eso es el mínimo AA, no un lujo. */
+.pg-card .pg-cat { position: absolute; top: 14px; left: 14px; z-index: 2; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #fff; background: rgba(8,8,9,.66); backdrop-filter: blur(6px); padding: 6px 12px; border-radius: 30px; }
 .pg-card .pg-card-body { padding: 22px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
 .pg-card .pg-card-meta { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .1em; color: var(--muted); }
 .pg-card h3 { margin: 0; font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 1.35rem; line-height: 1.15; letter-spacing: -.01em; transition: color .25s; }
@@ -220,6 +322,8 @@ a.pg-ref:hover h3 { color: var(--accent); }
 .sel-ph { width: 100%; height: 100%; display: grid; place-items: center; font-size: 40px; }
 .sel-badge { position: absolute; top: 10px; right: 10px; display: inline-flex; align-items: center; gap: 3px; font-family: 'Space Mono', monospace; font-weight: 700; font-size: 11px; color: #0b0b0c; background: var(--c-amber, #F5B400); padding: 4px 9px 4px 7px; border-radius: 999px; }
 .sel-badge .ico { width: 12px; height: 12px; fill: currentColor; stroke: none; flex: none; }
+/* Recomendaciones: la estrella sola basta como distintivo (todas son 10) */
+.sel-badge--pick { gap: 0; padding: 6px; }
 .sel-name { font-family: 'Clash Display', sans-serif; font-weight: 600; font-size: .98rem; line-height: 1.15; margin: 12px 0 4px; color: var(--fg); }
 .sel-meta { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .04em; color: var(--muted); margin: 0; }
 
@@ -264,6 +368,36 @@ a.pg-ref:hover h3 { color: var(--accent); }
 .film-note-body strong { color: var(--fg); }
 .film-cta { margin-top: 44px; }
 
+/* Acceso a la playlist de recomendaciones (en todas las fichas) */
+.film-playlist-cta {
+  display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+  font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+  color: #0b0b0c; background: var(--c-amber, #F5B400);
+  padding: 9px 16px; border-radius: 40px; white-space: nowrap;
+  transition: transform .18s, filter .18s;
+}
+.film-playlist-cta:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.film-playlist-cta .ico { width: 14px; height: 14px; fill: currentColor; stroke: none; flex: none; }
+
+/* Anterior / siguiente dentro de la selección */
+.film-playlist { margin-top: 26px; }
+.film-playlist-pos { display: block; margin-bottom: 12px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.film-playlist-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.film-playlist-link {
+  display: flex; flex-direction: column; gap: 5px; text-decoration: none;
+  border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px;
+  background: var(--surface); min-width: 0;
+  transition: transform .25s cubic-bezier(.16, 1, .3, 1), border-color .25s;
+}
+.film-playlist-link:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 42%, var(--line)); }
+.film-playlist-dir { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.film-playlist-dir::before { content: '‹ '; }
+.film-playlist-tit { font-family: 'Clash Display', sans-serif; font-weight: 600; font-size: 1rem; color: var(--fg); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.film-playlist-link--next { text-align: right; }
+.film-playlist-link--next .film-playlist-dir::before { content: none; }
+.film-playlist-link--next .film-playlist-dir::after { content: ' ›'; }
+@media (max-width: 560px) { .film-playlist-nav { grid-template-columns: 1fr; } .film-playlist-link--next { text-align: left; } }
+
 /* =====================================================================
    FASE 8 — breadcrumb, galería/lightbox, modo focus, categoría
    ===================================================================== */
@@ -275,14 +409,36 @@ a.pg-ref:hover h3 { color: var(--accent); }
 .pg-crumb span { color: var(--muted-2, rgba(255,255,255,.35)); }
 .pg-crumb .cur { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46vw; }
 
-/* Galería de proyecto (imágenes horizontales) + lightbox */
+/* Galería de proyecto (imágenes horizontales) + lightbox.
+   La galería es una pieza de la ficha, no un anexo: la primera toma va a
+   sangre y el resto en dos columnas, así el trabajo se ve antes de leerlo. */
 .pg-gallery-title { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(1.4rem, 3vw, 2rem); letter-spacing: -.02em; margin: 46px 0 20px; }
-.pg-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; margin-top: 0; }
-.pg-shot { position: relative; margin: 0; border-radius: 16px; overflow: hidden; cursor: zoom-in; background: #1a1a1e; box-shadow: var(--sh-md); }
-.pg-shot img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; transition: transform .5s cubic-bezier(.16,1,.3,1); }
-.pg-shot:hover img { transform: scale(1.05); }
-.pg-shot-zoom { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; background: rgba(8,8,9,.55); backdrop-filter: blur(6px); color: #fff; font-size: 16px; opacity: 0; transition: opacity .25s; pointer-events: none; }
-.pg-shot:hover .pg-shot-zoom { opacity: 1; }
+.pg-gallery { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(14px, 1.6vw, 22px); margin-top: 0; }
+.pg-shot { position: relative; margin: 0; border-radius: 18px; overflow: hidden; background: #1a1a1e; box-shadow: var(--sh-md); }
+.pg-shot img { width: 100%; aspect-ratio: 16/10; object-fit: cover; display: block; transition: transform .6s cubic-bezier(.16,1,.3,1); }
+.pg-shot:hover img { transform: scale(1.04); }
+/* La lupa y el cursor de zoom solo cuando el visor existe de verdad: sin JS
+   la galería es una galería, no una promesa rota. */
+.pg-gallery.is-lightbox .pg-shot { cursor: zoom-in; }
+.pg-shot img:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+@supports selector(:has(*)) {
+  .pg-shot:has(img:focus-visible) { box-shadow: 0 0 0 3px var(--fg), var(--sh-md); }
+}
+/* Primera toma: ancho completo y más alta */
+.pg-shot--lead { grid-column: 1 / -1; border-radius: 22px; }
+.pg-shot--lead img { aspect-ratio: 16/8; }
+/* Una imagen impar al final ocupa el ancho para no dejar un hueco */
+.pg-shot--lead ~ .pg-shot:nth-last-child(1):nth-child(even) { grid-column: 1 / -1; }
+.pg-shot-zoom { position: absolute; top: 14px; right: 14px; width: 38px; height: 38px; display: none; place-items: center; border-radius: 12px; background: rgba(8,8,9,.55); backdrop-filter: blur(6px); color: #fff; opacity: 0; transform: scale(.9); transition: opacity .25s, transform .25s cubic-bezier(.16,1,.3,1); pointer-events: none; }
+.pg-gallery.is-lightbox .pg-shot-zoom { display: grid; }
+.pg-shot-zoom .ico { width: 17px; height: 17px; }
+.pg-gallery.is-lightbox .pg-shot:hover .pg-shot-zoom,
+.pg-gallery.is-lightbox .pg-shot:focus-within .pg-shot-zoom { opacity: 1; transform: none; }
+
+@media (max-width: 720px) {
+  .pg-gallery { grid-template-columns: 1fr; }
+  .pg-shot--lead img { aspect-ratio: 16/10; }
+}
 
 .pg-cta { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-top: 64px; padding-top: 30px; border-top: 1px solid var(--line); }
 
@@ -314,12 +470,24 @@ a.pg-ref:hover h3 { color: var(--accent); }
 /* Modo Focus (artículo) */
 .pg-focus-btn { display: inline-flex; align-items: center; gap: 7px; background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 40px; padding: 8px 14px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: all .2s; }
 .pg-focus-btn:hover { color: var(--fg); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.pg-focus-btn .ico { width: 13px; height: 13px; flex: none; }
+html.is-focus .pg-focus-btn .ico { color: var(--accent); }
 /* En modo focus se limpia el header (pero se conserva el botón para salir y la
    barra de progreso, que es justo cuando más sirve) */
 html.is-focus .pg-crumb, html.is-focus .pg-ref { display: none !important; }
 html.is-focus .pg-top { background: transparent; border-bottom: none; backdrop-filter: none; -webkit-backdrop-filter: none; pointer-events: none; }
-html.is-focus .pg-top .brand, html.is-focus .pg-top .pg-back, html.is-focus .pg-top .pg-wa { display: none; }
+/* Se retira TODO el chrome de la barra: si el menú siguiera visible quedaría
+   a la vista pero muerto (la barra pasa a pointer-events: none). */
+html.is-focus .pg-top .brand, html.is-focus .pg-top .pg-back, html.is-focus .pg-top .pg-wa,
+html.is-focus .pg-top .pg-nav, html.is-focus .pg-top .pg-burger { display: none; }
 html.is-focus .pg-top .pg-focus-btn { pointer-events: auto; }
+/* La cabecera se vuelve transparente, así que la barra dejaba de ser el
+   subrayado de algo y quedaba como una raya roja suelta cruzando el texto a
+   ~60px de altura: se leía como un fallo de pintado. Se pega al borde de la
+   ventana, que sin chrome sí es un anclaje legítimo, y adelgaza a 3px. */
+html.is-focus .pg-progress {
+  position: fixed; top: 0; bottom: auto; left: 0; right: 0; height: 3px; z-index: 600;
+}
 html.is-focus .pg-focus-btn { background: var(--surface); border-color: var(--accent); color: var(--fg); }
 html.is-focus .pg { max-width: 720px; }
 
@@ -389,15 +557,59 @@ html.is-focus .pg { max-width: 720px; }
 .art-hero { position: relative; width: 100%; height: 100vh; height: 100svh; min-height: 560px; overflow: hidden; display: flex; align-items: flex-end; }
 .art-hero-media { position: absolute; inset: -12% 0; z-index: 0; will-change: transform; }
 .art-hero-media img, .art-hero-grad { width: 100%; height: 100%; object-fit: cover; display: block; }
-.art-hero-scrim { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(10,10,11,.20) 0%, rgba(10,10,11,.10) 34%, rgba(10,10,11,.34) 62%, color-mix(in srgb, var(--bg) 84%, transparent) 86%, var(--bg) 100%); }
-.art-hero-inner { position: relative; z-index: 2; width: 100%; max-width: 860px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 32px) clamp(48px, 9vh, 96px); }
-.art-hero-inner .pg-kicker { color: rgba(255,255,255,.82); }
-.art-hero-inner .pg-title { color: #fff; text-shadow: 0 2px 34px rgba(0,0,0,.55); margin: 16px 0 10px; }
+/* Portada por defecto: el gas del hero. El degradado queda debajo por si el
+   navegador no da WebGL — el canvas transparente lo deja ver. */
+.art-hero-gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 1; }
+.art-hero-grad--fallback { position: absolute; inset: 0; z-index: 0; }
+/* pointer-events: none es obligatorio — si no, el velo se come los clicks de
+   todo lo que tenga debajo (la portada enlazada, entre otras cosas). */
+/* El 34 % del tramo medio dejaba el kicker y la firma a ~4:1 sobre portadas
+   claras (las hay: fachadas, logotipos sobre foto). Se refuerza justo la banda
+   donde vive el texto; la mitad superior de la imagen no se toca. */
+.art-hero-scrim { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, rgba(10,10,11,.20) 0%, rgba(10,10,11,.08) 32%, rgba(10,10,11,.50) 62%, color-mix(in srgb, var(--bg) 88%, transparent) 86%, var(--bg) 100%); }
+.art-hero-inner { position: relative; z-index: 3; width: 100%; max-width: 860px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 32px) clamp(48px, 9vh, 96px); }
+/* El kicker cae al 36 % de la altura del hero, donde el velo apenas tiene un
+   8-20 % de negro: es el punto MÁS claro de la portada. El titular y la entrada
+   llevan sombra y este no, y era el único texto pequeño de los tres. */
+.art-hero-inner .pg-kicker { color: rgba(255,255,255,.86); text-shadow: 0 1px 16px rgba(0,0,0,.6); }
+/* Sobre una foto, el rojo de marca como TEXTO no llega a AA con ningún velo
+   razonable (≈1.4:1 sobre una portada clara). En el hero la categoría va en
+   blanco y el acento lo lleva un filete, que no es información. */
+/* El filete va como inline-block, no como flex item. Con .acc en inline-flex su
+   línea base la fijaba el filete —una caja vacía de 2px— y no el texto, así que
+   la categoría quedaba descolgada de la fecha en un contenedor alineado a
+   baseline. Como elemento en línea, .acc recupera la línea base del texto. */
+.art-hero-inner .pg-kicker .acc { color: #fff; }
+.art-hero-inner .pg-kicker .acc::before {
+  content: ''; display: inline-block; width: 22px; height: 2px; border-radius: 2px;
+  background: var(--accent); margin-right: 10px; vertical-align: .26em;
+}
+.art-hero-inner .pg-title { color: #fff; text-shadow: 0 2px 34px rgba(0,0,0,.55); margin: 16px 0 12px; font-size: clamp(3rem, 8.4vw, 6.2rem); }
 .art-hero-inner .pg-lead { color: rgba(255,255,255,.86); max-width: 720px; margin: 0; text-shadow: 0 1px 20px rgba(0,0,0,.5); }
 .art-hero-el { will-change: transform, opacity; }
 
+/* Portada clicable (proyecto con sitio): capa transparente por encima del velo
+   y por debajo del bloque de texto, que conserva sus propios enlaces. */
+.art-hero-link { position: absolute; inset: 0; z-index: 2; display: block; }
+.art-hero-visit {
+  position: absolute; right: clamp(18px, 4vw, 44px); top: clamp(76px, 12vh, 118px); z-index: 1;
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 11px 18px; border-radius: 40px;
+  background: rgba(8,8,9,.5); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.22); color: #fff;
+  font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: .86rem;
+  opacity: 0; transform: translateY(-6px);
+  transition: opacity .3s, transform .3s cubic-bezier(.16,1,.3,1), background .3s;
+}
+.art-hero-visit .ico { width: 16px; height: 16px; }
+.art-hero-link:hover .art-hero-visit,
+.art-hero-link:focus-visible .art-hero-visit { opacity: 1; transform: none; background: var(--accent); border-color: transparent; }
+.art-hero-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -6px; }
+/* Sin hover (táctil) el aviso se queda visible: si no, no hay forma de saber que lleva a algún sitio */
+@media (hover: none) { .art-hero-visit { opacity: 1; transform: none; } }
+
 /* Indicador de scroll */
-.art-hero-cue { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 3; display: flex; flex-direction: column; align-items: center; gap: 6px; color: rgba(255,255,255,.72); font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; pointer-events: none; transition: opacity .4s; }
+.art-hero-cue { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 6px; color: rgba(255,255,255,.72); font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; pointer-events: none; transition: opacity .4s; }
 .art-hero-cue svg { width: 20px; height: 20px; animation: art-cue-bounce 1.8s ease-in-out infinite; }
 @keyframes art-cue-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
 
@@ -414,6 +626,82 @@ html.is-focus .pg { max-width: 720px; }
 @media (prefers-reduced-motion: reduce) {
   .art-hero-cue svg { animation: none; }
 }
+/* En móvil el «Scroll» se montaba encima del extracto: se le reserva sitio y,
+   si la pantalla es baja, se retira (ahí el gesto de scroll es evidente). */
 @media (max-width: 640px) {
+  .art-hero-inner { padding-bottom: 86px; }
+  .art-hero-inner .pg-lead { font-size: 1rem; }
+}
+@media (max-height: 680px), (max-width: 400px) {
+  .art-hero-cue { display: none; }
   .art-hero-inner { padding-bottom: clamp(40px, 8vh, 72px); }
+}
+
+/* =====================================================================
+   FASE 11 — Ficha de proyecto como caso de estudio
+   La portada va arriba a sangre (destino del morph `ao-cover`) y el cuerpo
+   se despliega a lo ancho: título de sección a la izquierda, contenido a la
+   derecha. El texto plano de la BD lo trocea proyectoBloques().
+   ===================================================================== */
+.pg--full { max-width: 1500px; padding-top: clamp(40px, 6vh, 64px); }
+
+/* Hereda .art-hero (paralaje GSAP); solo cambia la altura y la medida del texto */
+.proj-hero { height: 82vh; height: 82svh; min-height: 500px; }
+.proj-hero .art-hero-inner { max-width: 1500px; }
+.proj-hero .pg-crumb { margin: 0 0 16px; }
+.proj-hero .pg-crumb a { color: rgba(255, 255, 255, .72); }
+.proj-hero .pg-crumb .cur { color: #fff; }
+.proj-hero .pg-title { margin-bottom: 0; }
+
+.proj-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: clamp(22px, 3vh, 32px); }
+
+/* Botón al sitio en producción: la línea «Enlace: …» de la descripción */
+.proj-visit {
+  display: inline-flex; align-items: center; gap: 9px; text-decoration: none;
+  background: var(--fg); color: var(--bg);
+  font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px;
+  padding: 10px 18px; border-radius: 40px;
+  transition: transform .18s, filter .18s, box-shadow .18s;
+}
+.proj-visit:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(0, 0, 0, .35); }
+.proj-visit .ico { width: 15px; height: 15px; flex: none; }
+.proj-visit--ghost { background: none; color: var(--fg); border: 1px solid var(--line); }
+.proj-visit--ghost:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+/* Sección: rótulo sticky a la izquierda, contenido a la derecha */
+.proj-sec {
+  display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: clamp(18px, 4vw, 64px);
+  padding: clamp(34px, 6vh, 64px) 0;
+  border-top: 1px solid var(--line);
+}
+.proj-sec:first-of-type { border-top: 0; padding-top: 0; }
+
+.proj-sec-h {
+  position: sticky; top: 96px; align-self: start; margin: 0;
+  font-family: 'Clash Display', sans-serif; font-weight: 700;
+  font-size: clamp(1.45rem, 2.4vw, 2.15rem); line-height: 1.08; letter-spacing: -.02em;
+}
+.proj-sec-num { display: block; margin-bottom: 12px; font-family: 'Space Mono', monospace; font-weight: 400; font-size: 12px; letter-spacing: .22em; color: var(--accent); }
+.proj-sec-h { text-wrap: balance; }
+
+/* Columna fija: una sección guardada sin título no pinta el <h2> y, sin esto,
+   la prosa caía en la columna estrecha del rótulo. */
+.proj-sec-body {
+  grid-column: 2;
+  font-size: clamp(1.02rem, .98rem + .3vw, 1.16rem); line-height: 1.7;
+  color: color-mix(in srgb, var(--fg) 88%, transparent);
+}
+/* Los párrafos conservan una medida legible (~68ch a este cuerpo); la galería
+   sí aprovecha todo el ancho de la columna. Las secciones son siempre prosa. */
+.proj-sec-body > p { margin: 0 0 1.15em; max-width: 68ch; text-wrap: pretty; }
+.proj-sec-body > p:last-child { margin-bottom: 0; }
+
+.proj-sec--galeria .pg-gallery { margin-top: 0; }
+.pg--full .pg-cta { margin-top: 40px; }
+
+@media (max-width: 900px) {
+  .proj-sec { grid-template-columns: 1fr; gap: 16px; padding: clamp(28px, 5vh, 44px) 0; }
+  .proj-sec-h { position: static; }
+  .proj-sec-body { grid-column: auto; }
 }

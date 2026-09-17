@@ -1,13 +1,8 @@
 <link rel="stylesheet" href="/build/css/paginas.css">
 <div id="ao-app" data-theme="dark">
 <div data-barba-namespace="pelicula">
-    <header class="pg-top">
-        <a href="/" class="brand">Alexander <span>Oliva</span></a>
-        <div class="pg-actions">
-            <a class="pg-back" href="/tekhne/peliculas">Películas</a>
-            <a class="pg-wa" href="<?php echo waLink('Hola Alexander, quiero platicar contigo.'); ?>" target="_blank" rel="noopener">Contáctame</a>
-        </div>
-    </header>
+    <?php $ao_top_volver = ['url' => '/tekhne/peliculas', 'texto' => 'Películas']; ?>
+    <?php include __DIR__ . '/../partials/pg-top.php'; ?>
 
     <?php
         $tiene_comentario = !empty(trim((string) $film->comentario));
@@ -47,30 +42,27 @@
             <div class="film-info">
                 <header class="film-lead" data-anim>
                     <span class="film-lead-kicker">
-                        <?php echo mb_strtoupper(s($film->categoria ?: 'Título')); ?><?php echo $film->anio ? ' · ' . s($film->anio) : ''; ?>
+                        <?php echo mb_strtoupper(s($film->categoriaTexto() ?: 'Título')); ?><?php echo $film->anio ? ' · ' . s($film->anio) : ''; ?>
                     </span>
                     <h1 class="film-lead-title"><?php echo s($film->titulo); ?></h1>
-                    <?php if (!empty($film->autor) && $film->autor !== '—') : ?>
-                        <p class="film-lead-dir"><?php echo s($film->personaLabel()); ?>: <strong><?php echo s($film->autor); ?></strong></p>
+                    <?php if ($film->personaConocida()) : ?>
+                        <p class="film-lead-dir"><?php echo s($film->personaLabel()); ?>: <strong><?php echo s($film->personasTexto()); ?></strong></p>
                     <?php endif; ?>
                 </header>
 
                 <!-- Ficha técnica en cards -->
                 <div class="film-sheet" data-anim>
                     <?php if ($film->categoria) : ?>
-                        <div class="film-fact"><dt>Categoría</dt><dd><?php echo s($film->categoria); ?></dd></div>
+                        <div class="film-fact"><dt>Categoría</dt><dd><?php echo s($film->categoriaTexto()); ?></dd></div>
                     <?php endif; ?>
-                    <?php if (!empty($film->autor) && $film->autor !== '—') : ?>
-                        <div class="film-fact"><dt><?php echo s($film->personaLabel()); ?></dt><dd><?php echo s($film->autor); ?></dd></div>
+                    <?php if ($film->personaConocida()) : ?>
+                        <div class="film-fact"><dt><?php echo s($film->personaLabel()); ?></dt><dd><?php echo s($film->personasTexto()); ?></dd></div>
                     <?php endif; ?>
                     <?php if ($film->anio) : ?>
                         <div class="film-fact"><dt>Año</dt><dd><?php echo s($film->anio); ?></dd></div>
                     <?php endif; ?>
                     <?php if ($film->duracion) : $d = max(0, (int) $film->duracion); ?>
                         <div class="film-fact"><dt>Duración</dt><dd><?php echo $d >= 60 ? intdiv($d, 60) . ' h' . ($d % 60 ? ' ' . ($d % 60) . ' min' : '') : $d . ' min'; ?></dd></div>
-                    <?php endif; ?>
-                    <?php if ($film->fecha_vista) : ?>
-                        <div class="film-fact"><dt>Visto</dt><dd><?php echo date('d/m/Y', strtotime($film->fecha_vista)); ?></dd></div>
                     <?php endif; ?>
                 </div>
 
@@ -81,9 +73,35 @@
                     </div>
                 <?php endif; ?>
 
+                <!-- Playlist: entrar a la selección desde cualquier ficha y, si
+                     este título forma parte de ella, saltar al anterior/siguiente. -->
                 <div class="pg-cta film-cta" data-anim>
                     <a class="pg-back" href="/tekhne/peliculas">Ver más títulos</a>
+                    <a class="film-playlist-cta" href="/tekhne/recomendaciones">
+                        <?php echo icono('estrella'); ?>
+                        <?php echo $playlist['pos'] !== null ? 'Ver la playlist' : 'Ver recomendaciones'; ?>
+                    </a>
                 </div>
+
+                <?php if ($playlist['pos'] !== null) : ?>
+                    <nav class="film-playlist" data-anim aria-label="Playlist de recomendaciones">
+                        <span class="film-playlist-pos">
+                            Recomendación <?php echo $playlist['pos'] + 1; ?> de <?php echo $playlist['total']; ?>
+                        </span>
+                        <?php if ($playlist['anterior']) : ?>
+                            <div class="film-playlist-nav">
+                                <a class="film-playlist-link film-playlist-link--prev" href="/tekhne/pelicula/<?php echo generarSlug($playlist['anterior']->titulo); ?>">
+                                    <span class="film-playlist-dir">Anterior</span>
+                                    <span class="film-playlist-tit"><?php echo s($playlist['anterior']->titulo); ?></span>
+                                </a>
+                                <a class="film-playlist-link film-playlist-link--next" href="/tekhne/pelicula/<?php echo generarSlug($playlist['siguiente']->titulo); ?>">
+                                    <span class="film-playlist-dir">Siguiente</span>
+                                    <span class="film-playlist-tit"><?php echo s($playlist['siguiente']->titulo); ?></span>
+                                </a>
+                            </div>
+                        <?php endif; ?>
+                    </nav>
+                <?php endif; ?>
 
                 <?php echo creditoImdb(); ?>
             </div>

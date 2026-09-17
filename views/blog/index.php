@@ -1,13 +1,8 @@
 <link rel="stylesheet" href="/build/css/paginas.css">
 <div id="ao-app" data-theme="dark">
 <div data-barba-namespace="blog-home">
-    <header class="pg-top">
-        <a href="/" class="brand">Alexander <span>Oliva</span></a>
-        <div class="pg-actions">
-            <a class="pg-back" href="/">Inicio</a>
-            <a class="pg-wa" href="<?php echo waLink('Hola Alexander, quiero platicar contigo.'); ?>" target="_blank" rel="noopener">Contáctame</a>
-        </div>
-    </header>
+    <?php $ao_top_volver = ['url' => '/', 'texto' => 'Inicio']; ?>
+    <?php include __DIR__ . '/../partials/pg-top.php'; ?>
 
     <main class="pg pg--wide">
         <!-- Masthead editorial -->
@@ -52,6 +47,11 @@
         function tk_cover($post, $i, $grads) {
             return !empty($post->cover_img) ? "url('" . urlSubida('blog', $post->cover_img) . "') center/cover no-repeat" : $grads[$i % count($grads)];
         }
+        // Sin portada subida manda el gas (el mismo shader del hero). El canvas
+        // va encima del degradado, que se queda de respaldo si no hay WebGL.
+        function tk_gas($post) {
+            return !empty($post->cover_img) ? '' : '<canvas class="ao-gas" data-gas aria-hidden="true"></canvas>';
+        }
         ?>
 
         <!-- Artículos -->
@@ -59,6 +59,7 @@
             <?php foreach ($posts as $ao_i => $post) : $cover = tk_cover($post, $ao_i, $ao_grads); ?>
                 <a href="/tekhne/<?php echo s($post->slug ?: $post->id); ?>" data-anim data-vt-cover data-search="<?php echo s($post->titulo . ' ' . $post->descripcion . ' ' . $post->categoria); ?>" class="pg-card<?php echo $ao_i === 0 ? ' pg-card--feat' : ''; ?>">
                     <div class="pg-card-cover" data-vt-img style="background:<?php echo $cover; ?>;">
+                        <?php echo tk_gas($post); ?>
                         <span class="pg-cat"><?php echo s($post->categoria); ?></span>
                     </div>
                     <div class="pg-card-body">
@@ -84,7 +85,7 @@
                 <div class="pg-grid">
                     <?php foreach ($cuentos as $ao_i => $post) : $cover = tk_cover($post, $ao_i, $ao_grads); ?>
                         <a href="/tekhne/<?php echo s($post->slug ?: $post->id); ?>" data-vt-cover data-search="<?php echo s($post->titulo . ' ' . $post->descripcion . ' Cuentos'); ?>" class="pg-card">
-                            <div class="pg-card-cover" data-vt-img style="background:<?php echo $cover; ?>;"><span class="pg-cat">Cuentos</span></div>
+                            <div class="pg-card-cover" data-vt-img style="background:<?php echo $cover; ?>;"><?php echo tk_gas($post); ?><span class="pg-cat">Cuentos</span></div>
                             <div class="pg-card-body">
                                 <span class="pg-card-meta"><?php echo s($post->metaTarjeta()); ?></span>
                                 <h3><?php echo s($post->titulo); ?></h3>
@@ -110,7 +111,12 @@
                 </div>
                 <a class="sel-vertodas" href="/tekhne/peliculas">Ver catálogo <span>→</span></a>
             </div>
-            <div class="sel-shelf">
+            <!-- data-lenis-prevent: el estante tiene scroll horizontal propio y
+                 Lenis intercepta la rueda a nivel de ventana. Un gesto diagonal
+                 de trackpad —lo normal al empujar una fila de pósters— lleva
+                 deltaY, así que Lenis se lo quedaba y la página daba un tirón
+                 vertical en vez de correr el estante. -->
+            <div class="sel-shelf" data-lenis-prevent>
                 <?php foreach (array_slice($peliculas, 0, 12) as $t) : $tiene = !empty(trim((string) $t->comentario)); $n = (float) $t->nota; ?>
                     <a class="sel-card" href="/tekhne/pelicula/<?php echo generarSlug($t->titulo); ?>" title="<?php echo s($t->titulo); ?>">
                         <div class="sel-poster">
@@ -140,7 +146,7 @@
                 </div>
                 <a class="sel-vertodas" href="/tekhne/recomendaciones">Ver todas <span>→</span></a>
             </div>
-            <div class="sel-shelf">
+            <div class="sel-shelf" data-lenis-prevent>
                 <?php foreach (array_slice($seleccion, 0, 8) as $t) : ?>
                     <a class="sel-card" href="/tekhne/pelicula/<?php echo generarSlug($t->titulo); ?>" title="<?php echo s($t->titulo); ?>">
                         <div class="sel-poster">
@@ -149,7 +155,7 @@
                             <?php else : ?>
                                 <div class="sel-ph"><?php echo icono('film'); ?></div>
                             <?php endif; ?>
-                            <span class="sel-badge"><?php echo icono('estrella'); ?>10</span>
+                            <span class="sel-badge sel-badge--pick" title="Selección del autor"><?php echo icono('estrella'); ?></span>
                         </div>
                         <h3 class="sel-name"><?php echo s($t->titulo); ?></h3>
                         <p class="sel-meta"><?php echo s($t->categoria); ?><?php echo $t->anio ? ' · ' . s($t->anio) : ''; ?></p>

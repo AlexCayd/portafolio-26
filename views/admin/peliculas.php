@@ -13,43 +13,72 @@
     <div class="kpi k-orange"><div class="kpi-label">Duración promedio</div><div class="kpi-value"><?php echo $stats['duracionProm']; ?></div><div class="kpi-sub">minutos</div></div>
 </div>
 
-<?php if (!empty($ultimos)) : ?>
-<div class="card">
-    <div class="card-head"><h2 class="h2-ico"><?php echo icono('film'); ?> Últimos registros <span class="mini-s" style="color:var(--muted)">— los 10 más recientes</span></h2></div>
-    <div class="pel-tira">
-        <?php foreach ($ultimos as $p) : $n = (float) $p->nota; $cls = $n >= 8 ? 'nota-alta' : ($n >= 5 ? 'nota-media' : 'nota-baja'); ?>
-            <a class="pel-tira-item" href="/admin/peliculas/gestionar?id=<?php echo $p->id; ?>" title="Editar <?php echo s($p->titulo); ?>">
-                <div class="pel-tira-poster">
-                    <?php if (!empty($p->poster)) : ?><img src="<?php echo urlSubida('peliculas', $p->poster); ?>" alt="" loading="lazy">
-                    <?php else : ?><div class="poster-ph"><?php echo icono('film'); ?></div><?php endif; ?>
-                    <span class="nota-badge <?php echo $cls; ?> pel-tira-nota"><?php echo number_format($n, 0); ?></span>
-                </div>
-                <span class="pel-tira-titulo"><?php echo s($p->titulo); ?></span>
-            </a>
-        <?php endforeach; ?>
-    </div>
-</div>
-<?php endif; ?>
+<?php
+// Póster con nota del ranking. $extra va dentro del póster (el puesto y el
+// movimiento).
+$ao_poster = function ($p, string $extra = '') {
+    $n = (float) $p->nota; $cls = $n >= 8 ? 'nota-alta' : ($n >= 5 ? 'nota-media' : 'nota-baja');
+    $img = !empty($p->poster)
+        ? '<img src="' . urlSubida('peliculas', $p->poster) . '" alt="" loading="lazy">'
+        : '<div class="poster-ph">' . icono('film') . '</div>';
+    return '<a class="pel-tira-item" href="/admin/peliculas/gestionar?id=' . (int) $p->id . '" title="Editar ' . s($p->titulo) . '">'
+         . '<div class="pel-tira-poster">' . $img . $extra
+         . '<span class="nota-badge ' . $cls . ' pel-tira-nota">' . number_format($n, 0) . '</span></div>'
+         . '<span class="pel-tira-titulo">' . s($p->titulo) . '</span></a>';
+};
+?>
 
-<div class="card">
-    <div class="card-head"><h2 class="h2-ico"><?php echo icono('estrella'); ?> Mejor puntuados de <?php echo $anioActual; ?> <span class="mini-s" style="color:var(--muted)">— top 10 del año</span></h2></div>
-    <?php if (!empty($topAnio)) : ?>
-        <div class="pel-tira">
-            <?php foreach ($topAnio as $i => $p) : $n = (float) $p->nota; $cls = $n >= 8 ? 'nota-alta' : ($n >= 5 ? 'nota-media' : 'nota-baja'); ?>
-                <a class="pel-tira-item" href="/admin/peliculas/gestionar?id=<?php echo $p->id; ?>" title="Editar <?php echo s($p->titulo); ?>">
-                    <div class="pel-tira-poster">
-                        <?php if (!empty($p->poster)) : ?><img src="<?php echo urlSubida('peliculas', $p->poster); ?>" alt="" loading="lazy">
-                        <?php else : ?><div class="poster-ph"><?php echo icono('film'); ?></div><?php endif; ?>
-                        <span class="pel-tira-rank">#<?php echo $i + 1; ?></span>
-                        <span class="nota-badge <?php echo $cls; ?> pel-tira-nota"><?php echo number_format($n, 0); ?></span>
-                    </div>
-                    <span class="pel-tira-titulo"><?php echo s($p->titulo); ?></span>
-                </a>
-            <?php endforeach; ?>
-        </div>
-    <?php else : ?>
-        <p style="color:var(--muted)">Aún no hay títulos registrados en <?php echo $anioActual; ?>.</p>
-    <?php endif; ?>
+<!-- Últimos 5 como lista vertical junto al ranking de 2×5: las dos tarjetas
+     miden lo mismo y la lista cuenta cuándo se vio cada uno. -->
+<div class="pel-duo">
+    <div class="card">
+        <div class="card-head"><div class="card-titulo"><h2 class="h2-ico"><?php echo icono('film'); ?> Últimos registros</h2><p class="card-sub">Los 5 más recientes por fecha vista</p></div></div>
+        <?php if (!empty($ultimos)) : ?>
+            <ol class="pel-recientes">
+                <?php foreach ($ultimos as $p) : $n = (float) $p->nota; $cls = $n >= 8 ? 'nota-alta' : ($n >= 5 ? 'nota-media' : 'nota-baja'); ?>
+                    <li>
+                        <a class="pel-reciente" href="/admin/peliculas/gestionar?id=<?php echo $p->id; ?>" title="Editar <?php echo s($p->titulo); ?>">
+                            <span class="pel-reciente-poster">
+                                <?php if (!empty($p->poster)) : ?><img src="<?php echo urlSubida('peliculas', $p->poster); ?>" alt="" loading="lazy">
+                                <?php else : ?><span class="poster-ph"><?php echo icono('film'); ?></span><?php endif; ?>
+                            </span>
+                            <span class="pel-reciente-info">
+                                <span class="pel-reciente-titulo"><?php echo s($p->titulo); ?></span>
+                                <span class="pel-reciente-meta"><?php echo s(trim($p->categoriaTexto() . ($p->anio ? ' · ' . $p->anio : ''), ' ·')); ?></span>
+                                <span class="pel-reciente-fecha"><?php echo icono('calendario'); ?><?php echo $p->fecha_vista ? s(fechaLarga((string) $p->fecha_vista)) : 'Sin fecha'; ?></span>
+                            </span>
+                            <span class="nota-badge <?php echo $cls; ?>"><?php echo number_format($n, 0); ?></span>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            </ol>
+        <?php else : ?>
+            <p style="color:var(--muted)">Aún no hay títulos registrados.</p>
+        <?php endif; ?>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><div class="card-titulo"><h2 class="h2-ico"><?php echo icono('estrella'); ?> Mejor puntuados de <?php echo $anioActual; ?></h2><p class="card-sub">Top 10 · las flechas marcan el cambio desde el último día visto</p></div></div>
+        <?php if (!empty($topAnio)) : ?>
+            <div class="pel-tira pel-tira--ranking">
+                <?php foreach ($topAnio as $i => $r) :
+                    $mov = $r['mov'];
+                    // Solo la dirección: flecha arriba (subió o entró) o abajo (bajó).
+                    // Sin cambios no se pinta nada. El detalle va al lector de pantalla.
+                    if ($mov === 'nuevo')  { $movCls = 'sube'; $movIco = 'arriba'; $movTxt = 'entró al ranking'; }
+                    elseif ($mov > 0)      { $movCls = 'sube'; $movIco = 'arriba'; $movTxt = 'subió ' . $mov . ($mov === 1 ? ' puesto' : ' puestos'); }
+                    elseif ($mov < 0)      { $movCls = 'baja'; $movIco = 'abajo';  $movTxt = 'bajó ' . (-$mov) . ($mov === -1 ? ' puesto' : ' puestos'); }
+                    else                   { $movCls = '';     $movIco = '';       $movTxt = ''; }
+                    $movHtml = $movCls
+                        ? '<span class="pel-mov pel-mov--' . $movCls . '"><span aria-hidden="true">' . icono($movIco) . '</span><span class="oculto-visual">, ' . $movTxt . '</span></span>'
+                        : '';
+                    echo $ao_poster($r['peli'], '<span class="pel-tira-rank">#' . ($i + 1) . $movHtml . '</span>');
+                endforeach; ?>
+            </div>
+        <?php else : ?>
+            <p style="color:var(--muted)">Aún no hay títulos registrados en <?php echo $anioActual; ?>.</p>
+        <?php endif; ?>
+    </div>
 </div>
 
 <div class="card" style="margin-top:22px">
@@ -84,15 +113,44 @@
 <div class="chart-grid" style="margin-top:22px">
     <div class="chart-box span-8"><h3>Distribución de calificaciones</h3><p class="chart-sub">Cantidad de títulos por nota (1–10)</p><canvas id="chartCalif"></canvas></div>
     <div class="chart-box span-4"><h3>Aprobación</h3><p class="chart-sub">Aprobado vs. No aprobado</p><canvas id="chartAprob"></canvas></div>
-    <div class="chart-box span-6"><h3>Puntuadas por año</h3><p class="chart-sub">Títulos por año de estreno</p><canvas id="chartAnioCount"></canvas></div>
-    <div class="chart-box span-6"><h3>Nota promedio por año visto</h3><p class="chart-sub">Promedio de lo que califiqué cada año</p><canvas id="chartAnioProm"></canvas></div>
+    <div class="chart-box span-8"><h3>Nota promedio por año visto</h3><p class="chart-sub">Promedio de lo que califiqué cada año</p><canvas id="chartAnioProm"></canvas></div>
+    <div class="chart-box span-4"><h3>Por categoría</h3><p class="chart-sub">Reparto de la colección</p><canvas id="chartCat"></canvas></div>
     <div class="chart-box span-12">
         <h3>Vistos por mes</h3>
         <p class="chart-sub">Títulos registrados en cada mes, sumando todos los años (pasa el cursor para el desglose)</p>
         <canvas id="chartVistosMes"></canvas>
     </div>
-    <div class="chart-box span-4"><h3>Por categoría</h3><p class="chart-sub">Reparto de la colección</p><canvas id="chartCat"></canvas></div>
-    <div class="chart-box span-8"><h3>Top directores / creadores</h3><p class="chart-sub">Por número de títulos</p><canvas id="chartAutores"></canvas></div>
+    <div class="chart-box span-12">
+        <h3>Top 5 directores / creadores</h3>
+        <p class="chart-sub">Por número de títulos, con todo lo que tengo registrado de cada uno</p>
+        <?php if (!empty($topDirectores)) : $ao_max = max(1, $topDirectores[0]['total']); ?>
+            <ol class="dir-top">
+                <?php foreach ($topDirectores as $i => $d) : ?>
+                    <li class="dir-top-fila">
+                        <div class="dir-top-cab">
+                            <span class="dir-top-pos"><?php echo sprintf('%02d', $i + 1); ?></span>
+                            <span class="dir-top-nombre"><?php echo s($d['nombre']); ?></span>
+                            <span class="dir-top-total"><?php echo $d['total']; ?> <?php echo $d['total'] === 1 ? 'título' : 'títulos'; ?></span>
+                            <span class="dir-top-barra" aria-hidden="true"><span style="width:<?php echo round($d['total'] / $ao_max * 100, 1); ?>%"></span></span>
+                        </div>
+                        <ul class="dir-top-titulos">
+                            <?php foreach ($d['titulos'] as $p) : $n = (float) $p->nota; $cls = $n >= 8 ? 'nota-alta' : ($n >= 5 ? 'nota-media' : 'nota-baja'); ?>
+                                <li>
+                                    <a href="/admin/peliculas/gestionar?id=<?php echo $p->id; ?>" title="<?php echo s($p->titulo) . ($p->anio ? ' (' . s($p->anio) . ')' : ''); ?>">
+                                        <?php if (!empty($p->poster)) : ?><img src="<?php echo urlSubida('peliculas', $p->poster); ?>" alt="<?php echo s($p->titulo); ?>" loading="lazy">
+                                        <?php else : ?><span class="poster-ph"><?php echo icono('film'); ?></span><?php endif; ?>
+                                        <span class="nota-badge <?php echo $cls; ?>"><?php echo number_format($n, 0); ?></span>
+                                    </a>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </li>
+                <?php endforeach; ?>
+            </ol>
+        <?php else : ?>
+            <p style="color:var(--muted)">Aún no hay directores registrados.</p>
+        <?php endif; ?>
+    </div>
     <div class="chart-box span-12"><h3>Vistas acumuladas</h3><p class="chart-sub">Total acumulado por año en que lo vi</p><canvas id="chartAcum"></canvas></div>
 </div>
 
@@ -106,8 +164,8 @@
                 <tr>
                     <td class="cell-poster" data-label=""><?php if (!empty($p->poster)) : ?><img class="poster-mini" src="<?php echo urlSubida('peliculas', $p->poster); ?>" alt=""><?php else : ?><div class="poster-mini" style="display:grid;place-items:center;color:var(--muted-2)"><?php echo icono('film'); ?></div><?php endif; ?></td>
                     <td class="cell-titulo" data-label="Título"><?php echo s($p->titulo); ?></td>
-                    <td data-label="Categoría"><span class="badge badge--cat"><?php echo s($p->categoria); ?></span></td>
-                    <td data-label="Dir./Creador" style="color:var(--muted)"><?php echo s($p->autor); ?></td>
+                    <td data-label="Categoría"><span class="badge badge--cat"><?php echo s($p->categoriaTexto()); ?></span></td>
+                    <td data-label="Dir./Creador" style="color:var(--muted)"><?php echo s($p->personasTexto()); ?></td>
                     <td data-label="Año"><?php echo s($p->anio); ?></td>
                     <td data-label="Nota"><span class="nota-badge <?php echo $cls; ?>"><?php echo number_format($n, 0); ?></span></td>
                     <td data-label="Estado"><?php echo $p->estaAprobada() ? '<span class="badge badge--ok">Aprobado</span>' : '<span class="badge badge--no">No aprobado</span>'; ?></td>
@@ -147,7 +205,6 @@
     function palN(n){ var a=[]; for(var i=0;i<n;i++) a.push(PAL[i%PAL.length]); return a; }
     new Chart(chartCalif, { type:'bar', data:{ labels:['1','2','3','4','5','6','7','8','9','10'], datasets:[{label:'Títulos',data:S.distNotas,backgroundColor:AMBER,borderRadius:4,borderSkipped:false}] }, options:{responsive:true,plugins:noL,scales:axis} });
     new Chart(chartAprob, { type:'doughnut', data:{ labels:['Aprobado','No aprobado'], datasets:[{data:[S.aprobados,S.noAprobados],backgroundColor:[GREEN,RED],borderColor:'#131316',borderWidth:2}] }, options:{responsive:true,cutout:'62%',plugins:{legend:{position:'bottom'}}} });
-    new Chart(chartAnioCount, { type:'bar', data:{ labels:S.aniosLabels, datasets:[{label:'Títulos',data:S.aniosCount,backgroundColor:BLUE,borderRadius:4,borderSkipped:false}] }, options:{responsive:true,plugins:noL,scales:axis} });
     new Chart(chartAnioProm, { type:'line', data:{ labels:S.vistoLabels, datasets:[{label:'Nota',data:S.vistoProm,borderColor:AMBER,backgroundColor:'rgba(245,180,0,.12)',borderWidth:2,fill:true,tension:.3,pointRadius:4,pointBackgroundColor:AMBER}] }, options:{responsive:true,plugins:noL,scales:{y:{min:0,max:10,grid:{color:GRID}},x:{grid:{display:false}}}} });
 
     // Vistos por mes: una sola barra con el total de cada mes (todos los años);
@@ -179,7 +236,6 @@
         }
     });
     new Chart(chartCat, { type:'doughnut', data:{ labels:S.catLabels, datasets:[{data:S.catCount,backgroundColor:palN(S.catLabels.length),borderColor:'#131316',borderWidth:2}] }, options:{responsive:true,cutout:'58%',plugins:{legend:{position:'bottom'}}} });
-    new Chart(chartAutores, { type:'bar', data:{ labels:S.autoresLabels, datasets:[{label:'Títulos',data:S.autoresCount,backgroundColor:BLUE,borderRadius:4,borderSkipped:false}] }, options:{indexAxis:'y',responsive:true,plugins:noL,scales:{x:{beginAtZero:true,grid:{color:GRID},ticks:{precision:0}},y:{grid:{display:false}}}} });
     // Acumulado por año en que lo vi (fecha_vista), no por año de estreno
     new Chart(chartAcum, { type:'line', data:{ labels:S.vistoLabels, datasets:[{label:'Acumulado',data:S.vistoAcum,borderColor:MAGENTA,backgroundColor:'rgba(170,34,150,.12)',borderWidth:2,fill:true,tension:.3,pointRadius:3}] }, options:{responsive:true,plugins:noL,scales:axis} });
 })();

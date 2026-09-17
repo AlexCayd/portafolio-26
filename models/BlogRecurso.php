@@ -3,7 +3,7 @@
 namespace Model;
 
 /**
- * Recursos asociados a una entrada de Tékhne (libros / películas).
+ * Recursos asociados a una entrada de Tékhne (libros / películas / videojuegos).
  * Sustituye a las columnas blog.ref_tipo / blog.ref_id, que solo admitían uno.
  */
 class BlogRecurso extends ActiveRecord {
@@ -11,7 +11,7 @@ class BlogRecurso extends ActiveRecord {
     protected static $tabla = 'blog_recursos';
     protected static $columnasDB = ['id', 'blog_id', 'ref_tipo', 'ref_id', 'orden'];
 
-    const TIPOS = ['libro', 'pelicula'];
+    const TIPOS = ['libro', 'pelicula', 'videojuego'];
 
     public $id;
     public $blog_id;
@@ -35,7 +35,7 @@ class BlogRecurso extends ActiveRecord {
 
     /**
      * Reemplaza la lista completa de recursos de una entrada.
-     * $pares: [['tipo' => 'libro'|'pelicula', 'id' => int], …]
+     * $pares: [['tipo' => 'libro'|'pelicula'|'videojuego', 'id' => int], …]
      */
     public static function guardarLista(int $blogId, array $pares) : void {
         $blogId = (int) $blogId;
@@ -65,14 +65,17 @@ class BlogRecurso extends ActiveRecord {
 
     /**
      * Convierte las filas en los objetos reales, descartando huérfanos
-     * (el libro/película pudo borrarse). Devuelve [['tipo' => …, 'obj' => …], …].
+     * (el recurso pudo borrarse). Devuelve [['tipo' => …, 'obj' => …], …].
      */
     public static function resolver(array $filas) : array {
         $out = [];
         foreach ($filas as $fila) {
-            $obj = $fila->ref_tipo === 'libro'
-                ? Libro::find((int) $fila->ref_id)
-                : ($fila->ref_tipo === 'pelicula' ? Pelicula::find((int) $fila->ref_id) : null);
+            switch ($fila->ref_tipo) {
+                case 'libro':      $obj = Libro::find((int) $fila->ref_id); break;
+                case 'pelicula':   $obj = Pelicula::find((int) $fila->ref_id); break;
+                case 'videojuego': $obj = Videojuego::find((int) $fila->ref_id); break;
+                default:           $obj = null;
+            }
             if ($obj) $out[] = ['tipo' => $fila->ref_tipo, 'obj' => $obj];
         }
         return $out;

@@ -71,13 +71,18 @@
             </div>
 
             <div class="campo full autocomplete" data-autocomplete data-endpoint="/admin/buscar?tipo=ref" data-onpick="blogPick">
-                <span>Recursos asociados (libros / películas / series) — opcional, puedes añadir varios</span>
+                <span>Recursos asociados (libros / películas / series / videojuegos) — opcional, puedes añadir varios</span>
                 <input type="text" class="ac-input" placeholder="Busca un título y elígelo para añadirlo…">
                 <div class="ac-results"></div>
                 <div class="ref-lista" id="ref-lista">
+                    <?php
+                    // Etiqueta del chip por tipo de recurso (los videojuegos guardan
+                    // el título en `nombre`, no en `titulo`).
+                    $ao_etiquetas = ['libro' => 'Libro: ', 'pelicula' => 'Película: ', 'videojuego' => 'Videojuego: '];
+                    ?>
                     <?php foreach ($recursos as $r) : ?>
                         <span class="tag-pill" data-tipo="<?php echo s($r['tipo']); ?>" data-id="<?php echo (int) $r['obj']->id; ?>">
-                            <?php echo s(($r['tipo'] === 'libro' ? 'Libro: ' : 'Película: ') . $r['obj']->titulo); ?> <b data-x>✕</b>
+                            <?php echo s(($ao_etiquetas[$r['tipo']] ?? '') . ($r['tipo'] === 'videojuego' ? $r['obj']->nombre : $r['obj']->titulo)); ?> <b data-x>✕</b>
                         </span>
                     <?php endforeach; ?>
                 </div>
@@ -316,7 +321,8 @@
             var pill = document.createElement('span');
             pill.className = 'tag-pill';
             pill.dataset.tipo = item.tipo; pill.dataset.id = item.id;
-            pill.textContent = (item.tipo === 'libro' ? 'Libro: ' : 'Película: ') + item.titulo + ' ';
+            var etiquetas = { libro: 'Libro: ', pelicula: 'Película: ', videojuego: 'Videojuego: ' };
+            pill.textContent = (etiquetas[item.tipo] || '') + item.titulo + ' ';
             var x = document.createElement('b'); x.setAttribute('data-x', ''); x.textContent = '✕';
             pill.appendChild(x);
             refLista.appendChild(pill);

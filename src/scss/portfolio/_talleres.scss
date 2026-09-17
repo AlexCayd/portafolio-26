@@ -1,0 +1,257 @@
+// ---------------------------------------------------------------------------
+// TALLERES A LA MEDIDA (sección #ao-teaching)
+//
+// Idea: el bloque no es una tarjeta de oferta, es una HOJA DE TEMARIO. Cinco
+// materias con nombre y un sexto renglón deliberadamente en blanco —con su
+// cursor parpadeando— que es lo que significa "a la medida": el temario se
+// termina de escribir con el cliente. Cada renglón es, además, una cotización
+// con el mensaje de WhatsApp ya redactado.
+//
+// Todo el estado visual vive aquí: sin JS el bloque se ve y funciona igual.
+// El movimiento lo aportan [data-reveal] / [data-reveal-stagger] (ao-init.js).
+// ---------------------------------------------------------------------------
+
+#ao-app .ao-talleres {
+  margin-top: clamp(30px, 5vh, 56px);
+  padding-top: clamp(26px, 4vh, 44px);
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(26px, 4vw, 56px);
+}
+
+@media (min-width: 940px) {
+  #ao-app .ao-talleres {
+    grid-template-columns: minmax(300px, .92fr) minmax(0, 1.08fr);
+    align-items: start;
+  }
+}
+
+/* ---------- Columna editorial ---------- */
+
+#ao-app .ao-talleres-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: .22em;
+  color: var(--accent);
+}
+#ao-app .ao-talleres-kicker::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+
+#ao-app .ao-talleres-titulo {
+  margin: 16px 0 0;
+  font-family: 'Clash Display', sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.7rem, 3.2vw, 2.7rem);
+  line-height: 1.03;
+  letter-spacing: -.02em;
+  text-wrap: balance;
+}
+#ao-app .ao-talleres-titulo em { font-style: normal; font-weight: 700; color: var(--accent); }
+
+#ao-app .ao-talleres-texto {
+  margin: 16px 0 0;
+  max-width: 46ch;
+  font-size: clamp(1rem, 1.15vw, 1.08rem);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--fg) 82%, var(--bg));
+  text-wrap: pretty;
+}
+
+#ao-app .ao-talleres-cta {
+  margin-top: clamp(22px, 3vw, 30px);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  text-decoration: none;
+  padding: 17px 30px;
+  border-radius: 50px;
+  font-family: 'Clash Display', sans-serif;
+  font-weight: 700;
+  font-size: clamp(1rem, 1.3vw, 1.12rem);
+  white-space: nowrap;
+}
+#ao-app .ao-talleres-cta:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+
+#ao-app .ao-talleres-meta {
+  margin: 18px 0 0;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--fg) 65%, var(--bg));
+}
+
+/* ---------- La hoja de temario ---------- */
+
+#ao-app .ao-talleres-hoja {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--sh-md);
+  overflow: hidden;
+}
+
+#ao-app .ao-talleres-hoja-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 13px clamp(16px, 2vw, 24px);
+  border-bottom: 1px solid var(--line);
+  font-family: 'Space Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--fg) 65%, var(--bg));
+}
+
+#ao-app .ao-talleres-lista { list-style: none; margin: 0; padding: 0; }
+
+#ao-app .ao-taller + .ao-taller { border-top: 1px solid var(--line); }
+
+#ao-app .ao-taller-link {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(12px, 1.6vw, 20px);
+  min-height: 68px;
+  padding: clamp(14px, 1.7vw, 19px) clamp(16px, 2vw, 24px);
+  text-decoration: none;
+  color: var(--fg);
+  transition: background-color .28s ease;
+}
+
+// Barra de acento: crece desde arriba al enfocar/pasar el cursor.
+#ao-app .ao-taller-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: 50% 0;
+  transition: transform .34s cubic-bezier(.16, 1, .3, 1);
+}
+
+#ao-app .ao-taller-link:hover,
+#ao-app .ao-taller-link:focus-visible { background-color: color-mix(in srgb, var(--accent) 9%, transparent); }
+
+#ao-app .ao-taller-link:hover::before,
+#ao-app .ao-taller-link:focus-visible::before { transform: scaleY(1); }
+
+#ao-app .ao-taller-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+
+#ao-app .ao-taller-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  letter-spacing: .08em;
+  color: color-mix(in srgb, var(--fg) 65%, var(--bg));
+  align-self: start;
+  padding-top: 3px;
+  transition: color .28s ease;
+}
+#ao-app .ao-taller-link:hover .ao-taller-num,
+#ao-app .ao-taller-link:focus-visible .ao-taller-num { color: var(--fg); }
+
+#ao-app .ao-taller-cuerpo { min-width: 0; }
+
+#ao-app .ao-taller-nombre {
+  display: block;
+  font-family: 'Clash Display', sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.02rem, 1.5vw, 1.22rem);
+  line-height: 1.16;
+  letter-spacing: -.01em;
+}
+
+#ao-app .ao-taller-desc {
+  display: block;
+  margin-top: 5px;
+  font-size: .82rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--fg) 72%, var(--bg));
+}
+
+// Marcador: siempre visible, así la fila se lee como accionable también en táctil.
+#ao-app .ao-taller-ir {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--fg) 72%, var(--bg));
+  flex: none;
+  transition: background-color .3s ease, border-color .3s ease, color .3s ease, transform .3s cubic-bezier(.16, 1, .3, 1);
+}
+#ao-app .ao-taller-link:hover .ao-taller-ir,
+#ao-app .ao-taller-link:focus-visible .ao-taller-ir {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--accent-fg);
+}
+
+/* ---------- El renglón en blanco ---------- */
+
+#ao-app .ao-taller--abierto { border-top-style: dashed; }
+
+// El cursor se alinea con la última línea aunque el título envuelva (375px).
+#ao-app .ao-taller--abierto .ao-taller-nombre {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  color: color-mix(in srgb, var(--fg) 80%, var(--bg));
+}
+
+#ao-app .ao-taller-caret {
+  width: 2px;
+  height: 1em;
+  margin-bottom: .1em;
+  background: var(--accent);
+  flex: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  #ao-app .ao-taller-caret { animation: ao-taller-caret 1.6s ease-in-out infinite; }
+  #ao-app .ao-taller-link:hover .ao-taller-ir,
+  #ao-app .ao-taller-link:focus-visible .ao-taller-ir { transform: translateX(3px); }
+}
+
+@keyframes ao-taller-caret {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .18; }
+}
+
+// Sin movimiento: el estado de la fila se comunica igual, sin transiciones.
+@media (prefers-reduced-motion: reduce) {
+  #ao-app .ao-taller-link,
+  #ao-app .ao-taller-link::before,
+  #ao-app .ao-taller-num,
+  #ao-app .ao-taller-ir { transition: none; }
+}
+
+/* ---------- Teléfono ---------- */
+
+@media (max-width: 560px) {
+  #ao-app .ao-talleres-cta { width: 100%; justify-content: center; }
+  #ao-app .ao-talleres-hoja-head { font-size: 10px; letter-spacing: .16em; }
+  #ao-app .ao-taller-ir { width: 30px; height: 30px; }
+}

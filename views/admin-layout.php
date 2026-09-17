@@ -30,7 +30,11 @@ $nav = [
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?php echo $titulo ?? 'Panel'; ?> - Admin · Alexander Oliva</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="icon" type="image/png" href="/build/img/profile.png">
+<meta name="theme-color" content="#0b0b0c">
+<!-- Mismo icono que el sitio público: el panel también se reconoce en la pestaña -->
+<link rel="icon" type="image/png" sizes="32x32" href="<?php echo asset('/build/img/favicon-32.png'); ?>">
+<link rel="icon" type="image/png" sizes="512x512" href="<?php echo asset('/build/img/favicon-512.png'); ?>">
+<link rel="apple-touch-icon" sizes="180x180" href="<?php echo asset('/build/img/favicon-180.png'); ?>">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?php echo asset('/build/css/admin.css'); ?>">
 <?php if (!empty($usaCharts)) : ?><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script><?php endif; ?>
@@ -207,7 +211,13 @@ document.querySelectorAll('form[data-confirm]').forEach(function (f) {
         cont.addEventListener('dragover', function (e) {
             e.preventDefault(); var r = e.target.closest('[draggable="true"]'); if (!r || r === drag) return;
             var rect = r.getBoundingClientRect();
-            cont.insertBefore(drag, (e.clientY - rect.top) / rect.height > 0.5 ? r.nextSibling : r);
+            // En una tabla el orden lo marca el eje Y; en una rejilla (la galería
+            // de un proyecto) las miniaturas van en fila, así que manda la X.
+            var enFila = drag.offsetTop === r.offsetTop;
+            var pasado = enFila
+                ? (e.clientX - rect.left) / rect.width  > 0.5
+                : (e.clientY - rect.top)  / rect.height > 0.5;
+            cont.insertBefore(drag, pasado ? r.nextSibling : r);
             renumber(cont); updateLanding(cont);
         });
     });
@@ -241,6 +251,9 @@ window.initStars = function (root) {
         function hover(v) { var fn = sr.dataset.onhover && window[sr.dataset.onhover]; if (fn) fn(v); }
         var val0 = parseFloat(input.value) || 0;
         paint(val0); hover(val0);
+        // Para widgets reutilizados (una modal que se abre con otro registro):
+        // permite repintar tras cambiar el input por fuera.
+        sr.repintar = function () { var v = parseFloat(input.value) || 0; paint(v); hover(v); };
         sr.querySelectorAll('.star').forEach(function (st) {
             var i = +st.dataset.i;
             st.addEventListener('mousemove', function (e) { var v = i - media(e, st); paint(v); hover(v); });
@@ -280,6 +293,15 @@ window.initFechasDmy = function (root) {
         // El hidden hermano es el que viaja en el POST. Se resuelve ANTES de montar
         // el calendario, que envuelve el input y le cambia el parentNode.
         var hidden = inp.parentNode.querySelector('input[type="hidden"][name="' + inp.dataset.fechaDmy + '"]');
+        // Atajo «Hoy» del rótulo (campoFechaDmy con $conHoy)
+        var hoyBtn = inp.parentNode.querySelector('[data-fecha-hoy]');
+        if (hoyBtn) hoyBtn.addEventListener('click', function (e) {
+            e.preventDefault(); e.stopPropagation();
+            var d = new Date();
+            inp.value = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear();
+            inp.classList.remove('is-invalid');
+            inp.dispatchEvent(new Event('change', { bubbles: true }));
+        });
         window.initDatePicker(inp);
         var form = inp.closest('form');
         if (!hidden || !form) return;
@@ -301,8 +323,14 @@ window.initFechasDmy = function (root) {
 // aceptando tecleo y el valor sigue viajando en el hidden hermano.
 window.initDatePicker = function (inp) {
     if (!inp || inp.dataset.dp) return; inp.dataset.dp = '1';
+    // La fecha se elige siempre en el calendario, nunca se teclea: así no hay
+    // formatos a medias ni fechas inválidas que validar. Para vaciarla está la
+    // acción «Limpiar» del propio calendario.
+    inp.readOnly = true;
+    inp.setAttribute('aria-haspopup', 'dialog');
     var MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     var DIAS  = ['L','M','M','J','V','S','D'];
+    var ANIO_MIN = 2020;   // primer año con registros: el calendario no baja de ahí
 
     // El input se envuelve para poder anclar el popover y el botón de calendario
     var wrap = inp.parentNode;
@@ -346,8 +374,12 @@ window.initDatePicker = function (inp) {
 
         var opts = '';
         for (var i = 0; i < 12; i++) opts += '<option value="' + i + '"' + (i === m ? ' selected' : '') + '>' + MESES[i] + '</option>';
-        var anios = '';
-        for (var a = y - 8; a <= y + 8; a++) anios += '<option value="' + a + '"' + (a === y ? ' selected' : '') + '>' + a + '</option>';
+        // Todas las fechas del panel son de hechos ya ocurridos (visto, leído,
+        // publicado) y el registro empieza en 2020: la lista va del año actual a
+        // ANIO_MIN. Si el año del cursor cae fuera se añade para no perder la selección.
+        var anios = '', tope = hoy.getFullYear(), piso = Math.min(ANIO_MIN, y), techo = Math.max(tope, y);
+        for (var a = techo; a >= piso; a--) anios += '<option value="' + a + '"' + (a === y ? ' selected' : '') + '>' + a + '</option>';
+        var sinAnterior = y < ANIO_MIN || (y === ANIO_MIN && m === 0);
 
         var celdas = '';
         for (var b = 0; b < offset; b++) celdas += '<span class="dp-d dp-d--off"></span>';
@@ -360,7 +392,7 @@ window.initDatePicker = function (inp) {
 
         pop.innerHTML =
             '<div class="dp-head">' +
-                '<button type="button" class="dp-nav" data-nav="-1" aria-label="Mes anterior">&lsaquo;</button>' +
+                '<button type="button" class="dp-nav" data-nav="-1" aria-label="Mes anterior"' + (sinAnterior ? ' disabled' : '') + '>&lsaquo;</button>' +
                 '<select class="dp-sel dp-mes" aria-label="Mes">' + opts + '</select>' +
                 '<select class="dp-sel dp-anio" aria-label="Año">' + anios + '</select>' +
                 '<button type="button" class="dp-nav" data-nav="1" aria-label="Mes siguiente">&rsaquo;</button>' +
@@ -380,11 +412,19 @@ window.initDatePicker = function (inp) {
         cursor = seleccionada() || hoy0();
         wrap.appendChild(pop);
         render();
-        // Si no cabe abajo, se despliega hacia arriba
+        // Si no cabe abajo, se despliega hacia arriba. El límite es la ventana o,
+        // si el campo vive en un contenedor con scroll (el cuerpo de una modal),
+        // ese contenedor: lo que se salga de él queda recortado.
         requestAnimationFrame(function () {
             if (!pop) return;
-            var r = pop.getBoundingClientRect();
-            if (r.bottom > window.innerHeight - 8) pop.classList.add('dp-pop--arriba');
+            var caja = { top: 0, bottom: window.innerHeight }, scroller = null;
+            for (var el = wrap.parentElement; el && el !== document.body; el = el.parentElement) {
+                if (/(auto|scroll)/.test(getComputedStyle(el).overflowY)) { scroller = el; caja = el.getBoundingClientRect(); break; }
+            }
+            var r = pop.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+            if (r.bottom <= caja.bottom - 8) return;
+            if (w.top - r.height - 7 >= caja.top + 8 || !scroller) pop.classList.add('dp-pop--arriba');
+            else pop.scrollIntoView({ block: 'nearest' });   // ni arriba ni abajo: se desplaza el contenedor
         });
         document.addEventListener('mousedown', fuera, true);
         document.addEventListener('keydown', teclas, true);
@@ -405,6 +445,7 @@ window.initDatePicker = function (inp) {
         e.preventDefault();
         var base = seleccionada() || cursor;
         var d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + salto);
+        if (d.getFullYear() < ANIO_MIN && d < base) return;
         cursor = new Date(d.getFullYear(), d.getMonth(), 1);
         escribir(d); render();
     }
@@ -459,8 +500,21 @@ window.initTagInputs = function () {
 initTagInputs();
 
 // ---- Autocompletar ([data-autocomplete] con .ac-input, .ac-results, data-endpoint, data-onpick) ----
-document.querySelectorAll('[data-autocomplete]').forEach(function (box) {
+// Icono de reserva cuando el resultado no trae portada. Se toma de icono()
+// para no duplicar SVGs sueltos en el JS.
+var AC_ICONOS = {
+    libro:      <?php echo json_encode(icono('libros'), JSON_HEX_TAG); ?>,
+    pelicula:   <?php echo json_encode(icono('peliculas'), JSON_HEX_TAG); ?>,
+    videojuego: <?php echo json_encode(icono('videojuegos'), JSON_HEX_TAG); ?>
+};
+// Se expone para poder engancharlo en campos creados por JS (filas de
+// director, formularios en modal). El flag `acBuilt` evita duplicar oyentes.
+window.initAutocomplete = function (raiz) {
+(raiz || document).querySelectorAll('[data-autocomplete]').forEach(function (box) {
+    if (box.dataset.acBuilt) return;
+    box.dataset.acBuilt = '1';
     var input = box.querySelector('.ac-input'), results = box.querySelector('.ac-results'), endpoint = box.dataset.endpoint, onpick = box.dataset.onpick, t;
+    if (!input || !results) return;
     input.addEventListener('input', function () {
         clearTimeout(t); var q = input.value.trim();
         if (q.length < 2) { results.innerHTML = ''; results.classList.remove('open'); return; }
@@ -468,7 +522,7 @@ document.querySelectorAll('[data-autocomplete]').forEach(function (box) {
             fetch(endpoint + (endpoint.indexOf('?') < 0 ? '?' : '&') + 'q=' + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (items) {
                 results.innerHTML = (items && items.length) ? items.map(function (it) {
                     return '<div class="ac-item" data-json="' + encodeURIComponent(JSON.stringify(it)) + '">' +
-                        (it.poster ? '<img src="' + it.poster + '">' : '<span class="ac-ico">' + (it.tipo === 'libro' ? '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>' : '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/></svg>') + '</span>') +
+                        (it.poster ? '<img src="' + it.poster + '">' : '<span class="ac-ico">' + (AC_ICONOS[it.tipo] || AC_ICONOS.pelicula) + '</span>') +
                         '<div><div class="ac-t">' + it.titulo + '</div><div class="ac-s">' + (it.sub || '') + '</div></div></div>';
                 }).join('') : '<div class="ac-empty">Sin resultados</div>';
                 results.classList.add('open');
@@ -497,6 +551,8 @@ document.querySelectorAll('[data-autocomplete]').forEach(function (box) {
     });
     document.addEventListener('click', function (e) { if (!box.contains(e.target)) results.classList.remove('open'); });
 });
+};
+initAutocomplete();
 </script>
 <?php if (!empty($scriptExtra)) echo $scriptExtra; ?>
 </body>

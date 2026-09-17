@@ -24,20 +24,83 @@ class Visita extends ActiveRecord {
                           ON DUPLICATE KEY UPDATE total = total + 1");
     }
 
-    // Registra una visita a una página concreta (contador por ruta)
+    /**
+     * Registra una visita a una página concreta. Escribe en las dos tablas:
+     * `visitas_pagina` guarda el acumulado histórico y el título (dimensión),
+     * `visitas_pagina_dia` el desglose por fecha que alimenta los periodos.
+     */
     public static function registrarPagina(string $ruta, string $titulo) : void {
         $ruta   = self::$db->escape_string(mb_substr($ruta, 0, 191));
         $titulo = self::$db->escape_string(mb_substr($titulo, 0, 200));
+        $hoy    = date('Y-m-d');
         self::$db->query("INSERT INTO visitas_pagina (ruta, titulo, total) VALUES ('{$ruta}', '{$titulo}', 1)
                           ON DUPLICATE KEY UPDATE total = total + 1, titulo = VALUES(titulo)");
+        // Contar visitas nunca puede tumbar una página pública: si la tabla por
+        // día aún no existe en el servidor (despliegue a medias), se omite.
+        try {
+            self::$db->query("INSERT INTO visitas_pagina_dia (ruta, fecha, total) VALUES ('{$ruta}', '{$hoy}', 1)
+                              ON DUPLICATE KEY UPDATE total = total + 1");
+        } catch (\mysqli_sql_exception $e) {
+            // sin desglose por fecha hasta que exista la tabla
+        }
     }
 
     // Todas las páginas ordenadas por visitas (desc) => array de objetos {ruta, titulo, total}
+    // Es el «Todo el histórico»: incluye lo anterior al desglose por fecha.
     public static function paginasPorVisitas() : array {
         $rows = self::$db->query("SELECT ruta, titulo, total FROM visitas_pagina ORDER BY total DESC, titulo ASC");
         $out = [];
         while ($r = $rows->fetch_object()) { $out[] = $r; }
         return $out;
+    }
+
+    /**
+     * Páginas más visitadas desde una fecha (inclusive). El título se une por
+     * `ruta` con la tabla acumulada para no duplicarlo un registro por día.
+     */
+    private static function paginasDesde(string $desde) : array {
+        $desde = self::$db->escape_string($desde);
+        $rows = self::$db->query("SELECT d.ruta AS ruta, COALESCE(NULLIF(p.titulo, ''), d.ruta) AS titulo, SUM(d.total) AS total
+                                  FROM visitas_pagina_dia d
+                                  LEFT JOIN visitas_pagina p ON p.ruta = d.ruta
+                                  WHERE d.fecha >= '{$desde}'
+                                  GROUP BY d.ruta, titulo
+                                  ORDER BY total DESC, titulo ASC");
+        $out = [];
+        while ($r = $rows->fetch_object()) { $r->total = (int) $r->total; $r->acumulado = false; $out[] = $r; }
+
+        // Rutas visitadas en el periodo (por su última visita) que todavía no
+        // tienen desglose por fecha: solo existe su total histórico. Van al final
+        // marcadas como `acumulado` para no mezclarlas con visitas del periodo.
+        // Desaparecen solas en cuanto la ruta acumula filas por día.
+        $rows = self::$db->query("SELECT p.ruta, COALESCE(NULLIF(p.titulo, ''), p.ruta) AS titulo, p.total
+                                  FROM visitas_pagina p
+                                  WHERE DATE(p.actualizado) >= '{$desde}'
+                                    AND NOT EXISTS (SELECT 1 FROM visitas_pagina_dia d WHERE d.ruta = p.ruta AND d.fecha >= '{$desde}')
+                                  ORDER BY p.total DESC, titulo ASC");
+        while ($r = $rows->fetch_object()) { $r->total = (int) $r->total; $r->acumulado = true; $out[] = $r; }
+        return $out;
+    }
+
+    // Páginas más visitadas de los últimos $dias días (mismo rango que porDia)
+    public static function paginasPorDias(int $dias) : array {
+        return self::paginasDesde(date('Y-m-d', strtotime("-" . ($dias - 1) . " days")));
+    }
+
+    // Páginas más visitadas de los últimos $meses meses (mismo rango que porMes)
+    public static function paginasPorMeses(int $meses) : array {
+        return self::paginasDesde(date('Y-m-01', strtotime("first day of -" . ($meses - 1) . " month")));
+    }
+
+    /**
+     * Primer día con desglose por página, o null si la tabla está vacía.
+     * La UI lo usa para avisar desde cuándo los periodos son fiables: lo
+     * anterior a esa fecha solo existe como total acumulado sin fechar.
+     * Inicio (`/`) no cuenta: su histórico diario se rellenó desde `visitas`.
+     */
+    public static function inicioDetallePagina() : ?string {
+        $r = self::$db->query("SELECT MIN(fecha) AS f FROM visitas_pagina_dia WHERE ruta <> '/'")->fetch_assoc();
+        return $r && $r['f'] ? $r['f'] : null;
     }
 
     // Total diario de los últimos $dias días => ['labels'=>[], 'data'=>[]]
@@ -65,13 +128,27 @@ class Visita extends ActiveRecord {
         $map = [];
         while ($r = $rows->fetch_assoc()) { $map[$r['ym']] = (int) $r['t']; }
         $nombres = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        $conAnio = $meses > 12;                 // si cruza más de un año, «Ene 25» evita la ambigüedad
         $labels = []; $data = []; $total = 0;
         for ($i = $desde; $i >= 0; $i--) {
             $ym = date('Y-m', strtotime("first day of -{$i} month"));
-            $labels[] = $nombres[(int) date('n', strtotime($ym . '-01')) - 1];
+            $t  = strtotime($ym . '-01');
+            $labels[] = $nombres[(int) date('n', $t) - 1] . ($conAnio ? ' ' . date('y', $t) : '');
             $v = $map[$ym] ?? 0; $data[] = $v; $total += $v;
         }
         return ['labels' => $labels, 'data' => $data, 'total' => $total];
+    }
+
+    /**
+     * Toda la serie: de la primera visita registrada a hoy, mes a mes.
+     * Alimenta la opción «Todo el histórico» del dashboard.
+     */
+    public static function historico() : array {
+        $r = self::$db->query("SELECT MIN(fecha) AS f FROM " . static::$tabla)->fetch_assoc();
+        if (!$r || empty($r['f'])) return ['labels' => [], 'data' => [], 'total' => 0];
+        $ini   = strtotime($r['f']);
+        $meses = ((int) date('Y') - (int) date('Y', $ini)) * 12 + ((int) date('n') - (int) date('n', $ini)) + 1;
+        return self::porMes(max(1, $meses));
     }
 
     public static function totalGlobal() : int {

@@ -1,13 +1,8 @@
 <link rel="stylesheet" href="/build/css/paginas.css">
 <div id="ao-app" data-theme="dark">
 <div data-barba-namespace="blog-recomendaciones">
-    <header class="pg-top">
-        <a href="/" class="brand">Alexander <span>Oliva</span></a>
-        <div class="pg-actions">
-            <a class="pg-back" href="/tekhne">Tékhne</a>
-            <a class="pg-wa" href="<?php echo waLink('Hola Alexander, quiero platicar contigo.'); ?>" target="_blank" rel="noopener">Contáctame</a>
-        </div>
-    </header>
+    <?php $ao_top_volver = ['url' => '/tekhne', 'texto' => 'Tékhne']; ?>
+    <?php include __DIR__ . '/../partials/pg-top.php'; ?>
 
     <main class="pg pg--wide">
         <nav class="pg-crumb" data-anim aria-label="Ruta de navegación">
@@ -29,7 +24,7 @@
                         <?php else : ?>
                             <div class="sel-ph"><?php echo icono('film'); ?></div>
                         <?php endif; ?>
-                        <span class="sel-badge"><?php echo icono('estrella'); ?>10</span>
+                        <span class="sel-badge sel-badge--pick" title="Selección del autor"><?php echo icono('estrella'); ?></span>
                     </div>
                     <h3 class="sel-name"><?php echo s($t->titulo); ?></h3>
                     <p class="sel-meta"><?php echo s($t->categoria); ?><?php echo $t->anio ? ' · ' . s($t->anio) : ''; ?></p>

@@ -32,4 +32,10 @@ class Videojuego extends ActiveRecord {
     public static function ordenados() {
         return self::consultarSQL("SELECT * FROM " . static::$tabla . " ORDER BY orden ASC, id ASC");
     }
+
+    // Autocompletar del panel (recursos asociados a una entrada de Tékhne)
+    public static function buscar(string $q) {
+        $q = self::$db->escape_string($q);
+        return self::consultarSQL("SELECT * FROM " . static::$tabla . " WHERE nombre LIKE '%{$q}%' ORDER BY nombre ASC LIMIT 8");
+    }
 }

@@ -5,6 +5,7 @@ namespace Controllers;
 use MVC\Router;
 use Model\Proyecto;
 use Model\ProyectoImagen;
+use Model\ProyectoSeccion;
 use Model\Servicio;
 use Model\Credencial;
 use Model\Blog;
@@ -57,8 +58,8 @@ class PortfolioController
             ],
         ];
 
-        // --- Blog: los 3 primeros publicados por orden (se eligen con drag en /admin/blog) ---
-        $posts = array_slice(Blog::publicados(), 0, 3);
+        // --- Blog: los 6 primeros publicados por orden (se eligen con drag en /admin/blog) ---
+        $posts = array_slice(Blog::publicados(), 0, 6);
 
         $router->render('portfolio/index', [
             'titulo'        => 'Alexander Oliva - Desarrollador de Software & Diseñador UX/UI en CDMX',
@@ -81,13 +82,21 @@ class PortfolioController
 
         Visita::registrarPagina('/proyecto/' . $proyecto->slug, $proyecto->titulo);
 
+        $galeria = ProyectoImagen::porProyecto((int) $proyecto->id);
+
         $router->render('proyecto/index', [
             'titulo'   => $proyecto->titulo . ' - Alexander Oliva',
-            'metaDescripcion' => mb_substr(strip_tags($proyecto->descripcion), 0, 160),
+            'metaDescripcion' => mb_substr($proyecto->resumenMeta(), 0, 160),
             'ogImagen' => urlSubida('proyectos/portadas', $proyecto->img),
             'canonical' => 'https://alexanderoliva.com/proyecto/' . $proyecto->slug,
             'proyecto' => $proyecto,
-            'galeria'  => ProyectoImagen::porProyecto((int) $proyecto->id),
+            'galeria'  => $galeria,
+            // La ficha se arma siempre igual: contexto, galería y después las
+            // secciones que traiga el proyecto (ver Proyecto::bloques()).
+            'bloques'  => $proyecto->bloques(
+                ProyectoSeccion::porProyecto((int) $proyecto->id),
+                !empty($galeria)
+            ),
         ], 'portfolio-layout');
     }
 
@@ -143,7 +152,7 @@ class PortfolioController
             'titulo' => $post->titulo . ' - Tékhne · Alexander Oliva',
             'metaDescripcion' => $post->descripcion,
             'ogTitulo' => $post->titulo,
-            'ogImagen' => $post->cover_img ? urlSubida('blog', $post->cover_img) : '/build/img/profile.png',
+            'ogImagen' => $post->cover_img ? urlSubida('blog', $post->cover_img) : '/build/img/og-default.jpg',
             'ogTipo'   => 'article',
             'ogFecha'  => $post->fecha_pub ?: null,
             'canonical' => 'https://alexanderoliva.com/tekhne/' . ($post->slug ?: $post->id),
@@ -174,16 +183,33 @@ class PortfolioController
         $url = '/tekhne/pelicula/' . generarSlug($film->titulo);
         Visita::registrarPagina($url, $film->titulo);
 
+        // Playlist de recomendaciones: desde cualquier ficha se puede entrar a
+        // la selección, y si el título forma parte de ella se navega con
+        // anterior/siguiente sin volver al listado.
+        $seleccion = Pelicula::perfectas();
+        $pos = null;
+        foreach ($seleccion as $i => $t) {
+            if ((int) $t->id === (int) $film->id) { $pos = $i; break; }
+        }
+        $total = count($seleccion);
+        $playlist = [
+            'total'    => $total,
+            'pos'      => $pos,
+            'anterior' => $pos !== null && $total > 1 ? $seleccion[($pos - 1 + $total) % $total] : null,
+            'siguiente'=> $pos !== null && $total > 1 ? $seleccion[($pos + 1) % $total] : null,
+        ];
+
         $router->render('pelicula/index', [
             'titulo' => $film->titulo . ' - Tékhne · Alexander Oliva',
             'metaDescripcion' => $film->comentario
                 ? mb_substr(strip_tags($film->comentario), 0, 160)
-                : trim(($film->categoria ?: '') . ($film->autor && $film->autor !== '—' ? ' de ' . $film->autor : '') . ($film->anio ? ' (' . $film->anio . ')' : '')),
+                : trim(($film->categoriaTexto() ?: '') . ($film->personaConocida() ? ' de ' . $film->personasTexto() : '') . ($film->anio ? ' (' . $film->anio . ')' : '')),
             'ogTitulo' => $film->titulo,
-            'ogImagen' => $film->poster ? urlSubida('peliculas', $film->poster) : '/build/img/profile.png',
+            'ogImagen' => $film->poster ? urlSubida('peliculas', $film->poster) : '/build/img/og-default.jpg',
             'ogTipo'   => 'article',
             'canonical' => 'https://alexanderoliva.com' . $url,
-            'film'   => $film,
+            'film'     => $film,
+            'playlist' => $playlist,
         ], 'portfolio-layout');
     }
 
