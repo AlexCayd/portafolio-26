@@ -1,22 +1,23 @@
 <link rel="stylesheet" href="/build/css/paginas.css">
 <div id="ao-app" data-theme="dark">
 <div data-barba-namespace="pelicula">
-    <?php $ao_top_volver = ['url' => '/tekhne/peliculas', 'texto' => 'Películas']; ?>
     <?php include __DIR__ . '/../partials/pg-top.php'; ?>
 
     <?php
         $tiene_comentario = !empty(trim((string) $film->comentario));
         $nota = (float) $film->nota;
         $poster_url = urlSubida('peliculas', $film->poster);
+
+        $ao_crumb = [
+            ['url' => '/',                 'texto' => 'Home'],
+            ['url' => '/tekhne',           'texto' => 'Tékhne'],
+            ['url' => '/tekhne/peliculas', 'texto' => 'Películas'],
+            ['texto' => $film->titulo],
+        ];
+        include __DIR__ . '/../partials/pg-crumb.php';
     ?>
 
     <main class="pg pg--wide film-page">
-        <nav class="pg-crumb" data-anim aria-label="Ruta de navegación">
-            <a href="/">Home</a><span>›</span>
-            <a href="/tekhne">Tékhne</a><span>›</span>
-            <a href="/tekhne/peliculas">Películas</a><span>›</span>
-            <span class="cur"><?php echo s($film->titulo); ?></span>
-        </nav>
 
         <!-- Póster a la izquierda, ficha técnica a la derecha. El póster lleva
              view-transition-name para continuar la animación desde el catálogo. -->
@@ -73,30 +74,36 @@
                     </div>
                 <?php endif; ?>
 
-                <!-- Playlist: entrar a la selección desde cualquier ficha y, si
-                     este título forma parte de ella, saltar al anterior/siguiente. -->
+                <!-- Watchlist: entrar a la selección desde cualquier ficha y, si
+                     este título forma parte de ella, saltar al anterior/siguiente.
+                     El catálogo completo solo se ofrece con sesión de admin: para
+                     el resto es una ruta que no existe. -->
                 <div class="pg-cta film-cta" data-anim>
-                    <a class="pg-back" href="/tekhne/peliculas">Ver más títulos</a>
-                    <a class="film-playlist-cta" href="/tekhne/recomendaciones">
+                    <?php if (!empty($esAdmin)) : ?>
+                        <a class="pg-back" href="/tekhne/peliculas">Ver el catálogo</a>
+                    <?php else : ?>
+                        <a class="pg-back" href="/tekhne">Tékhne</a>
+                    <?php endif; ?>
+                    <a class="film-watchlist-cta" href="/tekhne/recomendaciones">
                         <?php echo icono('estrella'); ?>
-                        <?php echo $playlist['pos'] !== null ? 'Ver la playlist' : 'Ver recomendaciones'; ?>
+                        <?php echo $watchlist['pos'] !== null ? 'Ver la watchlist' : 'Ver la watchlist completa'; ?>
                     </a>
                 </div>
 
-                <?php if ($playlist['pos'] !== null) : ?>
-                    <nav class="film-playlist" data-anim aria-label="Playlist de recomendaciones">
-                        <span class="film-playlist-pos">
-                            Recomendación <?php echo $playlist['pos'] + 1; ?> de <?php echo $playlist['total']; ?>
+                <?php if ($watchlist['pos'] !== null) : ?>
+                    <nav class="film-watchlist" data-anim aria-label="Watchlist">
+                        <span class="film-watchlist-pos">
+                            Watchlist <?php echo $watchlist['pos'] + 1; ?> de <?php echo $watchlist['total']; ?>
                         </span>
-                        <?php if ($playlist['anterior']) : ?>
-                            <div class="film-playlist-nav">
-                                <a class="film-playlist-link film-playlist-link--prev" href="/tekhne/pelicula/<?php echo generarSlug($playlist['anterior']->titulo); ?>">
-                                    <span class="film-playlist-dir">Anterior</span>
-                                    <span class="film-playlist-tit"><?php echo s($playlist['anterior']->titulo); ?></span>
+                        <?php if ($watchlist['anterior']) : ?>
+                            <div class="film-watchlist-nav">
+                                <a class="film-watchlist-link film-watchlist-link--prev" href="/tekhne/pelicula/<?php echo generarSlug($watchlist['anterior']->titulo); ?>">
+                                    <span class="film-watchlist-dir">Anterior</span>
+                                    <span class="film-watchlist-tit"><?php echo s($watchlist['anterior']->titulo); ?></span>
                                 </a>
-                                <a class="film-playlist-link film-playlist-link--next" href="/tekhne/pelicula/<?php echo generarSlug($playlist['siguiente']->titulo); ?>">
-                                    <span class="film-playlist-dir">Siguiente</span>
-                                    <span class="film-playlist-tit"><?php echo s($playlist['siguiente']->titulo); ?></span>
+                                <a class="film-watchlist-link film-watchlist-link--next" href="/tekhne/pelicula/<?php echo generarSlug($watchlist['siguiente']->titulo); ?>">
+                                    <span class="film-watchlist-dir">Siguiente</span>
+                                    <span class="film-watchlist-tit"><?php echo s($watchlist['siguiente']->titulo); ?></span>
                                 </a>
                             </div>
                         <?php endif; ?>

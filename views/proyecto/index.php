@@ -10,8 +10,7 @@ $ao_n       = 0;   // numerador de secciones (01, 02, 03…)
 <div id="ao-app" data-theme="dark">
 <div data-barba-namespace="proyecto">
     <?php
-    $ao_top_volver = ['url' => '/#ao-projects', 'texto' => 'Proyectos'];
-    $ao_top_wa     = 'Hola Alexander, vi tu proyecto «' . $proyecto->titulo . '» y me gustaría platicar.';
+    $ao_top_wa = 'Hola Alexander, vi tu proyecto «' . $proyecto->titulo . '» y me gustaría platicar.';
     ?>
     <?php include __DIR__ . '/../partials/pg-top.php'; ?>
 
@@ -37,11 +36,6 @@ $ao_n       = 0;   // numerador de secciones (01, 02, 03…)
             </a>
         <?php endif; ?>
         <div class="art-hero-inner proj-hero-inner">
-            <nav class="pg-crumb art-hero-el" aria-label="Ruta de navegación">
-                <a href="/">Home</a><span>›</span>
-                <a href="/#ao-projects">Proyectos</a><span>›</span>
-                <span class="cur"><?php echo s($proyecto->titulo); ?></span>
-            </nav>
             <div class="pg-kicker art-hero-el"><span class="acc">Proyecto</span><span><?php echo s($proyecto->anio); ?></span></div>
             <h1 class="pg-title art-hero-el"><?php echo s($proyecto->titulo); ?></h1>
             <div class="proj-actions art-hero-el">
@@ -53,11 +47,16 @@ $ao_n       = 0;   // numerador de secciones (01, 02, 03…)
                 <a class="pg-wa" href="<?php echo $ao_wa; ?>" target="_blank" rel="noopener">Quiero algo así</a>
             </div>
         </div>
-        <div class="art-hero-cue" id="art-hero-cue" aria-hidden="true">
-            <span>Scroll</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-        </div>
     </section>
+
+    <?php
+    $ao_crumb = [
+        ['url' => '/',             'texto' => 'Home'],
+        ['url' => '/#ao-projects', 'texto' => 'Proyectos'],
+        ['texto' => $proyecto->titulo],
+    ];
+    include __DIR__ . '/../partials/pg-crumb.php';
+    ?>
 
     <main class="pg pg--full">
         <?php foreach ($bloques as $ao_b) : $ao_n++; ?>

@@ -127,6 +127,16 @@ function protegerAdmin() : void {
         header('Location: /login');
         exit;
     }
+    // Ninguna página del panel se guarda en caché. Hoy esto ya lo hace PHP solo
+    // —session.cache_limiter viene en `nocache` por defecto y session_start()
+    // manda estas mismas cabeceras—, así que es un seguro, no un arreglo: ese
+    // valor es de php.ini y en un hosting compartido no lo controlamos. Si
+    // algún día llega en `public`, las vistas del panel (datos tras sesión)
+    // quedarían en el disco del navegador después de cerrar sesión.
+    if (!headers_sent()) {
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('Pragma: no-cache');
+    }
 }
 
 // Iconos SVG inline (estilo línea) usados en el panel
@@ -164,6 +174,14 @@ function icono(string $n) : string {
         'ojo' => '<path d="M1.6 12S5.6 5.2 12 5.2 22.4 12 22.4 12 18.4 18.8 12 18.8 1.6 12 1.6 12z"/><circle cx="12" cy="12" r="3.1"/>',
         'arriba' => '<path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>',
         'abajo' => '<path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/>',
+        // Modo lectura: una hoja con texto. La diana de 'focus' decía «apuntar»,
+        // no «leer», y el botón no lleva rótulo en ninguna medida de pantalla.
+        'lectura' => '<rect x="4" y="3.2" width="16" height="17.6" rx="2.6"/><path d="M8.4 9.6h7.2"/><path d="M8.4 14.4h4.4"/>',
+        // Separador del breadcrumb y flecha de «volver» (se gira con CSS)
+        'chevron' => '<path d="M9 18l6-6-6-6"/>',
+        'izquierda' => '<path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>',
+        'derecha' => '<path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>',
+        'candado' => '<rect x="4" y="10.5" width="16" height="11" rx="2"/><path d="M8 10.5V7a4 4 0 018 0v3.5"/>',
     ];
     $inner = $p[$n] ?? '';
     return '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' . $inner . '</svg>';

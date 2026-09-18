@@ -78,7 +78,11 @@ $ao_ogTipo = $ogTipo ?? 'website';
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 
-<!-- Librerías de animación (CDN) -->
+<!-- Librerías de animación (CDN).
+     preconnect: Three.js es un <script> bloqueante en el <head>, así que su
+     DNS + TLS está en el camino crítico de la primera pintura. Abrir la
+     conexión aquí es lo que hace que el gas de las tarjetas llegue antes. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/Flip.min.js"></script>

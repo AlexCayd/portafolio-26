@@ -36,17 +36,17 @@
 
 <div class="card">
     <div class="card-head"><h2>Listado (<?php echo count($servicios); ?>)</h2><span class="mini-s" style="color:var(--muted)">↕ arrastra para reordenar</span></div>
-    <div class="tabla-wrap">
-        <table class="tabla">
+    <div class="tabla-wrap tabla-wrap--cards">
+        <table class="tabla tabla--cards">
             <thead><tr><th></th><th>#</th><th>Título</th><th>Tags</th><th>Acciones</th></tr></thead>
             <tbody data-sortable data-orden-url="/admin/servicios/orden">
             <?php foreach ($servicios as $i => $sv) : ?>
                 <tr class="sortable-row" draggable="true" data-id="<?php echo $sv->id; ?>">
-                    <td><span class="drag-handle">⠿</span></td>
-                    <td class="num-cell" data-num="pad2" style="font-family:var(--mono);color:var(--muted)"><?php echo sprintf('%02d', $i + 1); ?></td>
-                    <td><?php echo s($sv->titulo); ?></td>
-                    <td style="color:var(--muted)"><?php echo s(str_replace(',', ', ', $sv->tags)); ?></td>
-                    <td class="acciones">
+                    <td class="cell-arrastre" data-label=""><span class="drag-handle">⠿</span></td>
+                    <td class="num-cell" data-num="pad2" data-label="Posición" style="font-family:var(--mono);color:var(--muted)"><?php echo sprintf('%02d', $i + 1); ?></td>
+                    <td class="cell-titulo" data-label="Título"><?php echo s($sv->titulo); ?></td>
+                    <td data-label="Tags" style="color:var(--muted)"><?php echo s(str_replace(',', ', ', $sv->tags)); ?></td>
+                    <td class="acciones" data-label="Acciones">
                         <a href="/admin/servicios?id=<?php echo $sv->id; ?>" class="act-btn act-edit" title="Editar"><?php echo icono('editar'); ?></a>
                         <form method="POST" action="/admin/servicios/eliminar" data-confirm="Se eliminará este servicio." data-confirm-name="<?php echo s($sv->titulo); ?>">
                             <input type="hidden" name="id" value="<?php echo $sv->id; ?>">

@@ -64,23 +64,23 @@
 
 <div class="card">
     <div class="card-head"><h2>Lista (<?php echo count($videojuegos); ?>)</h2><span class="mini-s" style="color:var(--muted)">↕ arrastra para reordenar</span></div>
-    <div class="tabla-wrap">
-        <table class="tabla">
+    <div class="tabla-wrap tabla-wrap--cards">
+        <table class="tabla tabla--cards">
             <thead><tr><th></th><th>Posición</th><th>Portada</th><th>Nombre</th><th>Horas iniciales</th><th>Horas totales</th><th>Horas 2026</th><th>Acciones</th></tr></thead>
             <tbody data-sortable data-orden-url="/admin/videojuegos/orden">
             <?php foreach ($videojuegos as $i => $vj) : $h = $vj->horas2026(); ?>
                 <tr class="sortable-row" draggable="true" data-id="<?php echo $vj->id; ?>">
-                    <td><span class="drag-handle">⠿</span></td>
-                    <td class="num-cell"><?php echo $i + 1; ?></td>
-                    <td><?php if (!empty($vj->portada)) : ?><img class="vj-thumb" src="<?php echo urlSubida('videojuegos', $vj->portada); ?>" alt=""><?php else : ?><div class="vj-thumb vj-thumb--ph"><?php echo icono('videojuegos'); ?></div><?php endif; ?></td>
-                    <td><?php echo s($vj->nombre); ?></td>
-                    <td><?php echo rtrim(rtrim(number_format((float)$vj->horas_iniciales, 1), '0'), '.'); ?></td>
-                    <td><?php echo $vj->horas_totales !== null ? rtrim(rtrim(number_format((float)$vj->horas_totales, 1), '0'), '.') : '—'; ?></td>
-                    <td>
+                    <td class="cell-arrastre" data-label=""><span class="drag-handle">⠿</span></td>
+                    <td class="num-cell" data-label="Posición"><?php echo $i + 1; ?></td>
+                    <td class="cell-portada" data-label=""><?php if (!empty($vj->portada)) : ?><img class="vj-thumb" src="<?php echo urlSubida('videojuegos', $vj->portada); ?>" alt=""><?php else : ?><div class="vj-thumb vj-thumb--ph"><?php echo icono('videojuegos'); ?></div><?php endif; ?></td>
+                    <td class="cell-titulo" data-label="Nombre"><?php echo s($vj->nombre); ?></td>
+                    <td data-label="Horas iniciales"><?php echo rtrim(rtrim(number_format((float)$vj->horas_iniciales, 1), '0'), '.'); ?></td>
+                    <td data-label="Horas totales"><?php echo $vj->horas_totales !== null ? rtrim(rtrim(number_format((float)$vj->horas_totales, 1), '0'), '.') : '—'; ?></td>
+                    <td data-label="Horas 2026">
                         <?php if ($h === null) : ?><span class="vj-2026 na">—</span>
                         <?php else : ?><span class="vj-2026 <?php echo $h < 0 ? 'neg' : ''; ?>"><?php echo rtrim(rtrim(number_format($h, 1), '0'), '.'); ?></span><?php endif; ?>
                     </td>
-                    <td class="acciones">
+                    <td class="acciones" data-label="Acciones">
                         <a href="/admin/videojuegos?id=<?php echo $vj->id; ?>" class="act-btn act-edit" title="Editar"><?php echo icono('editar'); ?></a>
                         <form method="POST" action="/admin/videojuegos/eliminar" data-confirm="Se eliminará este videojuego." data-confirm-name="<?php echo s($vj->nombre); ?>">
                             <input type="hidden" name="id" value="<?php echo $vj->id; ?>">

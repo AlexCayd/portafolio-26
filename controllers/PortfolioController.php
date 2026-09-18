@@ -106,7 +106,25 @@ class PortfolioController
         Visita::registrarPagina('/tekhne', 'Tékhne');
 
         $publicados = Blog::publicados();
-        // Separar los cuentos en su propia sección
+        // La portada es cronológica, no curada: `publicados()` viene ordenado por
+        // `orden` —la columna que el panel arrastra para elegir las 3 entradas de
+        // la landing— y con eso la entrada más nueva podía caer en mitad de la
+        // página. Aquí manda la fecha: el primer elemento ES el más reciente, que
+        // es justo lo que la portada destaca. El `orden` del panel sigue mandando
+        // donde tiene sentido (la landing).
+        usort($publicados, function ($a, $b) {
+            $fa = $a->fecha_pub ? strtotime($a->fecha_pub) : 0;
+            $fb = $b->fecha_pub ? strtotime($b->fecha_pub) : 0;
+            return $fb <=> $fa ?: ((int) $b->id <=> (int) $a->id);
+        });
+
+        // La destacada es la entrada más nueva SEA DE LA SECCIÓN QUE SEA: se
+        // saca de su bucket antes de repartir. Si no, una racha de cuentos —que
+        // van en su propia sección— dejaba la portada con un cartel de «no hay
+        // nada» mientras debajo había cuatro entradas recientes.
+        $portada = array_shift($publicados);
+
+        // Los cuentos, en su propia sección
         $cuentos = array_values(array_filter($publicados, fn($p) => generarSlug($p->categoria) === 'cuentos'));
         $articulos = array_values(array_filter($publicados, fn($p) => generarSlug($p->categoria) !== 'cuentos'));
 
@@ -114,11 +132,15 @@ class PortfolioController
             'titulo' => 'Tékhne - La publicación de Alexander Oliva',
             'metaDescripcion' => 'Tékhne: tecnología, cultura, libros, cine y cuentos. La publicación de Alexander Oliva sobre las ideas que conectan disciplinas.',
             'canonical' => 'https://alexanderoliva.com/tekhne',
+            'portada' => $portada,
             'posts'  => $articulos,
             'cuentos' => $cuentos,
             'categorias' => Blog::CATEGORIAS,
             'seleccion' => Pelicula::perfectas(),
-            'peliculas'  => Pelicula::ordenadas(),
+            // El catálogo completo es una herramienta privada: ni se consulta si
+            // quien mira no es admin (ver peliculas(), que cierra la ruta).
+            'peliculas'  => esAdmin() ? Pelicula::ordenadas() : [],
+            'esAdmin'    => esAdmin(),
         ], 'portfolio-layout');
     }
 
@@ -127,8 +149,8 @@ class PortfolioController
     {
         Visita::registrarPagina('/tekhne/recomendaciones', 'Recomendaciones - Tékhne');
         $router->render('blog/recomendaciones', [
-            'titulo' => 'Para ver más tarde - Tékhne · Alexander Oliva',
-            'metaDescripcion' => 'Mi selección personal de cine y series: lo mejor que he visto.',
+            'titulo' => 'Watchlist - Tékhne · Alexander Oliva',
+            'metaDescripcion' => 'Mi watchlist: la selección personal de cine y series, lo mejor que he visto.',
             'canonical' => 'https://alexanderoliva.com/tekhne/recomendaciones',
             'seleccion' => Pelicula::perfectas(),
         ], 'portfolio-layout');
@@ -161,14 +183,20 @@ class PortfolioController
         ], 'portfolio-layout');
     }
 
-    // Catálogo público de películas y series: /tekhne/peliculas
+    // Catálogo completo de películas y series: /tekhne/peliculas
+    // Es una herramienta privada —la bitácora de todo lo visto, sin curar—, no
+    // una página del medio: fuera de sesión de admin no existe. Lo público es la
+    // watchlist (/tekhne/recomendaciones), que sí está seleccionada.
     public static function peliculas(Router $router)
     {
+        if (!esAdmin()) { header('Location: /tekhne/recomendaciones'); exit; }
+
         Visita::registrarPagina('/tekhne/peliculas', 'Películas y series - Tékhne');
         $router->render('pelicula/lista', [
-            'titulo' => 'Películas y series - Tékhne · Alexander Oliva',
+            'titulo' => 'Catálogo - Tékhne · Alexander Oliva',
             'metaDescripcion' => 'Todo lo que he visto: cine y series calificadas por Alexander Oliva, con buscador.',
             'canonical' => 'https://alexanderoliva.com/tekhne/peliculas',
+            'robots'    => 'noindex, nofollow',
             'peliculas' => Pelicula::ordenadas(),
         ], 'portfolio-layout');
     }
@@ -183,16 +211,16 @@ class PortfolioController
         $url = '/tekhne/pelicula/' . generarSlug($film->titulo);
         Visita::registrarPagina($url, $film->titulo);
 
-        // Playlist de recomendaciones: desde cualquier ficha se puede entrar a
-        // la selección, y si el título forma parte de ella se navega con
-        // anterior/siguiente sin volver al listado.
+        // Watchlist: desde cualquier ficha se puede entrar a la selección, y si
+        // el título forma parte de ella se navega con anterior/siguiente sin
+        // volver al listado.
         $seleccion = Pelicula::perfectas();
         $pos = null;
         foreach ($seleccion as $i => $t) {
             if ((int) $t->id === (int) $film->id) { $pos = $i; break; }
         }
         $total = count($seleccion);
-        $playlist = [
+        $watchlist = [
             'total'    => $total,
             'pos'      => $pos,
             'anterior' => $pos !== null && $total > 1 ? $seleccion[($pos - 1 + $total) % $total] : null,
@@ -208,8 +236,9 @@ class PortfolioController
             'ogImagen' => $film->poster ? urlSubida('peliculas', $film->poster) : '/build/img/og-default.jpg',
             'ogTipo'   => 'article',
             'canonical' => 'https://alexanderoliva.com' . $url,
-            'film'     => $film,
-            'playlist' => $playlist,
+            'film'      => $film,
+            'watchlist' => $watchlist,
+            'esAdmin'   => esAdmin(),
         ], 'portfolio-layout');
     }
 
@@ -241,8 +270,9 @@ class PortfolioController
         $urls = [
             ['loc' => $base . '/',                        'freq' => 'weekly',  'prio' => '1.0'],
             ['loc' => $base . '/tekhne',                  'freq' => 'weekly',  'prio' => '0.8'],
-            ['loc' => $base . '/tekhne/recomendaciones',  'freq' => 'monthly', 'prio' => '0.5'],
-            ['loc' => $base . '/tekhne/peliculas',        'freq' => 'weekly',  'prio' => '0.6'],
+            // /tekhne/peliculas NO va aquí: el catálogo es privado (solo admin) y
+            // anunciar una ruta que redirige es pedirle a Google que rastree un 302.
+            ['loc' => $base . '/tekhne/recomendaciones',  'freq' => 'monthly', 'prio' => '0.6'],
         ];
         foreach (Proyecto::ordenados() as $p) {
             $urls[] = ['loc' => $base . '/proyecto/' . $p->slug, 'freq' => 'yearly', 'prio' => '0.7'];

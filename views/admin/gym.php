@@ -81,7 +81,7 @@ function mini_mes(int $anio, int $mes, array $dias) : void {
 
     <div class="card">
         <h2>Resumen · <?php echo s($ambito); ?></h2>
-        <div class="kpis" style="grid-template-columns:1fr 1fr;margin-bottom:18px">
+        <div class="kpis kpis--duo">
             <div class="kpi k-green"><div class="kpi-label">Sí</div><div class="kpi-value" id="t-si"><?php echo $totales['si']; ?></div></div>
             <div class="kpi k-red"><div class="kpi-label">No</div><div class="kpi-value" id="t-no"><?php echo $totales['no']; ?></div></div>
             <div class="kpi k-blue"><div class="kpi-label">Cumplido</div><div class="kpi-value" id="t-cumplido"><?php echo $cumplido; ?></div></div>

@@ -7,8 +7,12 @@
  * son enlaces; por debajo de 1000px se pliegan en el botón hamburguesa
  * (el breakpoint vive en .pg-nav / .pg-burger, en paginas.scss).
  *
+ * El botón «← Tékhne» que vivía aquí se retiró: repetía lo que ya dice el
+ * breadcrumb (partials/pg-crumb.php, que va justo debajo) y era lo que
+ * descentraba el menú, porque ensanchaba .pg-actions solo en las páginas que
+ * lo llevaban. Ahora los tres huecos de la barra tienen un ancho estable.
+ *
  * Variables opcionales antes del include:
- *   $ao_top_volver  ['url' => '/tekhne', 'texto' => 'Tékhne']   botón «←»
  *   $ao_top_wa      mensaje de WhatsApp del botón «Contáctame»
  *   $ao_top_extra   HTML propio de la vista (p. ej. el botón Focus)
  */
@@ -32,9 +36,6 @@ $ao_top_wa = $ao_top_wa ?? 'Hola Alexander, vi tu sitio y me gustaría platicar 
 
     <div class="pg-actions">
         <?php echo $ao_top_extra ?? ''; ?>
-        <?php if (!empty($ao_top_volver)) : ?>
-            <a class="pg-back" href="<?php echo s($ao_top_volver['url']); ?>"><?php echo s($ao_top_volver['texto']); ?></a>
-        <?php endif; ?>
         <a class="pg-wa" href="<?php echo waLink($ao_top_wa); ?>" target="_blank" rel="noopener">Contáctame</a>
         <button type="button" class="pg-burger" id="pg-burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="pg-menu">
             <span></span><span></span>
@@ -53,4 +54,4 @@ $ao_top_wa = $ao_top_wa ?? 'Hola Alexander, vi tu sitio y me gustaría platicar 
 </div>
 <?php
 // Se limpian para que un segundo include en la misma página no herede opciones
-unset($ao_top_volver, $ao_top_extra, $ao_top_wa);
+unset($ao_top_extra, $ao_top_wa);

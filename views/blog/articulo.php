@@ -31,10 +31,9 @@ $ao_bc = [
 <div id="ao-app" data-theme="dark">
 <div data-barba-namespace="blog-articulo">
     <?php
-    $ao_top_volver = ['url' => '/tekhne', 'texto' => 'Tékhne'];
-    $ao_top_wa     = 'Hola Alexander, leí tu artículo «' . $post->titulo . '».';
-    $ao_top_extra  = '<button type="button" id="pg-focus" class="pg-focus-btn pg-focus-fab" aria-pressed="false" title="Modo lectura">'
-                   . icono('focus') . ' Focus</button>';
+    $ao_top_wa    = 'Hola Alexander, leí tu artículo «' . $post->titulo . '».';
+    $ao_top_extra = '<button type="button" id="pg-focus" class="pg-focus-btn" aria-pressed="false"'
+                  . ' aria-label="Modo lectura" title="Modo lectura">' . icono('lectura') . '</button>';
     ?>
     <?php include __DIR__ . '/../partials/pg-top.php'; ?>
 
@@ -60,20 +59,21 @@ $ao_bc = [
             <h1 class="pg-title art-hero-el"><?php echo s($post->titulo); ?></h1>
             <?php if (!empty($post->descripcion)) : ?><p class="pg-lead art-hero-el"><?php echo s($post->descripcion); ?></p><?php endif; ?>
         </div>
-        <div class="art-hero-cue" id="art-hero-cue" aria-hidden="true">
-            <span>Scroll</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
-        </div>
     </section>
 
-    <main class="pg pg--article">
-        <nav class="pg-crumb" data-anim aria-label="Ruta de navegación">
-            <a href="/">Home</a><span>›</span>
-            <a href="/tekhne">Tékhne</a><span>›</span>
-            <a href="/tekhne/categoria/<?php echo s(generarSlug($post->categoria)); ?>"><?php echo s($post->categoria); ?></a><span>›</span>
-            <span class="cur"><?php echo s($post->titulo); ?></span>
-        </nav>
+    <?php
+    // Va DESPUÉS del hero: mientras la portada llena la pantalla no pinta nada
+    // encima, y en cuanto empieza la lectura se ancla bajo la cabecera (sticky).
+    $ao_crumb = [
+        ['url' => '/',       'texto' => 'Home'],
+        ['url' => '/tekhne', 'texto' => 'Tékhne'],
+        ['url' => '/tekhne/categoria/' . generarSlug($post->categoria), 'texto' => $post->categoria],
+        ['texto' => $post->titulo],
+    ];
+    include __DIR__ . '/../partials/pg-crumb.php';
+    ?>
 
+    <main class="pg pg--article">
         <article class="pg-body" data-anim data-min="<?php echo (int) $post->tiempoLectura(); ?>">
             <?php echo $post->contenido; /* HTML saneado al guardar */ ?>
         </article>

@@ -34,13 +34,16 @@
   </div>
 
   <!-- NAV -->
-  <nav id="ao-nav" style="position:fixed;top:0;left:0;width:100%;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:16px clamp(20px,4vw,56px);border-bottom:1px solid transparent;transition:background .4s,backdrop-filter .4s,border-color .4s;">
-    <a href="#ao-top" data-cursor data-magnetic style="text-decoration:none;color:var(--fg);display:flex;flex-direction:column;line-height:1;">
+  <!-- Retícula de tres columnas (no space-between): las dos laterales van
+       atadas al mismo ancho, así el menú cae en el eje de la ventana y no se
+       mueve cuando cambia lo que hay a los lados. Misma solución que .pg-top. -->
+  <nav id="ao-nav" style="position:fixed;top:0;left:0;width:100%;z-index:500;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;padding:16px clamp(20px,4vw,56px);border-bottom:1px solid transparent;transition:background .4s,backdrop-filter .4s,border-color .4s;">
+    <a href="#ao-top" data-cursor data-magnetic style="grid-column:1;justify-self:start;min-width:0;text-decoration:none;color:var(--fg);display:flex;flex-direction:column;line-height:1;">
       <span style="font-family:'Clash Display',sans-serif;font-weight:700;font-size:16px;letter-spacing:-.01em;">ALEXANDER OLIVA</span>
       <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.28em;color:var(--muted);margin-top:5px;">DEV · UX/UI · CDMX</span>
     </a>
 
-    <div class="ao-navpill" style="display:flex;align-items:center;gap:2px;">
+    <div class="ao-navpill" style="grid-column:2;justify-self:center;display:flex;align-items:center;gap:2px;">
       <a class="ao-navlink" data-target="core" href="#ao-core" data-cursor style="position:relative;color:var(--fg);text-decoration:none;padding:9px 15px;border-radius:30px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .3s;">Perfil<span class="ao-navline" style="position:absolute;left:15px;right:15px;bottom:5px;height:1.5px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.16,1,.3,1);"></span></a>
       <a class="ao-navlink" data-target="projects" href="#ao-projects" data-cursor style="position:relative;color:var(--fg);text-decoration:none;padding:9px 15px;border-radius:30px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .3s;">Proyectos<span class="ao-navline" style="position:absolute;left:15px;right:15px;bottom:5px;height:1.5px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.16,1,.3,1);"></span></a>
       <a class="ao-navlink" data-target="expertise" href="#ao-expertise" data-cursor style="position:relative;color:var(--fg);text-decoration:none;padding:9px 15px;border-radius:30px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .3s;">Servicios<span class="ao-navline" style="position:absolute;left:15px;right:15px;bottom:5px;height:1.5px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.16,1,.3,1);"></span></a>
@@ -48,7 +51,7 @@
       <a class="ao-navlink" data-target="teaching" href="#ao-teaching" data-cursor style="position:relative;color:var(--fg);text-decoration:none;padding:9px 15px;border-radius:30px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;transition:color .3s;">Cursos<span class="ao-navline" style="position:absolute;left:15px;right:15px;bottom:5px;height:1.5px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.16,1,.3,1);"></span></a>
     </div>
 
-    <div class="ao-nav-actions" style="display:flex;align-items:center;gap:14px;">
+    <div class="ao-nav-actions" style="grid-column:3;justify-self:end;display:flex;align-items:center;gap:14px;">
       <button id="ao-theme" data-cursor aria-label="Cambiar tema" style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:transparent;border:1px solid var(--line);color:var(--fg);border-radius:50%;cursor:pointer;transition:border-color .3s,color .3s;">
         <svg class="ao-icon-moon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
         <svg class="ao-icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
@@ -56,7 +59,7 @@
       <a class="ao-cta" href="<?php echo waLink('Hola Alexander, vi tu portafolio y me gustaría platicar contigo.'); ?>" target="_blank" rel="noopener" data-cursor data-magnetic style="color:var(--accent-fg);background:var(--accent);text-decoration:none;padding:11px 18px;border-radius:40px;font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:13px;">Contáctame</a>
     </div>
 
-    <button id="ao-nav-toggle" class="ao-nav-burger" aria-label="Abrir menú" aria-expanded="false" style="display:none;align-items:center;justify-content:center;width:44px;height:44px;background:var(--surface);border:1px solid var(--line);border-radius:50%;color:var(--fg);cursor:pointer;">
+    <button id="ao-nav-toggle" class="ao-nav-burger" aria-label="Abrir menú" aria-expanded="false" style="grid-column:3;justify-self:end;display:none;align-items:center;justify-content:center;width:44px;height:44px;background:var(--surface);border:1px solid var(--line);border-radius:50%;color:var(--fg);cursor:pointer;">
       <span style="position:relative;display:block;width:18px;height:12px;">
         <span class="ao-burger-line" style="position:absolute;left:0;top:0;width:100%;height:2px;background:var(--fg);border-radius:2px;transition:transform .35s cubic-bezier(.16,1,.3,1),opacity .2s;"></span>
         <span class="ao-burger-line" style="position:absolute;left:0;top:5px;width:100%;height:2px;background:var(--fg);border-radius:2px;transition:transform .35s cubic-bezier(.16,1,.3,1),opacity .2s;"></span>
@@ -74,7 +77,7 @@
     <a class="ao-mnav" href="#ao-teaching" style="color:var(--fg);text-decoration:none;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(2rem,10vw,3.4rem);line-height:1.12;letter-spacing:-.02em;">Cursos</a>
     <div style="margin-top:auto;display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding-top:32px;border-top:1px solid var(--line);">
       <a href="<?php echo waLink('Hola Alexander, vi tu portafolio y me gustaría platicar contigo.'); ?>" target="_blank" rel="noopener" class="ao-mnav" style="flex:1 1 auto;text-align:center;background:var(--accent);color:var(--accent-fg);text-decoration:none;padding:15px 22px;border-radius:40px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:1rem;">Contáctame</a>
-      <a href="/uploads/cv.pdf" download style="flex:1 1 auto;text-align:center;border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:15px 22px;border-radius:40px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Descargar CV</a>
+      <a href="<?php echo asset('/uploads/cv.pdf'); ?>" download style="flex:1 1 auto;text-align:center;border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:15px 22px;border-radius:40px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Descargar CV</a>
       <button id="ao-theme-m" type="button" aria-label="Cambiar tema" style="flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;gap:10px;background:transparent;border:1px solid var(--line);color:var(--fg);border-radius:40px;padding:15px 22px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;">
         <svg class="ao-icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
         <svg class="ao-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
@@ -440,7 +443,7 @@
         <a class="ao-cta" href="<?php echo waLink('Hola Alexander, me gustaría cotizar un proyecto contigo. ¿Podemos platicar?'); ?>" target="_blank" rel="noopener" data-cursor data-magnetic style="display:inline-flex;align-items:center;gap:12px;background:var(--accent);color:var(--accent-fg);text-decoration:none;padding:16px 30px;border-radius:50px;font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(1rem,1.5vw,1.25rem);">Cotiza tu proyecto
           <span style="font-size:.85em;font-weight:500;opacity:.85;">→</span>
         </a>
-        <a href="/uploads/cv.pdf" download data-cursor data-magnetic style="display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:16px 28px;border-radius:50px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Descargar CV ↓</a>
+        <a href="<?php echo asset('/uploads/cv.pdf'); ?>" download data-cursor data-magnetic style="display:inline-flex;align-items:center;gap:10px;border:1px solid var(--line);color:var(--fg);text-decoration:none;padding:16px 28px;border-radius:50px;font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;">Descargar CV ↓</a>
       </div>
     </div>
 

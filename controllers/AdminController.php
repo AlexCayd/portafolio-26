@@ -451,16 +451,69 @@ class AdminController
         ], 'admin-layout');
     }
 
+    /**
+     * Publica un CV nuevo en public/uploads/cv.pdf.
+     *
+     * Antes esto era un move_uploaded_file a pelo y sin mirar el resultado: si
+     * fallaba —permisos, PDF demasiado grande para la configuración de PHP, el
+     * archivo abierto por el visor de la propia página— el viejo se quedaba en
+     * su sitio y el panel redirigía igual, sin decir nada. Subir el CV y ver el
+     * de antes era indistinguible de subirlo bien.
+     *
+     * El nuevo llega primero a un archivo aparte y solo cuando ya está en disco
+     * se borra el anterior y se pone el nuevo en su lugar: así no hay ningún
+     * momento en el que la landing se quede sin CV que descargar, ni se
+     * destruye el que había si la subida no llega a completarse.
+     */
     public static function cvSubir()
     {
         protegerAdmin();
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_FILES['cv_file']) && $_FILES['cv_file']['error'] === UPLOAD_ERR_OK) {
-            if (strtolower(pathinfo($_FILES['cv_file']['name'], PATHINFO_EXTENSION)) === 'pdf') {
-                $dir = rutaSubidas();
-                if (!is_dir($dir)) mkdir($dir, 0775, true);
-                move_uploaded_file($_FILES['cv_file']['tmp_name'], $dir . DIRECTORY_SEPARATOR . 'cv.pdf');
-            }
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: /admin/cv'); exit; }
+
+        $f = $_FILES['cv_file'] ?? null;
+        $err = $f['error'] ?? UPLOAD_ERR_NO_FILE;
+        if (!$f || $err !== UPLOAD_ERR_OK) {
+            flash($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE
+                ? 'El PDF pesa más de lo que admite el servidor.'
+                : 'No llegó ningún archivo. Vuelve a intentarlo.', 'eliminado');
+            header('Location: /admin/cv'); exit;
         }
+        if (strtolower(pathinfo($f['name'], PATHINFO_EXTENSION)) !== 'pdf') {
+            flash('El CV tiene que ser un PDF.', 'eliminado');
+            header('Location: /admin/cv'); exit;
+        }
+        // La extensión la pone quien sube; la firma la pone el archivo. Esto se
+        // publica en abierto, así que se comprueba lo segundo.
+        if (@file_get_contents($f['tmp_name'], false, null, 0, 5) !== '%PDF-') {
+            flash('Ese archivo no es un PDF válido.', 'eliminado');
+            header('Location: /admin/cv'); exit;
+        }
+
+        $dir = rutaSubidas();
+        if (!is_dir($dir)) mkdir($dir, 0775, true);
+        $destino = rutaSubidas('cv.pdf');
+        $entrante = $dir . DIRECTORY_SEPARATOR . 'cv-entrante.pdf';
+
+        if (!move_uploaded_file($f['tmp_name'], $entrante)) {
+            flash('No se pudo guardar el CV. Revisa los permisos de /uploads.', 'eliminado');
+            header('Location: /admin/cv'); exit;
+        }
+
+        // El nuevo ya está en disco: ahora sí se retira el anterior. En Windows
+        // rename() no sobrescribe, así que hay que borrar antes.
+        if (is_file($destino)) @unlink($destino);
+        if (!@rename($entrante, $destino)) {
+            @unlink($entrante);
+            flash('No se pudo reemplazar el CV anterior.', 'eliminado');
+            header('Location: /admin/cv'); exit;
+        }
+        @chmod($destino, 0644);
+        // filemtime() está cacheado por petición y la vista lo usa para la marca
+        // de tiempo y para romper la caché del navegador: sin esto enseñaría la
+        // fecha del CV viejo justo después de reemplazarlo.
+        clearstatcache(true, $destino);
+
+        flash('CV actualizado', 'editado');
         header('Location: /admin/cv'); exit;
     }
 

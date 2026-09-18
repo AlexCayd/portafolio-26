@@ -33,9 +33,9 @@ $ao_num = static fn($v) => str_pad((string) $v, 2, '0', STR_PAD_LEFT);
         <div class="pel-form-grid proy-datos-grid">
             <div class="campo">
                 <span>Portada <small style="color:var(--muted-2)">— horizontal 16:9</small></span>
-                <div class="upload upload--stack" style="max-width:380px">
-                    <div class="upload-preview" id="prev-portada" style="width:100%;aspect-ratio:16/9;height:auto">
-                        <?php if (!empty($editando->img)) : ?><img src="<?php echo urlSubida('proyectos/portadas', $editando->img); ?>" alt="" style="object-fit:cover"><?php else : ?>Sin imagen<?php endif; ?>
+                <div class="upload upload--stack upload--ancho">
+                    <div class="upload-preview upload-preview--16x9" id="prev-portada">
+                        <?php if (!empty($editando->img)) : ?><img src="<?php echo urlSubida('proyectos/portadas', $editando->img); ?>" alt=""><?php else : ?>Sin imagen<?php endif; ?>
                     </div>
                     <label class="upload-drop">
                         <b>Elige</b> o arrastra una imagen<br><small>PNG, JPG, WEBP · reemplaza la actual</small>
@@ -260,17 +260,17 @@ $ao_num = static fn($v) => str_pad((string) $v, 2, '0', STR_PAD_LEFT);
 
 <div class="card">
     <div class="card-head"><h2>Listado (<?php echo count($proyectos); ?>)</h2><span class="mini-s" style="color:var(--muted)">↕ arrastra para reordenar</span></div>
-    <div class="tabla-wrap">
-        <table class="tabla">
+    <div class="tabla-wrap tabla-wrap--cards">
+        <table class="tabla tabla--cards">
             <thead><tr><th></th><th>Portada</th><th>Título</th><th>Año</th><th>Acciones</th></tr></thead>
             <tbody data-sortable data-orden-url="/admin/proyectos/orden">
             <?php foreach ($proyectos as $p) : ?>
                 <tr class="sortable-row" draggable="true" data-id="<?php echo $p->id; ?>">
-                    <td><span class="drag-handle">⠿</span></td>
-                    <td><img class="thumb-cell" src="<?php echo urlSubida('proyectos/portadas', $p->img); ?>" alt="" onerror="this.style.visibility='hidden'"></td>
-                    <td><?php echo s($p->titulo); ?></td>
-                    <td><?php echo s($p->anio); ?></td>
-                    <td class="acciones">
+                    <td class="cell-arrastre" data-label=""><span class="drag-handle">⠿</span></td>
+                    <td class="cell-portada" data-label=""><img class="thumb-cell" src="<?php echo urlSubida('proyectos/portadas', $p->img); ?>" alt="" onerror="this.style.visibility='hidden'"></td>
+                    <td class="cell-titulo" data-label="Título"><?php echo s($p->titulo); ?></td>
+                    <td data-label="Año"><?php echo s($p->anio); ?></td>
+                    <td class="acciones" data-label="Acciones">
                         <a href="/admin/proyectos?id=<?php echo $p->id; ?>" class="act-btn act-edit" title="Editar"><?php echo icono('editar'); ?></a>
                         <form method="POST" action="/admin/proyectos/eliminar" data-confirm="Esto eliminará el proyecto y sus imágenes." data-confirm-name="<?php echo s($p->titulo); ?>">
                             <input type="hidden" name="id" value="<?php echo $p->id; ?>">

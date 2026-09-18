@@ -11,12 +11,12 @@
     <form method="POST" action="/admin/blog/guardar" enctype="multipart/form-data">
         <input type="hidden" name="id" value="<?php echo $editando->id ?? ''; ?>">
         <?php $catActual = $editando->categoria ?? (!empty($categorias) ? $categorias[0]->nombre : ''); ?>
-        <div class="pel-form-grid" style="grid-template-columns:300px 1fr;margin-bottom:18px">
+        <div class="pel-form-grid pel-form-grid--media">
             <div class="campo">
                 <span>Portada <small style="color:var(--muted-2)">— opcional</small></span>
                 <div class="upload upload--stack">
-                    <div class="upload-preview" id="prev-cover" style="width:100%;aspect-ratio:16/9;height:auto">
-                        <?php if (!empty($editando->cover_img)) : ?><img src="<?php echo urlSubida('blog', $editando->cover_img); ?>" alt="" style="object-fit:cover"><?php else : ?>Degradado<?php endif; ?>
+                    <div class="upload-preview upload-preview--16x9" id="prev-cover">
+                        <?php if (!empty($editando->cover_img)) : ?><img src="<?php echo urlSubida('blog', $editando->cover_img); ?>" alt=""><?php else : ?>Degradado<?php endif; ?>
                     </div>
                     <label class="upload-drop">
                         <b>Elige</b> o arrastra<br><small>PNG, JPG, WEBP</small>
@@ -100,27 +100,34 @@
 </div>
 
 <div class="card">
-    <div class="card-head"><h2>Entradas (<?php echo count($posts); ?>)</h2><span class="mini-s" style="color:var(--muted)">↕ arrastra para reordenar · <span class="landing-badge landing-badge--inline"><?php echo icono('estrella'); ?></span> las 3 primeras salen en la landing</span></div>
-    <div class="tabla-wrap">
-        <table class="tabla">
+    <?php
+    // Cuántas entradas salen en la landing. Es EL MISMO número que corta
+    // PortfolioController::index() con array_slice(..., 0, 6): el panel marcaba
+    // 3 mientras la landing pintaba 6, así que la estrella prometía una cosa y
+    // el sitio hacía otra. Si cambia allí, cambia aquí.
+    $ao_landing = 6;
+    ?>
+    <div class="card-head"><h2>Entradas (<?php echo count($posts); ?>)</h2><span class="mini-s" style="color:var(--muted)">↕ arrastra para reordenar · <span class="landing-badge landing-badge--inline"><?php echo icono('estrella'); ?></span> las <?php echo $ao_landing; ?> primeras salen en la landing</span></div>
+    <div class="tabla-wrap tabla-wrap--cards">
+        <table class="tabla tabla--cards">
             <thead><tr><th></th><th>Portada</th><th>Título</th><th>Categoría</th><th>Publicado</th><th>Visitas</th><th>Lectura</th><th>Acciones</th></tr></thead>
-            <tbody data-sortable data-orden-url="/admin/blog/orden" data-landing="3">
+            <tbody data-sortable data-orden-url="/admin/blog/orden" data-landing="<?php echo $ao_landing; ?>">
             <?php foreach ($posts as $ao_ix => $post) : ?>
-                <tr class="sortable-row<?php echo $ao_ix < 3 ? ' is-landing' : ''; ?>" draggable="true" data-id="<?php echo $post->id; ?>">
-                    <td><span class="drag-handle">⠿</span><?php if ($ao_ix < 3) : ?><span class="landing-badge" title="Se muestra en la landing"><?php echo icono('estrella'); ?></span><?php endif; ?></td>
-                    <td>
+                <tr class="sortable-row<?php echo $ao_ix < $ao_landing ? ' is-landing' : ''; ?>" draggable="true" data-id="<?php echo $post->id; ?>">
+                    <td class="cell-arrastre" data-label=""><span class="drag-handle">⠿</span><?php if ($ao_ix < $ao_landing) : ?><span class="landing-badge" title="Se muestra en la landing"><?php echo icono('estrella'); ?></span><?php endif; ?></td>
+                    <td class="cell-portada" data-label="">
                         <?php if (!empty($post->cover_img)) : ?><img class="thumb-cell" src="<?php echo urlSubida('blog', $post->cover_img); ?>" alt="">
                         <?php else : ?><div class="thumb-cell" style="background:linear-gradient(135deg,var(--accent),#1a0207)"></div><?php endif; ?>
                     </td>
-                    <td>
+                    <td class="cell-titulo" data-label="Título">
                         <a href="/tekhne/<?php echo s($post->slug ?: $post->id); ?>" target="_blank"><?php echo s($post->titulo); ?></a>
                         <?php if ($post->estado === 'borrador') : ?> <span class="badge badge--no" style="margin-left:4px">Borrador</span><?php endif; ?>
                     </td>
-                    <td><span class="badge badge--cat"><?php echo s($post->categoria); ?></span></td>
-                    <td style="color:var(--muted)"><?php echo $post->fecha_pub ? date('d/m/Y', strtotime($post->fecha_pub)) : '—'; ?></td>
-                    <td style="font-family:var(--mono)"><?php echo number_format((int) $post->visitas); ?></td>
-                    <td style="font-family:var(--mono)"><?php echo $post->tiempoLectura(); ?> min</td>
-                    <td class="acciones">
+                    <td data-label="Categoría"><span class="badge badge--cat"><?php echo s($post->categoria); ?></span></td>
+                    <td data-label="Publicado" style="color:var(--muted)"><?php echo $post->fecha_pub ? date('d/m/Y', strtotime($post->fecha_pub)) : '—'; ?></td>
+                    <td data-label="Visitas" style="font-family:var(--mono)"><?php echo number_format((int) $post->visitas); ?></td>
+                    <td data-label="Lectura" style="font-family:var(--mono)"><?php echo $post->tiempoLectura(); ?> min</td>
+                    <td class="acciones" data-label="Acciones">
                         <a href="/admin/blog?id=<?php echo $post->id; ?>" class="act-btn act-edit" title="Editar"><?php echo icono('editar'); ?></a>
                         <form method="POST" action="/admin/blog/eliminar" data-confirm="Se eliminará esta entrada." data-confirm-name="<?php echo s($post->titulo); ?>">
                             <input type="hidden" name="id" value="<?php echo $post->id; ?>">

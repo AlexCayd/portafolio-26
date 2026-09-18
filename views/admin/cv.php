@@ -3,10 +3,10 @@
         <h1>Curriculum Vitae</h1>
         <p>El PDF que se descarga desde el botón «Descargar CV» de la landing.</p>
     </div>
-    <?php if ($existe) : ?><a href="/uploads/cv.pdf" target="_blank" class="btn btn--ghost">Ver CV actual ↗</a><?php endif; ?>
+    <?php if ($existe) : ?><a href="<?php echo asset('/uploads/cv.pdf'); ?>" target="_blank" class="btn btn--ghost">Ver CV actual ↗</a><?php endif; ?>
 </div>
 
-<div class="dash-grid" style="grid-template-columns:1fr 1fr;align-items:start">
+<div class="dash-grid dash-grid--duo">
     <div class="card">
         <h2>Reemplazar CV</h2>
         <?php if ($existe) : ?>
@@ -32,9 +32,9 @@
     </div>
 
     <div class="card">
-        <div class="card-head"><h2>CV actual</h2><?php if ($existe) : ?><a href="/uploads/cv.pdf" target="_blank" class="btn btn--sm btn--ghost">Abrir ↗</a><?php endif; ?></div>
+        <div class="card-head"><h2>CV actual</h2><?php if ($existe) : ?><a href="<?php echo asset('/uploads/cv.pdf'); ?>" target="_blank" class="btn btn--sm btn--ghost">Abrir ↗</a><?php endif; ?></div>
         <?php if ($existe) : ?>
-            <iframe class="cv-preview" src="/uploads/cv.pdf#toolbar=0" title="CV actual"></iframe>
+            <iframe class="cv-preview" src="<?php echo asset('/uploads/cv.pdf'); ?>#toolbar=0" title="CV actual"></iframe>
         <?php else : ?>
             <div class="placeholder" style="padding:60px 20px"><div class="emoji"><?php echo icono('documento'); ?></div><p>Sin CV para previsualizar.</p></div>
         <?php endif; ?>

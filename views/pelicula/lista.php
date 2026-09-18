@@ -1,19 +1,20 @@
 <link rel="stylesheet" href="/build/css/paginas.css">
 <div id="ao-app" data-theme="dark">
 <div data-barba-namespace="peliculas-lista">
-    <?php $ao_top_volver = ['url' => '/tekhne', 'texto' => 'Tékhne']; ?>
     <?php include __DIR__ . '/../partials/pg-top.php'; ?>
+    <?php
+    $ao_crumb = [
+        ['url' => '/',       'texto' => 'Home'],
+        ['url' => '/tekhne', 'texto' => 'Tékhne'],
+        ['texto' => 'Catálogo'],
+    ];
+    include __DIR__ . '/../partials/pg-crumb.php';
+    ?>
 
     <main class="pg pg--wide">
-        <nav class="pg-crumb" data-anim aria-label="Ruta de navegación">
-            <a href="/">Home</a><span>›</span>
-            <a href="/tekhne">Tékhne</a><span>›</span>
-            <span class="cur">Películas y series</span>
-        </nav>
-
-        <div class="pg-kicker" data-anim><span class="acc">/ CINE &amp; SERIES</span><span><?php echo count($peliculas); ?> títulos</span></div>
+        <div class="pg-kicker" data-anim><span class="acc">/ CATÁLOGO</span><span><?php echo count($peliculas); ?> títulos</span><span class="pg-privado"><?php echo icono('candado'); ?>Solo admin</span></div>
         <h1 class="pg-title" data-anim>Todo lo que he <em>visto</em></h1>
-        <p class="pg-lead" data-anim>Mi bitácora de cine y series. Busca por título, categoría, director o año.</p>
+        <p class="pg-lead" data-anim>La bitácora completa, sin curar. Es una herramienta privada: fuera de sesión, lo que se publica es la <a href="/tekhne/recomendaciones">watchlist</a>.</p>
 
         <!-- Buscador inteligente -->
         <div class="tk-search" data-anim>

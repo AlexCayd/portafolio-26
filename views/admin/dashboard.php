@@ -130,8 +130,8 @@ $anioPrev = $anioVida - 1;
     <div class="card-head">
         <div><h2 style="margin:0">Páginas más visitadas</h2><span class="mini-s" style="color:var(--muted)" id="paginas-sub">Ordenadas por visitas en el periodo</span></div>
     </div>
-    <div class="tabla-wrap">
-        <table class="tabla tabla--paginas" id="tabla-paginas">
+    <div class="tabla-wrap tabla-wrap--cards">
+        <table class="tabla tabla--paginas tabla--cards" id="tabla-paginas">
             <thead>
                 <tr><th style="width:44px">#</th><th>Página</th><th>Ruta</th><th style="text-align:right">Visitas</th><th></th></tr>
             </thead>
@@ -200,13 +200,15 @@ $anioPrev = $anioVida - 1;
         cuerpo.innerHTML = filas.slice(ini, ini + POR).map(function (p, i) {
             var ruta = esc(p.ruta);
             // Las acumuladas no compiten en el ranking del periodo: sin puesto
+            // data-label: en móvil la tabla se pliega en tarjetas (.tabla--cards)
+            // y cada celda recupera ahí el encabezado que pierde al no haber thead
             return '<tr' + (p.acumulado ? ' class="is-acumulado"' : '') + '>' +
-                '<td class="mini-s">' + (p.acumulado ? '—' : (ini + i + 1)) + '</td>' +
-                '<td><span class="pg-titulo">' + esc(p.titulo || '(sin título)') + '</span></td>' +
-                '<td><a class="pg-ruta" href="' + ruta + '" target="_blank" rel="noopener">' + ruta + '</a></td>' +
-                '<td style="text-align:right">' + (p.acumulado ? '<span class="pg-acum" title="Total histórico: esta ruta aún no tiene visitas por fecha">Acumulado</span> ' : '') +
+                '<td class="mini-s" data-label="#">' + (p.acumulado ? '—' : (ini + i + 1)) + '</td>' +
+                '<td class="cell-titulo" data-label="Página"><span class="pg-titulo">' + esc(p.titulo || '(sin título)') + '</span></td>' +
+                '<td data-label="Ruta"><a class="pg-ruta" href="' + ruta + '" target="_blank" rel="noopener">' + ruta + '</a></td>' +
+                '<td data-label="Visitas" style="text-align:right">' + (p.acumulado ? '<span class="pg-acum" title="Total histórico: esta ruta aún no tiene visitas por fecha">Acumulado</span> ' : '') +
                     '<span class="pg-visitas">' + Number(p.total).toLocaleString('es-MX') + '</span></td>' +
-                '<td class="acciones"><a class="act-btn" href="' + ruta + '" target="_blank" rel="noopener" title="Ver página pública">' + ICO_EXT + '</a></td>' +
+                '<td class="acciones" data-label="Ver"><a class="act-btn" href="' + ruta + '" target="_blank" rel="noopener" title="Ver página pública">' + ICO_EXT + '</a></td>' +
                 '</tr>';
         }).join('');
 

@@ -45,10 +45,41 @@ class Visita extends ActiveRecord {
         }
     }
 
+    /**
+     * Rutas que el dashboard NO cuenta como página del sitio.
+     *
+     * El catálogo de cine pasó a ser una herramienta privada de admin —lo cierra
+     * PortfolioController::peliculas()— y seguía apareciendo entre «las páginas
+     * más visitadas» con todo el tráfico de cuando era pública, mezclado con las
+     * que sí se publican. La lista de páginas del panel tiene que responder a
+     * «qué está leyendo la gente», y una ruta que ya nadie de fuera puede abrir
+     * no responde a eso.
+     *
+     * Se FILTRAN, no se borran: las filas siguen en la tabla con su histórico
+     * intacto. Si el catálogo vuelve a abrirse, basta con sacarlo de aquí.
+     * Si otra ruta se cierra en el futuro, este es el único sitio que tocar.
+     */
+    const RUTAS_PRIVADAS = ['/tekhne/peliculas'];
+
+    // Condición SQL que deja fuera lo que no es público, para la columna dada.
+    private static function soloPublicas(string $col) : string {
+        $cond = [];
+        foreach (self::RUTAS_PRIVADAS as $r) {
+            $cond[] = "{$col} <> '" . self::$db->escape_string($r) . "'";
+        }
+        // Hoy nada registra visitas del panel, pero si algún día se añade a mano
+        // una llamada a registrarPagina() dentro de /admin, no debe colarse.
+        $cond[] = "{$col} NOT LIKE '/admin%'";
+        $cond[] = "{$col} NOT LIKE '/login%'";
+        return implode(' AND ', $cond);
+    }
+
     // Todas las páginas ordenadas por visitas (desc) => array de objetos {ruta, titulo, total}
     // Es el «Todo el histórico»: incluye lo anterior al desglose por fecha.
     public static function paginasPorVisitas() : array {
-        $rows = self::$db->query("SELECT ruta, titulo, total FROM visitas_pagina ORDER BY total DESC, titulo ASC");
+        $rows = self::$db->query("SELECT ruta, titulo, total FROM visitas_pagina
+                                  WHERE " . self::soloPublicas('ruta') . "
+                                  ORDER BY total DESC, titulo ASC");
         $out = [];
         while ($r = $rows->fetch_object()) { $out[] = $r; }
         return $out;
@@ -64,6 +95,7 @@ class Visita extends ActiveRecord {
                                   FROM visitas_pagina_dia d
                                   LEFT JOIN visitas_pagina p ON p.ruta = d.ruta
                                   WHERE d.fecha >= '{$desde}'
+                                    AND " . self::soloPublicas('d.ruta') . "
                                   GROUP BY d.ruta, titulo
                                   ORDER BY total DESC, titulo ASC");
         $out = [];
@@ -76,6 +108,7 @@ class Visita extends ActiveRecord {
         $rows = self::$db->query("SELECT p.ruta, COALESCE(NULLIF(p.titulo, ''), p.ruta) AS titulo, p.total
                                   FROM visitas_pagina p
                                   WHERE DATE(p.actualizado) >= '{$desde}'
+                                    AND " . self::soloPublicas('p.ruta') . "
                                     AND NOT EXISTS (SELECT 1 FROM visitas_pagina_dia d WHERE d.ruta = p.ruta AND d.fecha >= '{$desde}')
                                   ORDER BY p.total DESC, titulo ASC");
         while ($r = $rows->fetch_object()) { $r->total = (int) $r->total; $r->acumulado = true; $out[] = $r; }

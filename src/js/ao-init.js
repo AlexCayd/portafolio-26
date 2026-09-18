@@ -82,8 +82,18 @@
         if (window.__aoRecolor) window.__aoRecolor(THEME);
       }
       // View Transitions también sirve dentro del mismo documento: el cambio de
-      // tema se funde en vez de saltar de golpe.
-      if (document.startViewTransition && !reduce) document.startViewTransition(cambiar);
+      // tema se funde en vez de saltar de golpe. `vt-local` avisa de que esto
+      // NO es una navegación: sin la marca, el cambio de tema heredaba el guion
+      // de _transitions.scss (la página sale y entra con desplazamiento y
+      // desenfoque) y la barra, que tiene nombre propio, parpadeaba.
+      if (document.startViewTransition && !reduce) {
+        var raiz = document.documentElement;
+        raiz.classList.add('vt-local');
+        var soltar = function(){ raiz.classList.remove('vt-local'); };
+        var vt = document.startViewTransition(cambiar);
+        if (vt && vt.finished && vt.finished.then) vt.finished.then(soltar, soltar);
+        else setTimeout(soltar, 400);
+      }
       else cambiar();
     });
   }
@@ -485,7 +495,15 @@
         // El viewport de WebGL nace abajo-izquierda; en el canvas de origen eso
         // cae en la franja inferior, de ahí el recorte desde glc.height - t.h.
         t.ctx.drawImage(glc, 0, glc.height - t.h, t.w, t.h, 0, 0, t.w, t.h);
-        if (!t.pintada){ t.pintada = true; t.lienzo.classList.add('is-on'); }
+        if (!t.pintada){
+          t.pintada = true;
+          // Se enciende sin fundido, en el mismo repintado en el que se acaba
+          // de dibujar: el gas ya está ahí, no hay nada que cruzar. La clase se
+          // retira al fotograma siguiente para que los repintados posteriores
+          // (recolorear al cambiar de tema) sí se fundan.
+          t.lienzo.classList.add('sin-fundido', 'is-on');
+          requestAnimationFrame(function(){ t.lienzo.classList.remove('sin-fundido'); });
+        }
       }
 
       function repintar(){ tarjetas.forEach(function(t){ if (t.visible) pintar(t); }); }
@@ -507,6 +525,9 @@
             // El buscador de Tékhne oculta tarjetas con display:none; al volver
             // hay que remedirlas antes de dibujar.
             if (t.visible && !t.w) medirTodas();
+            // Una tarjeta que entra a mitad de scroll también estrena su gas en
+            // el acto: el bucle está congelado mientras el dedo se mueve.
+            if (t.visible && !t.pintada) pintar(t);
           });
         }, { rootMargin: '250px 0px' });
         tarjetas.forEach(function(t){ io.observe(t.lienzo); });
@@ -514,6 +535,19 @@
       } else {
         tarjetas.forEach(function(t){ t.visible = true; });
       }
+
+      /* Estreno inmediato de lo que ya está en pantalla. Sin esto, la primera
+         pintura esperaba al bucle de abajo, que descarta fotogramas hasta
+         acumular 31 ms y no dibuja NADA mientras se hace scroll: de ahí que la
+         tarjeta se quedara en el degradado de respaldo un buen rato. Es el
+         mismo pintar() que iba a ocurrir de todos modos, un fotograma antes.
+         El IntersectionObserver no ha resuelto todavía (su callback es
+         asíncrono), así que aquí se mira la posición directamente. */
+      var alto = window.innerHeight || 0;
+      tarjetas.forEach(function(t){
+        var r = t.lienzo.getBoundingClientRect();
+        if (r.bottom > -250 && r.top < alto + 250){ t.visible = true; pintar(t); }
+      });
 
       // El puntero abre el humo dentro de la tarjeta que se está señalando
       tarjetas.forEach(function(t){
@@ -628,6 +662,18 @@
       return lenis;
     } catch(e){ console.warn('lenis', e); return null; }
   };
+
+  /* El bundle va con defer, así que el script en línea de las páginas internas
+     se ejecuta ANTES que este archivo y no encuentra ninguna de las APIs de
+     arriba. Antes lo resolvía sondeando cada 100 ms hasta cuatro segundos: el
+     gas de las tarjetas no arrancaba hasta el siguiente sondeo, aunque el
+     bundle ya estuviera listo. Con el aviso, arranca en cuanto lo está.
+     La bandera cubre a quien se suscriba tarde (el evento ya no volverá). */
+  window.aoListo = true;
+  try { document.dispatchEvent(new Event('ao:listo')); } catch(e){
+    var ev = document.createEvent('Event'); ev.initEvent('ao:listo', false, false);
+    document.dispatchEvent(ev);
+  }
 
   /* ---------- FOOTER: flowing silk shader ---------- */
   function initFooterGL(app, reduced, gen){

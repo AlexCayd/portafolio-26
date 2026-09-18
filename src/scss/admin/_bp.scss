@@ -1,0 +1,40 @@
+@use "sass:map";
+
+/* =====================================================================
+   Breakpoints del panel
+   El admin creció por fases y acabó con dieciséis anchos literales
+   (420, 480, 520, 560, 620, 640, 700, 720, 768, 780, 820, 860, 900,
+   1000, 1050, 1100, 1280), varios de ellos sinónimos: 620 y 640 y 700
+   eran «móvil», 820 y 860 eran «tablet». Aquí quedan cinco con nombre.
+
+   Desktop-first (max-width) porque así está escrito el resto del panel:
+   los mixins de base/_mixins.scss son mobile-first y admin.scss no los
+   importa — mezclar los dos sentidos en la misma hoja es como se llega
+   a reglas que se pisan entre sí.
+   ===================================================================== */
+
+$bp: (
+  xs:  480px,   // teléfono pequeño
+  sm:  640px,   // teléfono
+  md:  820px,   // tablet vertical — aquí se pliega el sidebar
+  lg: 1024px,   // tablet horizontal
+  xl: 1280px    // escritorio holgado
+);
+
+@function bp($k) {
+  @if not map.has-key($bp, $k) {
+    @error "Breakpoint desconocido: #{$k}. Disponibles: #{map.keys($bp)}.";
+  }
+  @return map.get($bp, $k);
+}
+
+/* Hasta (incluido) el ancho nombrado */
+@mixin hasta($k) {
+  @media (max-width: bp($k)) { @content; }
+}
+
+/* A partir del ancho nombrado (exclusivo), para los pocos casos
+   en que la regla es más corta escrita al revés */
+@mixin desde($k) {
+  @media (min-width: bp($k) + 1px) { @content; }
+}

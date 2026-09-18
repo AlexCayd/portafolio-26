@@ -21,8 +21,8 @@
             <div class="campo campo-poster">
                 <span>Póster</span>
                 <div class="upload upload--stack upload--poster">
-                    <div class="upload-preview" id="prev-poster" style="width:100%;aspect-ratio:2/3;height:auto">
-                        <?php if (!empty($editando->poster)) : ?><img src="<?php echo urlSubida('peliculas', $editando->poster); ?>" alt="" style="object-fit:cover"><?php else : ?><span class="poster-ph" style="border:none"><?php echo icono('film'); ?></span><?php endif; ?>
+                    <div class="upload-preview upload-preview--2x3" id="prev-poster">
+                        <?php if (!empty($editando->poster)) : ?><img src="<?php echo urlSubida('peliculas', $editando->poster); ?>" alt=""><?php else : ?><span class="poster-ph" style="border:none"><?php echo icono('film'); ?></span><?php endif; ?>
                     </div>
                     <label class="upload-drop"><b>Elige</b> o arrastra el póster<br><small>JPG, PNG, WEBP</small><input type="file" name="poster_file" accept="image/*" data-preview="#prev-poster"></label>
                 </div>

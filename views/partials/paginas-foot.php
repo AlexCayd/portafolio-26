@@ -10,13 +10,29 @@
     }
 
     // ---- Reveal robusto (IntersectionObserver + anime.js) ---------------
+    // prefers-reduced-motion: esta entrada movía 30px, escalaba y desenfocaba
+    // CADA bloque de todas las páginas internas sin consultar la preferencia —
+    // en Tékhne son la mancheta, la barra, cada entrada del río y cada estante.
+    // Reducido no es inmóvil: se conserva el fundido (la señal de «esto acaba
+    // de aparecer») y se quitan el desplazamiento y el desenfoque, que son lo
+    // que provoca el malestar. Se relee en vivo: la preferencia se cambia sin
+    // recargar y el siguiente reveal ya respeta el valor nuevo.
+    var mqMov = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+    function suave() { return !(mqMov && mqMov.matches); }
+
     function reveal(scope) {
         var root = scope || document;
         var els = [].slice.call(root.querySelectorAll('[data-anim]'));
         if (!els.length) return;
+        var mueve = suave();
         els.forEach(function (el) {
             el.removeAttribute('data-shown');
-            el.style.opacity = '0'; el.style.transform = 'translateY(30px) scale(.98)';
+            el.style.opacity = '0';
+            // La transición NO se declara aquí: opacity y transition caerían en
+            // el mismo recálculo y el navegador animaría el 1 → 0, o sea la
+            // página desvaneciéndose antes de entrar. Se pone en show().
+            if (!mueve) { el.style.transform = ''; el.style.filter = ''; el.style.transition = ''; return; }
+            el.style.transform = 'translateY(30px) scale(.98)';
             // El blur se maneja con transición CSS aparte (anime.js no interpola bien blur()).
             el.style.filter = 'blur(7px)'; el.style.transition = 'filter .8s cubic-bezier(.16,1,.3,1)';
         });
@@ -24,6 +40,14 @@
         function show(el, i) {
             if (el.getAttribute('data-shown')) return;
             el.setAttribute('data-shown', '1');
+            if (!suave()) {
+                // Solo opacidad: nada de will-change ni de capas de GPU que aquí
+                // no compensan, y sin escalonado — cuarenta fundidos en cascada
+                // son cuarenta cosas moviéndose, que es justo lo que se pidió no.
+                el.style.transition = 'opacity .45s linear';
+                el.style.opacity = '1'; el.style.transform = ''; clearFx(el);
+                return;
+            }
             // will-change SOLO mientras dura la entrada. Antes se ponía de golpe
             // a todos los [data-anim]: en el catálogo de películas son cientos
             // de tarjetas promovidas a capa propia —y `filter` promociona— desde
@@ -254,45 +278,83 @@
         function setFocus(on) {
             document.documentElement.classList.toggle('is-focus', on);
             focusBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-            focusBtn.title = on ? 'Salir del modo lectura' : 'Modo lectura';
+            var etiqueta = on ? 'Salir del modo lectura' : 'Modo lectura';
+            focusBtn.title = etiqueta;
+            focusBtn.setAttribute('aria-label', etiqueta);
             try { localStorage.setItem('ao-focus', on ? '1' : '0'); } catch (e) {}
         }
-        focusBtn.addEventListener('click', function () { setFocus(!document.documentElement.classList.contains('is-focus')); });
+        // El chrome de la cabecera se funde con transiciones CSS, pero el ancho
+        // de la columna de lectura no: animar max-width obligaría a recomponer
+        // el artículo entero en cada fotograma. View Transitions resuelve el
+        // reflow UNA vez y cruza el antes con el después.
+        //
+        // `vt-local` marca que esto es un cambio de estado y no una navegación:
+        // portfolio.css tiene escrito el guion de las navegaciones (la página
+        // sale hacia arriba y la nueva entra desde abajo con desenfoque) y sin
+        // la marca el modo lectura lo heredaba entero. Y el nombre inline del
+        // hero se retira mientras dura, o `ao-cover` abre su propio grupo de
+        // morph para una imagen que no se ha movido ni un píxel.
+        // La preferencia de movimiento se consulta en el clic, no al cargar:
+        // se puede cambiar con la página abierta.
+        var heroMedia = document.getElementById('art-hero-media');
+        focusBtn.addEventListener('click', function () {
+            var on = !document.documentElement.classList.contains('is-focus');
+            var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (!document.startViewTransition || reduce) { setFocus(on); return; }
+
+            var raiz = document.documentElement;
+            raiz.classList.add('vt-local');
+            if (heroMedia) heroMedia.style.viewTransitionName = 'none';
+            var restaurar = function () {
+                raiz.classList.remove('vt-local');
+                if (heroMedia) heroMedia.style.viewTransitionName = 'ao-cover';
+            };
+            var vt = document.startViewTransition(function () { setFocus(on); });
+            if (vt && vt.finished && vt.finished.then) vt.finished.then(restaurar, restaurar);
+            else setTimeout(restaurar, 400);
+        });
+        // El estado guardado se restaura SIN transición: con startViewTransition
+        // aquí, abrir la página en modo lectura enseñaba un fundido fantasma.
         try { if (localStorage.getItem('ao-focus') === '1') setFocus(true); } catch (e) {}
     }
 
+    // ---- Espera al bundle -----------------------------------------------
+    // Este script va en línea, así que corre ANTES que bundle.min.js (defer).
+    // Antes se sondeaba cada 100 ms hasta cuatro segundos: aunque el bundle ya
+    // estuviera listo, el gas de las tarjetas no arrancaba hasta el siguiente
+    // sondeo. Ahora ao-init.js avisa con 'ao:listo' y se arranca en ese mismo
+    // instante; la bandera cubre el caso de que ya haya avisado.
+    function cuandoListo(fn) {
+        if (window.aoListo) { fn(); return; }
+        document.addEventListener('ao:listo', fn, { once: true });
+    }
+
     // ---- Portadas por defecto: el gas interactivo del hero del home ----
-    // El bundle se carga con defer, así que se espera a que exponga las APIs.
-    // Si no llegan en 4 s se abandona y queda el degradado de respaldo.
     var gl = document.getElementById('art-hero-gl');
     var miniaturas = document.querySelector('canvas[data-gas]');
     if (gl || miniaturas) {
-        var intentos = 0;
-        (function montar() {
-            if (window.THREE && window.aoGas && window.aoGasMiniaturas) {
-                if (gl) {
-                    var gas = window.aoGas(gl, {
-                        medir: function () {
-                            var c = gl.parentElement || gl;
-                            return { w: Math.max(1, c.offsetWidth), h: Math.max(1, c.offsetHeight) };
-                        },
-                        vigneta: 0.82       // menos viñeta: la portada es más chica que el hero
-                    });
-                    // La portada mide 100vh: en cuanto se empieza a leer queda
-                    // fuera y seguir pintándola cada fotograma es el gasto más
-                    // caro de la página a cambio de nada que nadie ve.
-                    var heroSec = document.getElementById('art-hero');
-                    if (gas && gas.activar && heroSec && window.IntersectionObserver) {
-                        new IntersectionObserver(function (es) {
-                            gas.activar(es[0].isIntersecting);
-                        }).observe(heroSec);
-                    }
+        cuandoListo(function () {
+            if (!window.THREE) return;          // sin WebGL queda el degradado de respaldo
+            if (gl && window.aoGas) {
+                var gas = window.aoGas(gl, {
+                    medir: function () {
+                        var c = gl.parentElement || gl;
+                        return { w: Math.max(1, c.offsetWidth), h: Math.max(1, c.offsetHeight) };
+                    },
+                    vigneta: 0.82       // menos viñeta: la portada es más chica que el hero
+                });
+                // La portada mide 100vh: en cuanto se empieza a leer queda
+                // fuera y seguir pintándola cada fotograma es el gasto más
+                // caro de la página a cambio de nada que nadie ve.
+                var heroSec = document.getElementById('art-hero');
+                if (gas && gas.activar && heroSec && window.IntersectionObserver) {
+                    new IntersectionObserver(function (es) {
+                        gas.activar(es[0].isIntersecting);
+                    }).observe(heroSec);
                 }
-                if (miniaturas) window.aoGasMiniaturas();
-                return;
             }
-            if (++intentos < 40) setTimeout(montar, 100);
-        })();
+            if (miniaturas && window.aoGasMiniaturas) window.aoGasMiniaturas();
+        });
     }
 
     // ---- Scroll suave, el mismo del home -------------------------------
@@ -300,11 +362,130 @@
     // las páginas internas se quedaban con scroll nativo mientras el home iba
     // suave. Se arranca en cuanto el bundle expone la API (respeta
     // prefers-reduced-motion por su cuenta).
-    var intentosLenis = 0;
-    (function suave() {
-        if (window.aoLenis) { window.aoLenis(); return; }
-        if (++intentosLenis < 40) setTimeout(suave, 100);
-    })();
+    cuandoListo(function () { if (window.aoLenis) window.aoLenis(); });
+
+    // ---- Breadcrumb: banda solo cuando está anclado --------------------
+    // La barra de ruta es sticky. En una entrada nace entre el hero a sangre y
+    // el primer párrafo, y ahí su velo con filete inferior partía la página en
+    // dos justo donde la portada se funde con el fondo. Anclada bajo el menú sí
+    // hace falta, porque flota sobre el texto.
+    //
+    // No hay selector CSS para «sticky pegado», así que se mide con un
+    // centinela de 1px puesto delante de la barra. Un IntersectionObserver con
+    // el borde superior recortado al alto de la cabecera avisa al cruzar esa
+    // línea; `boundingClientRect.top` desambigua el caso que el observador solo
+    // no distingue: «el centinela se fue por arriba» (anclada) frente a «el
+    // centinela aún no ha llegado, está más abajo de la ventana» (suelta) —los
+    // dos dan isIntersecting false. Cuesta cero por evento de scroll, que es lo
+    // que importa en una página que se recorre entera leyendo.
+    var centinela = document.querySelector('.pg-crumb-centinela');
+    var barraRuta = document.querySelector('.pg-crumb-bar');
+    if (centinela && barraRuta) {
+        var cabeceraRuta = document.querySelector('.pg-top');
+        var obsRuta = null;
+
+        function pintarRuta(top) {
+            var limite = cabeceraRuta ? cabeceraRuta.offsetHeight : 72;
+            barraRuta.classList.toggle('is-suelta', top > limite - 1);
+        }
+        function montarRuta() {
+            if (obsRuta) obsRuta.disconnect();
+            var limite = cabeceraRuta ? cabeceraRuta.offsetHeight : 72;
+            // Medición síncrona al arrancar: el observador no dispara hasta
+            // después del layout y, sin esto, una entrada enseñaría la banda
+            // durante un fotograma antes de quitarla.
+            pintarRuta(centinela.getBoundingClientRect().top);
+            obsRuta = new IntersectionObserver(function (es) {
+                pintarRuta(es[0].boundingClientRect.top);
+            }, { rootMargin: '-' + limite + 'px 0px 0px 0px', threshold: [0, 1] });
+            obsRuta.observe(centinela);
+        }
+        if ('IntersectionObserver' in window) {
+            montarRuta();
+            // El alto de la cabecera cambia de tramo (64px bajo 560px), así que
+            // el recorte del observador deja de valer y hay que rehacerlo.
+            var tRuta = null;
+            window.addEventListener('resize', function () {
+                clearTimeout(tRuta);
+                tRuta = setTimeout(montarRuta, 150);
+            });
+        }
+    }
+
+    // ---- Estantes horizontales (watchlist / catálogo) ------------------
+    // El problema que arregla esto: el estante llevaba `data-lenis-prevent`,
+    // que le dice a Lenis «no toques NINGUNA rueda que pase por aquí». Con eso
+    // el gesto diagonal del trackpad dejaba de dar el tirón vertical… y también
+    // dejaba de bajar la página: al pasar el puntero por encima de la fila de
+    // pósters el scroll se quedaba muerto, que es justo la sensación de rotura.
+    //
+    // El reparto correcto no es por zona, es por gesto:
+    //   · rueda vertical  → la página (Lenis), siempre, esté donde esté el ratón
+    //   · gesto horizontal → el estante, y el evento no sale de aquí
+    // Lenis escucha en `window`, así que basta con cortar la propagación del
+    // evento en el estante para que no lo vea. `stopPropagation` no anula la
+    // acción por defecto: el desplazamiento horizontal nativo sigue su curso.
+    var estantes = [].slice.call(document.querySelectorAll('[data-estante]'));
+    estantes.forEach(function (est) {
+        function recorrido() { return est.scrollWidth - est.clientWidth; }
+
+        est.addEventListener('wheel', function (e) {
+            if (e.ctrlKey) return;                 // zoom del navegador
+            if (recorrido() < 2) return;           // no hay nada que correr: manda la página
+
+            if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+                e.stopPropagation();               // gesto horizontal: es del estante
+                return;                            // el navegador ya lo desplaza solo
+            }
+            // Mayús + rueda: Firefox lo desplaza solo y Chrome lo manda como
+            // deltaX. Se hace a mano en los dos para que el resultado sea el
+            // mismo — y con preventDefault no hay doble movimiento.
+            if (e.shiftKey) {
+                e.stopPropagation();
+                e.preventDefault();
+                est.scrollLeft += e.deltaY;
+            }
+            // Rueda vertical a secas: no se toca. La página sigue bajando.
+        }, { passive: false });
+
+        // Flechas: el único acceso del ratón sin rueda horizontal. Se muestran
+        // solo si de verdad hay recorrido (y en táctil no: ahí basta el dedo).
+        var caja = est.closest('.sel-autor') || est.parentElement;
+        var ctrl = caja && caja.querySelector('[data-estante-ctrl]');
+        var prev = caja && caja.querySelector('[data-estante-prev]');
+        var next = caja && caja.querySelector('[data-estante-next]');
+        if (!ctrl || !prev || !next) return;
+
+        var tactil = window.matchMedia && matchMedia('(hover: none)').matches;
+        function paso() { return Math.max(200, Math.round(est.clientWidth * 0.8)); }
+        function correr(d) {
+            // `behavior: 'smooth'` es movimiento, y bastante: 800px de pósters
+            // cruzando la pantalla. Con reduced-motion el estante salta al sitio
+            // —el cambio se ve igual, sin el recorrido.
+            est.scrollBy({ left: d * paso(), behavior: suave() ? 'smooth' : 'auto' });
+        }
+        prev.addEventListener('click', function () { correr(-1); });
+        next.addEventListener('click', function () { correr(1); });
+
+        var pedido = false;
+        function pintar() {
+            pedido = false;
+            var hay = recorrido();
+            ctrl.hidden = tactil || hay < 2;
+            prev.disabled = est.scrollLeft < 4;
+            next.disabled = est.scrollLeft > hay - 4;
+        }
+        est.addEventListener('scroll', function () {
+            if (pedido) return;                    // un repintado por fotograma, no por evento
+            pedido = true;
+            requestAnimationFrame(pintar);
+        }, { passive: true });
+        window.addEventListener('resize', pintar);
+        pintar();
+        // Los pósters entran con loading="lazy": el recorrido real no se conoce
+        // hasta que cargan, y antes de eso las flechas saldrían apagadas.
+        if (window.ResizeObserver) { try { new ResizeObserver(pintar).observe(est); } catch (e) {} }
+    });
 
     // ---- Menú de navegación de las páginas internas --------------------
     var burger = document.getElementById('pg-burger');
@@ -343,8 +524,6 @@
         if (window.ScrollTrigger) {
             gsap.to(media, { yPercent: 22, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true } });
             gsap.to('.art-hero-inner', { yPercent: -8, opacity: .35, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true } });
-            var cue = document.getElementById('art-hero-cue');
-            if (cue) gsap.to(cue, { opacity: 0, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: '18% top', scrub: true } });
         }
     } else if (hero) {
         // Sin GSAP / reduced-motion: mostrar todo estático

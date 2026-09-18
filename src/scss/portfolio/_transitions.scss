@@ -54,6 +54,26 @@
 ::view-transition-new(ao-topbar),
 ::view-transition-new(ao-nav) { animation: ao-vt-media-in .3s ease both; }
 
+// --- Transición LOCAL: mismo documento, NO una navegación ---------------
+// El modo lectura del artículo y el conmutador de tema del home también pasan
+// por startViewTransition, y sin distinguirlos heredaban todo el guion de
+// arriba: la pantalla entera salía hacia arriba y volvía a entrar desde abajo
+// con 5px de desenfoque (460 ms), mientras la cabecera —que tiene nombre
+// propio, `ao-topbar`— se apagaba a opacidad 0 y volvía a aparecer. Pulsar
+// «modo lectura» se veía como cambiar de página, y el único mando que debía
+// quedarse quieto era justamente el que parpadeaba.
+//
+// Con la marca puesta el chrome pierde su nombre y viaja DENTRO de la raíz, y
+// la raíz se cruza en seco: lo único que se lee es el cambio que de verdad
+// ocurrió (el ancho de la columna, o el color del tema). La clase la pone y la
+// quita el JS alrededor de la llamada.
+html.vt-local .pg-top,
+html.vt-local #ao-nav { view-transition-name: none; }
+
+html.vt-local::view-transition-group(root) { animation-duration: .26s; }
+html.vt-local::view-transition-old(root) { animation: ao-vt-media-out .26s ease both; }
+html.vt-local::view-transition-new(root) { animation: ao-vt-media-in .26s ease both; }
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),

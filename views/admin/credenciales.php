@@ -10,11 +10,11 @@
     <h2><?php echo $editando ? 'Editar credencial' : 'Nueva credencial'; ?></h2>
     <form method="POST" action="/admin/credenciales/guardar" enctype="multipart/form-data">
         <input type="hidden" name="id" value="<?php echo $editando->id ?? ''; ?>">
-        <div style="display:grid;grid-template-columns:220px 1fr;gap:26px;align-items:stretch" class="pel-form-grid">
-            <div class="campo" style="display:flex;flex-direction:column">
+        <div class="pel-form-grid pel-form-grid--logo">
+            <div class="campo">
                 <span>Logo de la institución</span>
-                <div class="upload upload--stack" style="max-width:220px;flex:1;display:flex;flex-direction:column">
-                    <div class="upload-preview logo" id="prev-logo" style="width:100%;flex:1;min-height:150px">
+                <div class="upload upload--stack upload--logo">
+                    <div class="upload-preview logo upload-preview--alto" id="prev-logo">
                         <?php if (!empty($editando->logo)) : ?><img src="<?php echo urlSubida('logos', $editando->logo); ?>" alt=""><?php else : ?>Sin logo<?php endif; ?>
                     </div>
                     <label class="upload-drop">
@@ -57,18 +57,18 @@
             <form method="POST" action="/admin/credenciales/orden-crono"><button class="btn btn--sm">Ordenar por año</button></form>
         </div>
     </div>
-    <div class="tabla-wrap">
-        <table class="tabla">
+    <div class="tabla-wrap tabla-wrap--cards">
+        <table class="tabla tabla--cards">
             <thead><tr><th></th><th>Logo</th><th>Título</th><th>Institución</th><th>Año</th><th>Acciones</th></tr></thead>
             <tbody data-sortable data-orden-url="/admin/credenciales/orden">
             <?php foreach ($credenciales as $c) : ?>
                 <tr class="sortable-row" draggable="true" data-id="<?php echo $c->id; ?>">
-                    <td><span class="drag-handle">⠿</span></td>
-                    <td><img class="logo-cell" src="<?php echo urlSubida('logos', $c->logo); ?>" alt="" onerror="this.style.visibility='hidden'"></td>
-                    <td><?php echo s($c->titulo); ?></td>
-                    <td style="color:var(--muted)"><?php echo s($c->institucion); ?></td>
-                    <td style="font-family:var(--mono)"><?php echo s($c->anio); ?></td>
-                    <td class="acciones">
+                    <td class="cell-arrastre" data-label=""><span class="drag-handle">⠿</span></td>
+                    <td class="cell-portada" data-label=""><img class="logo-cell" src="<?php echo urlSubida('logos', $c->logo); ?>" alt="" onerror="this.style.visibility='hidden'"></td>
+                    <td class="cell-titulo" data-label="Título"><?php echo s($c->titulo); ?></td>
+                    <td data-label="Institución" style="color:var(--muted)"><?php echo s($c->institucion); ?></td>
+                    <td data-label="Año" style="font-family:var(--mono)"><?php echo s($c->anio); ?></td>
+                    <td class="acciones" data-label="Acciones">
                         <a href="/admin/credenciales?id=<?php echo $c->id; ?>" class="act-btn act-edit" title="Editar"><?php echo icono('editar'); ?></a>
                         <form method="POST" action="/admin/credenciales/eliminar" data-confirm="Se eliminará esta credencial." data-confirm-name="<?php echo s($c->titulo); ?>">
                             <input type="hidden" name="id" value="<?php echo $c->id; ?>">

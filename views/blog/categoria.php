@@ -1,8 +1,15 @@
 <link rel="stylesheet" href="/build/css/paginas.css">
 <div id="ao-app" data-theme="dark">
 <div data-barba-namespace="blog-categoria">
-    <?php $ao_top_volver = ['url' => '/tekhne', 'texto' => 'Tékhne']; ?>
     <?php include __DIR__ . '/../partials/pg-top.php'; ?>
+    <?php
+    $ao_crumb = [
+        ['url' => '/',       'texto' => 'Home'],
+        ['url' => '/tekhne', 'texto' => 'Tékhne'],
+        ['texto' => $categoriaNombre],
+    ];
+    include __DIR__ . '/../partials/pg-crumb.php';
+    ?>
 
     <main class="pg pg--wide">
         <!-- Masthead editorial (como la portada de Tékhne) -->

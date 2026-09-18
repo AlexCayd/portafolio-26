@@ -44,7 +44,7 @@ $nav = [
 <?php endif; ?>
 </head>
 <body>
-<button class="admin-burger" id="admin-burger" aria-label="Abrir menú"><?php echo icono('menu'); ?></button>
+<button class="admin-burger" id="admin-burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="admin-sidebar"><?php echo icono('menu'); ?></button>
 <div class="admin">
     <div class="admin-backdrop" id="admin-backdrop"></div>
     <aside class="admin-sidebar" id="admin-sidebar">
@@ -167,11 +167,37 @@ document.querySelectorAll('form[data-confirm]').forEach(function (f) {
 // ---- Sidebar móvil (drawer) ----
 (function () {
     var sb = document.getElementById('admin-sidebar'), bd = document.getElementById('admin-backdrop'), bt = document.getElementById('admin-burger');
-    function open() { sb.classList.add('open'); bd.classList.add('show'); }
-    function close() { sb.classList.remove('open'); bd.classList.remove('show'); }
-    if (bt) bt.addEventListener('click', open);
-    if (bd) bd.addEventListener('click', close);
-    sb.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', close); });
+    if (!sb) return;
+    // El mismo ancho en el que la hoja pliega el sidebar (mixin `md`)
+    var movil = window.matchMedia('(max-width: 820px)');
+
+    function abrir(on) {
+        sb.classList.toggle('open', on);
+        if (bd) bd.classList.toggle('show', on);
+        if (bt) {
+            bt.setAttribute('aria-expanded', on ? 'true' : 'false');
+            bt.setAttribute('aria-label', on ? 'Cerrar menú' : 'Abrir menú');
+        }
+        // Cerrado y fuera de pantalla, el menú seguía siendo tabulable: el foco
+        // se iba a enlaces invisibles antes de llegar al contenido.
+        sincronizarInert();
+        if (on) { var p = sb.querySelector('a'); if (p) p.focus(); }
+        else if (bt && sb.contains(document.activeElement)) bt.focus();
+    }
+    function sincronizarInert() {
+        var oculto = movil.matches && !sb.classList.contains('open');
+        if (oculto) sb.setAttribute('inert', ''); else sb.removeAttribute('inert');
+    }
+
+    if (bt) bt.addEventListener('click', function () { abrir(!sb.classList.contains('open')); });
+    if (bd) bd.addEventListener('click', function () { abrir(false); });
+    sb.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { abrir(false); }); });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && sb.classList.contains('open')) abrir(false);
+    });
+    // Al pasar a escritorio el menú vuelve a ser parte de la página
+    (movil.addEventListener ? movil.addEventListener.bind(movil, 'change') : movil.addListener.bind(movil))(sincronizarInert);
+    sincronizarInert();
 })();
 
 // ---- Drag & drop reordenar ----
@@ -226,11 +252,24 @@ document.querySelectorAll('form[data-confirm]').forEach(function (f) {
         inp.addEventListener('change', function () { var f = inp.files[0]; if (!f) return; var p = document.querySelector(inp.dataset.preview); if (p) p.innerHTML = '<img src="' + URL.createObjectURL(f) + '">'; });
     });
     // Dropzone
+    // Acuse de recibo del archivo elegido: los uploads de imagen lo dan con la
+    // miniatura, pero los que no tienen preview (el PDF del CV) se quedaban
+    // diciendo «Elige o arrastra» después de elegir, así que no había manera de
+    // saber si el clic había contado antes de pulsar el botón de guardar.
+    function marcarArchivo(drop, inp) {
+        var f = inp && inp.files && inp.files[0];
+        var et = drop.querySelector('.upload-file');
+        if (!f) { if (et) et.remove(); drop.classList.remove('tiene-archivo'); return; }
+        if (!et) { et = document.createElement('span'); et.className = 'upload-file'; drop.appendChild(et); }
+        et.textContent = f.name;
+        drop.classList.add('tiene-archivo');
+    }
     document.querySelectorAll('.upload-drop').forEach(function (drop) {
         var inp = drop.querySelector('input[type="file"]');
         ['dragover', 'dragenter'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('dragover'); }); });
         ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function () { drop.classList.remove('dragover'); }); });
         drop.addEventListener('drop', function (e) { e.preventDefault(); if (inp && e.dataTransfer.files.length) { inp.files = e.dataTransfer.files; inp.dispatchEvent(new Event('change')); } });
+        if (inp) inp.addEventListener('change', function () { marcarArchivo(drop, inp); });
     });
 })();
 

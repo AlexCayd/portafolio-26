@@ -1,19 +1,20 @@
 <link rel="stylesheet" href="/build/css/paginas.css">
 <div id="ao-app" data-theme="dark">
 <div data-barba-namespace="blog-recomendaciones">
-    <?php $ao_top_volver = ['url' => '/tekhne', 'texto' => 'Tékhne']; ?>
     <?php include __DIR__ . '/../partials/pg-top.php'; ?>
+    <?php
+    $ao_crumb = [
+        ['url' => '/',       'texto' => 'Home'],
+        ['url' => '/tekhne', 'texto' => 'Tékhne'],
+        ['texto' => 'Watchlist'],
+    ];
+    include __DIR__ . '/../partials/pg-crumb.php';
+    ?>
 
     <main class="pg pg--wide">
-        <nav class="pg-crumb" data-anim aria-label="Ruta de navegación">
-            <a href="/">Home</a><span>›</span>
-            <a href="/tekhne">Tékhne</a><span>›</span>
-            <span class="cur">Para ver más tarde</span>
-        </nav>
-
-        <div class="pg-kicker" data-anim><span class="acc">/ RECOMENDACIONES</span></div>
+        <div class="pg-kicker" data-anim><span class="acc">/ WATCHLIST</span><span><?php echo count($seleccion); ?> títulos</span></div>
         <h1 class="pg-title" data-anim>Para ver más <em>tarde…</em></h1>
-        <p class="pg-lead" data-anim>Lo mejor que he visto: mi selección personal de cine y series (<?php echo count($seleccion); ?>).</p>
+        <p class="pg-lead" data-anim>Lo mejor que he visto: mi selección personal de cine y series.</p>
 
         <div class="rec-grid">
             <?php foreach ($seleccion as $t) : ?>

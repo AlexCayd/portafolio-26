@@ -8,7 +8,18 @@
 /* Las reglas de View Transitions viven en portfolio.scss, que se carga en
    todas las páginas públicas (esta hoja solo se carga en las internas). */
 
-#ao-app { background: var(--bg); color: var(--fg); min-height: 100vh; position: relative; font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; }
+#ao-app {
+  /* Altos FIJOS de las dos bandas superiores. Son la fuente de la verdad: la
+     cabecera se fija a --pg-top-h, la barra de ruta se pega justo debajo y los
+     anclajes del artículo descuentan las dos. Si se dejaran crecer con su
+     contenido, cada página tendría una altura distinta —el botón Focus solo
+     está en el artículo— y la barra de ruta se anclaría un par de píxeles más
+     abajo, dejando pasar una raya de texto por el hueco. */
+  --pg-top-h: 72px;
+  --pg-crumb-h: 46px;
+  background: var(--bg); color: var(--fg); min-height: 100vh; position: relative; font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+}
+@media (max-width: 560px) { #ao-app { --pg-top-h: 64px; --pg-crumb-h: 42px; } }
 body { background: #0a0a0b; font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif; }
 
 .pg { max-width: 920px; margin: 0 auto; padding: clamp(90px, 14vh, 150px) clamp(20px, 5vw, 28px) 120px; }
@@ -50,11 +61,19 @@ body { background: #0a0a0b; font-family: 'Space Grotesk', system-ui, -apple-syst
   background: color-mix(in srgb, var(--fg) 14%, transparent);
 }
 
-/* Top bar */
+/* Top bar.
+   Retícula de tres columnas y NO flex con space-between: con space-between el
+   menú se queda donde lo dejan sus vecinos, así que cambiaba de sitio en cada
+   página según cuántos botones llevara .pg-actions —un artículo con Focus y
+   Contáctame lo empujaba bastante más a la izquierda que el listado—. Con las
+   dos columnas laterales atadas al mismo ancho (minmax(0,1fr)), la del medio
+   cae siempre en el eje de la ventana, tenga al lado lo que tenga. */
 .pg-top {
   position: fixed; top: 0; left: 0; width: 100%; z-index: 500;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px clamp(18px, 4vw, 48px);
+  box-sizing: border-box; height: var(--pg-top-h);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center; gap: 12px;
+  padding: 0 clamp(18px, 4vw, 48px);
   /* 82 % y no 68 %: la barra flota sobre portadas que pueden ser muy claras y
      el texto de 11-13px tiene que seguir cumpliendo AA sobre cualquiera. */
   background: color-mix(in srgb, var(--bg) 82%, transparent);
@@ -73,13 +92,13 @@ body { background: #0a0a0b; font-family: 'Space Grotesk', system-ui, -apple-syst
   background: var(--bg);
   backdrop-filter: none; -webkit-backdrop-filter: none;
 }
-.pg-top .brand { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: -.01em; color: var(--fg); text-decoration: none; transition: opacity .2s; }
+.pg-top .brand { grid-column: 1; justify-self: start; min-width: 0; font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: -.01em; color: var(--fg); text-decoration: none; white-space: nowrap; transition: opacity .2s; }
 .pg-top .brand:hover { opacity: .82; }
 .pg-top .brand span { color: var(--accent); }
-.pg-top .pg-actions { display: flex; align-items: center; gap: 10px; }
+.pg-top .pg-actions { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: 10px; }
 
 /* Navegación del sitio dentro de las páginas internas (mismas opciones que el home) */
-.pg-nav { display: flex; align-items: center; gap: 2px; }
+.pg-nav { grid-column: 2; justify-self: center; display: flex; align-items: center; gap: 2px; }
 .pg-nav a {
   position: relative; color: var(--fg); text-decoration: none; padding: 9px 14px; border-radius: 30px;
   font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
@@ -101,12 +120,15 @@ body { background: #0a0a0b; font-family: 'Space Grotesk', system-ui, -apple-syst
 .pg-burger:focus-visible,
 .pg-focus-btn:focus-visible,
 .tk-cat:focus-visible,
+.tk-tab:focus-visible,
+.tk-art:focus-visible,
+.sel-nav:focus-visible,
 .pg-card:focus-visible,
 a.pg-ref:focus-visible,
 .sel-card:focus-visible,
 .sel-vertodas:focus-visible,
-.film-playlist-link:focus-visible,
-.film-playlist-cta:focus-visible,
+.film-watchlist-link:focus-visible,
+.film-watchlist-cta:focus-visible,
 .proj-visit:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -150,15 +172,16 @@ a.pg-ref:focus-visible,
   .pg-menu, .pg-menu nav a, .pg-burger span { transition: none; }
 }
 
-/* Bajo 1000px la barra se queda con marca + acciones y el menú pasa al overlay */
+/* Bajo 1000px la barra se queda con marca + acciones y el menú pasa al overlay.
+   La retícula sigue siendo de tres columnas: marca y acciones conservan su
+   grid-column, así que la del medio se queda vacía y nada se descoloca. */
 @media (max-width: 1000px) {
   .pg-nav { display: none; }
   .pg-burger { display: flex; }
 }
 @media (max-width: 560px) {
-  .pg-top { padding: 10px 16px; }
+  .pg-top { padding: 10px 16px; gap: 8px; }
   .pg-top .pg-actions { gap: 8px; }
-  .pg-top .pg-back { display: none; }       /* el menú ya lleva a todas partes */
   .pg-wa { padding: 9px 15px; font-size: 12px; }
 }
 
@@ -169,9 +192,14 @@ a.pg-ref:focus-visible,
 }
 .pg-wa:hover { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 32%, transparent); }
 
-/* Botón "volver" tipo ghost con flecha animada */
+/* Botón "volver" tipo ghost con flecha animada.
+   Ya NO vive en la cabecera: allí duplicaba lo que dice el breadcrumb y era lo
+   que descentraba el menú (ensanchaba .pg-actions solo en las páginas que lo
+   llevaban). Su función de navegación la hace ahora el primer eslabón de
+   .pg-crumb. La clase se conserva porque cierra el pie de la ficha de película
+   y de la de proyecto, que es donde una salida grande sí tiene sentido. */
 .pg-back {
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
   font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
   color: var(--muted); text-decoration: none;
   padding: 9px 15px 9px 13px; border: 1px solid var(--line); border-radius: 40px;
@@ -181,7 +209,7 @@ a.pg-ref:focus-visible,
 .pg-back::before { content: '←'; display: inline-block; transition: transform .22s ease; }
 .pg-back:hover { color: var(--fg); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .pg-back:hover::before { transform: translateX(-3px); }
-.pg-back { white-space: nowrap; }
+.pg-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 /* Meta / kicker — datos generales del artículo (categoría · fecha · lectura).
    Usa la tipografía de texto del proyecto, no el monoespaciado: la categoría
@@ -228,7 +256,9 @@ h1.pg-title { font-family: 'Clash Display', sans-serif; font-weight: 700; font-s
 .pg-body h2 {
   font-family: 'Clash Display', sans-serif; font-weight: 700;
   font-size: clamp(1.5rem, 3.2vw, 2rem); letter-spacing: -.02em; line-height: 1.12;
-  color: var(--fg); margin: 1.9em 0 .5em; scroll-margin-top: 90px;
+  /* Cabecera + barra de breadcrumb: sin descontar las dos, un salto a un
+     apartado dejaba el título tapado por la barra que acaba de anclarse. */
+  color: var(--fg); margin: 1.9em 0 .5em; scroll-margin-top: calc(var(--pg-top-h) + var(--pg-crumb-h) + 18px);
 }
 .pg-body h3 { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 1.28rem; color: var(--fg); margin: 1.5em 0 .4em; }
 .pg-body img { width: 100%; border-radius: 14px; margin: 2em 0; display: block; box-shadow: var(--sh-md); }
@@ -309,7 +339,19 @@ a.pg-ref:hover h3 { color: var(--accent); }
 .sel-title em { font-style: normal; color: var(--accent); }
 .sel-sub { color: var(--muted); font-size: .98rem; margin: 0; max-width: 560px; }
 .sel-count { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); background: color-mix(in srgb, var(--fg) 8%, transparent); padding: 6px 14px; border-radius: 999px; white-space: nowrap; }
-.sel-shelf { display: grid; grid-auto-flow: column; grid-auto-columns: 160px; gap: 18px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; justify-content: start; }
+.sel-shelf {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 160px; gap: 18px;
+  overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; justify-content: start;
+  /* La otra mitad del arreglo del scroll del estante: sin `contain`, seguir
+     empujando en horizontal al llegar al final entrega el gesto al navegador y
+     eso es «atrás» en el historial (trackpad de macOS, gesto de borde en
+     Chrome/Edge). Se sale de la página mirando pósters, que es una rotura peor
+     que la del tirón vertical. `contain` también evita que el rebote horizontal
+     se propague a la página. */
+  overscroll-behavior-x: contain;
+  /* La tarjeta que recibe el foco con Tab se posa junto al borde, no pegada. */
+  scroll-padding: 0 12px;
+}
 .sel-shelf::-webkit-scrollbar { height: 8px; }
 .sel-shelf::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
 .sel-card { scroll-snap-align: start; text-decoration: none; }
@@ -368,46 +410,163 @@ a.pg-ref:hover h3 { color: var(--accent); }
 .film-note-body strong { color: var(--fg); }
 .film-cta { margin-top: 44px; }
 
-/* Acceso a la playlist de recomendaciones (en todas las fichas) */
-.film-playlist-cta {
+/* Acceso a la watchlist (en todas las fichas) */
+.film-watchlist-cta {
   display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
   font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
   color: #0b0b0c; background: var(--c-amber, #F5B400);
   padding: 9px 16px; border-radius: 40px; white-space: nowrap;
   transition: transform .18s, filter .18s;
 }
-.film-playlist-cta:hover { transform: translateY(-1px); filter: brightness(1.06); }
-.film-playlist-cta .ico { width: 14px; height: 14px; fill: currentColor; stroke: none; flex: none; }
+.film-watchlist-cta:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.film-watchlist-cta .ico { width: 14px; height: 14px; fill: currentColor; stroke: none; flex: none; }
 
-/* Anterior / siguiente dentro de la selección */
-.film-playlist { margin-top: 26px; }
-.film-playlist-pos { display: block; margin-bottom: 12px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
-.film-playlist-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.film-playlist-link {
+/* Anterior / siguiente dentro de la watchlist */
+.film-watchlist { margin-top: 26px; }
+.film-watchlist-pos { display: block; margin-bottom: 12px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+.film-watchlist-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.film-watchlist-link {
   display: flex; flex-direction: column; gap: 5px; text-decoration: none;
   border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px;
   background: var(--surface); min-width: 0;
   transition: transform .25s cubic-bezier(.16, 1, .3, 1), border-color .25s;
 }
-.film-playlist-link:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 42%, var(--line)); }
-.film-playlist-dir { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
-.film-playlist-dir::before { content: '‹ '; }
-.film-playlist-tit { font-family: 'Clash Display', sans-serif; font-weight: 600; font-size: 1rem; color: var(--fg); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.film-playlist-link--next { text-align: right; }
-.film-playlist-link--next .film-playlist-dir::before { content: none; }
-.film-playlist-link--next .film-playlist-dir::after { content: ' ›'; }
-@media (max-width: 560px) { .film-playlist-nav { grid-template-columns: 1fr; } .film-playlist-link--next { text-align: left; } }
+.film-watchlist-link:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 42%, var(--line)); }
+.film-watchlist-dir { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.film-watchlist-dir::before { content: '‹ '; }
+.film-watchlist-tit { font-family: 'Clash Display', sans-serif; font-weight: 600; font-size: 1rem; color: var(--fg); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.film-watchlist-link--next { text-align: right; }
+.film-watchlist-link--next .film-watchlist-dir::before { content: none; }
+.film-watchlist-link--next .film-watchlist-dir::after { content: ' ›'; }
+@media (max-width: 560px) { .film-watchlist-nav { grid-template-columns: 1fr; } .film-watchlist-link--next { text-align: left; } }
 
 /* =====================================================================
    FASE 8 — breadcrumb, galería/lightbox, modo focus, categoría
    ===================================================================== */
 
-/* Breadcrumb */
-.pg-crumb { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .06em; margin: 0 0 22px; }
-.pg-crumb a { color: var(--muted); text-decoration: none; transition: color .2s; }
-.pg-crumb a:hover { color: var(--accent); }
-.pg-crumb span { color: var(--muted-2, rgba(255,255,255,.35)); }
-.pg-crumb .cur { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46vw; }
+/* Breadcrumb — barra propia bajo la cabecera.
+   Sticky y no fixed: durante el hero a sangre no pinta nada encima de la
+   portada, y en cuanto se empieza a leer se ancla bajo el menú, que es
+   justamente cuando hace falta saber dónde se está y por dónde se sale.
+
+   La banda (velo + filete) SOLO existe mientras está anclada. En una entrada,
+   la barra vive entre el hero a sangre y el primer párrafo, y ahí el velo con
+   su borde inferior metía una regla dura cruzando la página justo donde la
+   portada se estaba fundiendo con el fondo: cortaba en dos lo que debería ser
+   un mismo descenso del titular al texto. Anclada sí se gana la banda, porque
+   entonces flota sobre el texto y necesita separarse de él.
+
+   Las medidas NO cambian entre estados —mismo alto, mismo padding—: la barra
+   está en flujo, así que cualquier cambio de caja al anclarse empujaría todo
+   el artículo. Solo cambia lo que se pinta. */
+.pg-crumb-centinela { height: 1px; margin-bottom: -1px; pointer-events: none; }
+
+.pg-crumb-bar {
+  position: sticky; top: var(--pg-top-h); z-index: 480;
+  box-sizing: border-box; height: var(--pg-crumb-h);
+  display: flex; align-items: center;
+  /* Mismo canal lateral que la cabecera: la ruta arranca justo bajo la marca,
+     y las dos bandas se leen como una sola pieza en dos pisos. */
+  padding: 0 clamp(18px, 4vw, 48px);
+  /* Opaca, sin backdrop-filter. La barra vive SIEMPRE sobre fondo liso —va
+     después del hero, y en las páginas sin hero nace al principio del cuerpo—,
+     así que el desenfoque no tenía nada que difuminar: solo recomponía una
+     banda a todo lo ancho en cada fotograma de scroll, justo durante la
+     lectura, que es el gasto que .pg-top.is-plana existe para evitar. Con el
+     velo al 88 % además se transparentaba una raya de texto por detrás. */
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  /* opacity/visibility van aquí y no en la regla del modo lectura: si solo
+     estuvieran allí, la barra se fundiría al entrar y volvería de golpe al
+     salir, porque al quitar .is-focus ya no hay ninguna transición declarada. */
+  transition: background .22s ease, border-color .22s ease, opacity .3s ease, visibility .3s;
+}
+/* Suelta = en su sitio, no anclada. La pone el JS; el estado por defecto es
+   la banda, que es el que vale sin JS y el que necesitan las páginas sin hero
+   (ahí la barra nace ya anclada). */
+.pg-crumb-bar.is-suelta {
+  background: transparent;
+  border-bottom-color: transparent;
+}
+@media (prefers-reduced-motion: reduce) { .pg-crumb-bar { transition: none; } }
+.pg-crumb {
+  display: flex; align-items: center; gap: 2px; min-width: 0;
+  /* Llena la banda de punta a punta. No cambia nada de lo que se ve —los
+     eslabones siguen centrados— pero es lo que permite que el área táctil de
+     abajo crezca sin que la recorte el overflow:hidden de esta misma lista. */
+  align-self: stretch;
+  list-style: none; margin: 0; padding: 0;
+  font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .06em;
+  /* Una ruta larga se recorta por el último eslabón (.cur), no envuelve: la
+     banda tiene alto fijo y una segunda línea se saldría. */
+  overflow: hidden; white-space: nowrap;
+}
+.pg-crumb li { display: flex; align-items: center; gap: 2px; min-width: 0; flex: none; }
+/* El último eslabón es el que cede: es el único cuyo texto ya está a la vista
+   en el título de la página. */
+.pg-crumb li:last-child { flex: 0 1 auto; min-width: 0; }
+/* Pastilla: el eslabón se ve pulsable antes de tocarlo, no solo al pasar por
+   encima — que en táctil no ocurre nunca. */
+.pg-crumb a {
+  position: relative;
+  display: inline-block; padding: 6px 11px; border-radius: 30px;
+  color: var(--muted); text-decoration: none;
+  border: 1px solid transparent;
+  transition: color .2s, background .2s, border-color .2s;
+}
+/* La pastilla mide 27px de alto: cumple el mínimo de 24 de AA, pero en táctil
+   el objetivo que se defiende son 44. El área crece con un pseudo transparente
+   hasta llenar la banda, así que no engorda el chrome ni mueve una sola caja.
+   -2px en horizontal para no invadir el eslabón vecino (el hueco es de 2). */
+.pg-crumb a::after { content: ''; position: absolute; inset: -9px -2px; }
+.pg-crumb a:hover, .pg-crumb a:focus-visible {
+  color: var(--fg);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+/* En una entrada, la ruta va centrada. El cuerpo del artículo es una columna
+   estrecha y centrada (.pg--article, 860px) dentro de una barra que ocupa todo
+   el ancho: con la ruta pegada al margen izquierdo quedaban dos ejes distintos
+   en los primeros 100px de la página —la ruta arrancando en el borde y el
+   texto empezando 400px más adentro— y lo primero que se leía era el desajuste.
+   Centrada comparte eje con el artículo y se lee como su rúbrica.
+   Solo aquí: en el catálogo o en una ficha de proyecto el contenido sí llena el
+   ancho, y ahí el sitio de una ruta es el margen. */
+[data-barba-namespace="blog-articulo"] .pg-crumb { justify-content: center; }
+
+/* --muted-2 no existe en la paleta pública (solo en la del panel): el respaldo
+   se deriva del token de texto en vez de ir en rgba a mano, que además se
+   quedaría blanco si estas páginas llegaran a tener tema claro. */
+.pg-crumb-sep { display: inline-flex; color: color-mix(in srgb, var(--fg) 38%, transparent); }
+.pg-crumb-sep .ico { width: 13px; height: 13px; stroke-width: 2.2; }
+.pg-crumb .cur { padding: 6px 4px; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 46vw; }
+
+/* Móvil: de la ruta entera solo queda el escalón al que de verdad se vuelve,
+   con la flecha — o sea, exactamente el botón «← Tékhne» que se retiró de la
+   cabecera, pero nombrando el sitio al que lleva. */
+@media (max-width: 720px) {
+  .pg-crumb li:not(.is-padre) { display: none; }
+  /* En móvil la ruta ya no es una ruta: es un botón de volver. Un botón de
+     volver se busca en el margen izquierdo, no en el centro, así que aquí se
+     deshace el centrado de la entrada. */
+  [data-barba-namespace="blog-articulo"] .pg-crumb { justify-content: flex-start; }
+  .pg-crumb li.is-padre .pg-crumb-sep { order: -1; color: currentColor; transform: rotate(180deg); }
+  .pg-crumb li.is-padre a { display: inline-flex; align-items: center; gap: 7px; padding-left: 8px; }
+  .pg-crumb li.is-padre { position: relative; border: 1px solid var(--line); border-radius: 30px; }
+  /* La flecha NO está dentro del enlace: es el separador girado, que en el
+     marcado es hermano del <a>. Sin esto, el gesto más evidente de todos
+     —tocar la flecha para volver— no hacía absolutamente nada. Se ancla el
+     área al <li>, de modo que el objetivo es la pastilla entera (flecha
+     incluida) y llega al alto completo de la banda. */
+  .pg-crumb li.is-padre a { position: static; }
+  .pg-crumb li.is-padre a::after { inset: -7px 0; border-radius: 30px; }
+}
+/* El canal lateral se estrecha con la cabecera (que cambia a 16px en 560), no
+   con el plegado de la ruta: entre 561 y 720 la barra iba a 16px mientras la
+   marca seguía en 4vw, y la ruta arrancaba 12px por dentro del eje del logo. */
+@media (max-width: 560px) {
+  .pg-crumb-bar { padding: 0 16px; }
+}
 
 /* Galería de proyecto (imágenes horizontales) + lightbox.
    La galería es una pieza de la ficha, no un anexo: la primera toma va a
@@ -467,19 +626,54 @@ a.pg-ref:hover h3 { color: var(--accent); }
 .lightbox .lb-count { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .1em; color: rgba(255,255,255,.7); }
 @media (max-width: 560px) { .lightbox .lb-nav { width: 42px; height: 42px; font-size: 24px; } .lightbox .lb-close { top: 14px; right: 14px; } }
 
-/* Modo Focus (artículo) */
-.pg-focus-btn { display: inline-flex; align-items: center; gap: 7px; background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 40px; padding: 8px 14px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; transition: all .2s; }
+/* Modo Focus (artículo).
+   Botón redondo de 40px, la misma pieza que .pg-burger y que el conmutador de
+   tema del home: las tres acciones circulares de la cabecera se leen como una
+   sola familia.
+   Nota: el rótulo NO se quitó para centrar el menú —de eso se encarga la
+   retícula de tres columnas de .pg-top, que centra la del medio sea cual sea
+   el ancho de .pg-actions—, sino para que las tres piezas sean la misma. Que
+   no haya rótulo obliga a que el icono se explique solo: por eso es una hoja
+   con texto ('lectura') y no la diana de 'focus', que decía «apuntar». */
+.pg-focus-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; flex: none; padding: 0;
+  background: var(--surface); border: 1px solid var(--line); color: var(--muted);
+  border-radius: 50%; cursor: pointer;
+  transition: color .28s, background .28s, border-color .28s, transform .28s cubic-bezier(.16,1,.3,1);
+}
 .pg-focus-btn:hover { color: var(--fg); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
-.pg-focus-btn .ico { width: 13px; height: 13px; flex: none; }
-html.is-focus .pg-focus-btn .ico { color: var(--accent); }
+/* Al activar, la hoja se encoge y se enciende: es literalmente lo que le pasa
+   a la columna de lectura (920 → 720px), así que el gesto explica el efecto. */
+.pg-focus-btn .ico {
+  width: 17px; height: 17px; flex: none;
+  transition: color .28s, transform .38s cubic-bezier(.16,1,.3,1);
+}
+html.is-focus .pg-focus-btn { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+html.is-focus .pg-focus-btn .ico { color: var(--accent); transform: scale(.82); }
+
 /* En modo focus se limpia el header (pero se conserva el botón para salir y la
-   barra de progreso, que es justo cuando más sirve) */
-html.is-focus .pg-crumb, html.is-focus .pg-ref { display: none !important; }
+   barra de progreso, que es justo cuando más sirve).
+   Se apaga con opacity + visibility y NO con display:none: display no se puede
+   animar, así que entrar y salir del modo lectura era un salto de un
+   fotograma. pointer-events:none en la barra ya impide que lo invisible siga
+   siendo clicable mientras se desvanece. */
+/* La barra de ruta se apaga pero NO se saca del flujo: es sticky, así que
+   `display:none` le quitaba sus 46px al documento y, entrando al modo lectura
+   a mitad de artículo, el párrafo que se estaba leyendo daba un salto de 46px
+   bajo el dedo. Invisible y en su sitio: cero desplazamiento de layout, el
+   scroll-margin de los h2 sigue cuadrando y el texto pasa por debajo sin que
+   se vea nada. (Es además la regla que el comentario de arriba enuncia.) */
+html.is-focus .pg-crumb-bar { opacity: 0; visibility: hidden; pointer-events: none; }
+html.is-focus .pg-ref { display: none; }
 html.is-focus .pg-top { background: transparent; border-bottom: none; backdrop-filter: none; -webkit-backdrop-filter: none; pointer-events: none; }
-/* Se retira TODO el chrome de la barra: si el menú siguiera visible quedaría
-   a la vista pero muerto (la barra pasa a pointer-events: none). */
-html.is-focus .pg-top .brand, html.is-focus .pg-top .pg-back, html.is-focus .pg-top .pg-wa,
-html.is-focus .pg-top .pg-nav, html.is-focus .pg-top .pg-burger { display: none; }
+.pg-top .brand, .pg-top .pg-wa, .pg-top .pg-nav, .pg-top .pg-burger {
+  transition: opacity .3s ease, transform .3s cubic-bezier(.16,1,.3,1), visibility .3s;
+}
+html.is-focus .pg-top .brand, html.is-focus .pg-top .pg-wa,
+html.is-focus .pg-top .pg-nav, html.is-focus .pg-top .pg-burger {
+  opacity: 0; visibility: hidden; transform: translateY(-6px);
+}
 html.is-focus .pg-top .pg-focus-btn { pointer-events: auto; }
 /* La cabecera se vuelve transparente, así que la barra dejaba de ser el
    subrayado de algo y quedaba como una raya roja suelta cruzando el texto a
@@ -488,8 +682,20 @@ html.is-focus .pg-top .pg-focus-btn { pointer-events: auto; }
 html.is-focus .pg-progress {
   position: fixed; top: 0; bottom: auto; left: 0; right: 0; height: 3px; z-index: 600;
 }
-html.is-focus .pg-focus-btn { background: var(--surface); border-color: var(--accent); color: var(--fg); }
+/* El ancho de la columna NO se anima con transition: animar max-width obliga a
+   recalcular el flujo del artículo en cada fotograma. El cambio lo cruza View
+   Transitions desde el JS (document.startViewTransition), que resuelve el
+   reflow de una vez y funde el antes y el después. */
 html.is-focus .pg { max-width: 720px; }
+/* El guion de esa transición NO se escribe aquí: portfolio.css (que se carga
+   también en las internas) ya define cómo se cruzan las páginas, y sin marcar
+   que esta transición es local el modo lectura heredaba la de una navegación.
+   Ver `html.vt-local` en portfolio/_transitions.scss. */
+
+@media (prefers-reduced-motion: reduce) {
+  .pg-focus-btn, .pg-focus-btn .ico,
+  .pg-top .brand, .pg-top .pg-wa, .pg-top .pg-nav, .pg-top .pg-burger { transition: none; }
+}
 
 /* Categoría del blog: hero + grilla (reusa .pg-card) */
 .cat-hero { margin-bottom: 10px; }
@@ -515,13 +721,32 @@ html.is-focus .pg { max-width: 720px; }
 /* Buscador inteligente */
 .tk-search { max-width: 620px; margin: 0 auto 34px; }
 .tk-search-box { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 40px; padding: 4px 8px 4px 18px; transition: border-color .2s, box-shadow .2s; }
-.tk-search-box:focus-within { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent); }
+/* Guarda obligatoria (§ cascada): el `display: flex` de arriba vence al
+   [hidden]{display:none} del reset, así que sin esto el atributo no oculta
+   nada. La portada de Tékhne entrega el buscador oculto hasta que el JS
+   confirma que puede filtrar. */
+.tk-search-box[hidden] { display: none; }
+/* El input lleva `outline: none`, así que TODO el indicador de foco del
+   buscador era este cambio de borde: 1px de rojo traslúcido sobre --surface
+   mide 2.35:1, por debajo del 3:1 que WCAG 2.2 exige a un indicador (1.4.11 /
+   2.4.11) — y encima BAJA la luminancia respecto al borde en reposo, o sea que
+   el foco oscurecía el control. Se le pone el mismo anillo de 2px que lleva
+   todo lo demás del sitio y el halo se queda como refuerzo, no como sustituto. */
+.tk-search-box:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  outline: 2px solid var(--accent); outline-offset: 2px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+}
 .tk-search-ic { width: 18px; height: 18px; color: var(--muted); flex: none; }
 .tk-search input { flex: 1; background: none; border: 0; outline: none; color: var(--fg); font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 1rem; padding: 12px 0; min-width: 0; }
 .tk-search input::placeholder { color: var(--muted); }
 .tk-search input::-webkit-search-cancel-button { display: none; }
 .tk-search-clear { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--surface-2, rgba(255,255,255,.06)); color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; transition: background .2s, color .2s; }
 .tk-search-clear:hover { background: var(--accent); color: #fff; }
+/* Anillo hacia DENTRO: el botón vive dentro del campo, que con el foco ya lleva
+   su propio anillo por fuera. Hacia fuera se cruzarían los dos; hacia dentro se
+   lee lo correcto — el campo está activo y el control enfocado es este. */
+.tk-search-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; color: var(--fg); }
 .tk-search-none { text-align: center; color: var(--muted); font-size: .95rem; margin: 18px 0 0; }
 .tk-search-none span { color: var(--fg); }
 
@@ -535,6 +760,13 @@ html.is-focus .pg { max-width: 720px; }
 .sel-vertodas:hover { transform: translateY(-1px); filter: brightness(1.06); }
 .sel-vertodas span { transition: transform .25s; }
 .sel-vertodas:hover span { transform: translateX(4px); }
+/* Misma flecha, pero dibujada con icono('derecha'): el glifo → no viene en el
+   subconjunto `latin` de Space Grotesk ni de Space Mono, así que el carácter
+   caía en la fuente del sistema —otro peso y otra caja en cada equipo— justo
+   al lado del texto del botón. Convive con la variante <span> de las vistas
+   que todavía no se han migrado. */
+.sel-vertodas .ico { width: 15px; height: 15px; flex: none; transition: transform .25s; }
+.sel-vertodas:hover .ico { transform: translateX(4px); }
 .sel-catalogo { margin: 18px 0 0; }
 .sel-catalogo a { display: inline-flex; align-items: center; gap: 8px; font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: .95rem; color: var(--muted); text-decoration: none; transition: color .2s; }
 .sel-catalogo a:hover { color: var(--accent); }
@@ -608,33 +840,29 @@ html.is-focus .pg { max-width: 720px; }
 /* Sin hover (táctil) el aviso se queda visible: si no, no hay forma de saber que lleva a algún sitio */
 @media (hover: none) { .art-hero-visit { opacity: 1; transform: none; } }
 
-/* Indicador de scroll */
-.art-hero-cue { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 4; display: flex; flex-direction: column; align-items: center; gap: 6px; color: rgba(255,255,255,.72); font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; pointer-events: none; transition: opacity .4s; }
-.art-hero-cue svg { width: 20px; height: 20px; animation: art-cue-bounce 1.8s ease-in-out infinite; }
-@keyframes art-cue-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+/* El indicador «Scroll» con la flecha se retiró del hero: pedía el único gesto
+   que nadie tiene que aprender, y a cambio ocupaba el hueco bajo el extracto y
+   obligaba a reservarle 86px de padding en móvil. */
 
 /* Contenedor del artículo: el ancho lo marca el propio cuerpo, así no queda
    una franja muerta a la derecha. El hero usa la misma medida para que el
    título arranque exactamente donde arranca el texto. */
 .pg--article { max-width: 860px; }
+/* El aire de .pg (hasta 150px arriba) está pensado para una página que empieza
+   en frío, bajo la cabecera. Una entrada no empieza en frío: llega de un hero
+   de 100vh y de la línea de ruta, así que ese colchón se sumaba al alto de la
+   barra y dejaba un vacío enorme entre el título de la portada y el primer
+   párrafo — el segundo salto de los dos que había aquí. La ruta y el texto
+   pasan a leerse como un bloque. */
+[data-barba-namespace="blog-articulo"] .pg--article { padding-top: clamp(30px, 4.5vh, 54px); }
 .pg--article .pg-body { max-width: 100%; margin-inline: auto; }
-.pg--article .pg-crumb { margin-top: 30px; }
 
 /* Home de Tékhne más ancho */
 .pg--wide { max-width: 1240px; }
 
-@media (prefers-reduced-motion: reduce) {
-  .art-hero-cue svg { animation: none; }
-}
-/* En móvil el «Scroll» se montaba encima del extracto: se le reserva sitio y,
-   si la pantalla es baja, se retira (ahí el gesto de scroll es evidente). */
 @media (max-width: 640px) {
-  .art-hero-inner { padding-bottom: 86px; }
+  .art-hero-inner { padding-bottom: clamp(24px, 5vh, 44px); }
   .art-hero-inner .pg-lead { font-size: 1rem; }
-}
-@media (max-height: 680px), (max-width: 400px) {
-  .art-hero-cue { display: none; }
-  .art-hero-inner { padding-bottom: clamp(40px, 8vh, 72px); }
 }
 
 /* =====================================================================
@@ -648,9 +876,9 @@ html.is-focus .pg { max-width: 720px; }
 /* Hereda .art-hero (paralaje GSAP); solo cambia la altura y la medida del texto */
 .proj-hero { height: 82vh; height: 82svh; min-height: 500px; }
 .proj-hero .art-hero-inner { max-width: 1500px; }
-.proj-hero .pg-crumb { margin: 0 0 16px; }
-.proj-hero .pg-crumb a { color: rgba(255, 255, 255, .72); }
-.proj-hero .pg-crumb .cur { color: #fff; }
+/* (Aquí vivían tres reglas para la ruta dentro del hero del proyecto. La ruta
+   ya no va dentro del hero sino en su propia barra, hermana de la sección, así
+   que el descendiente no casaba con nada. Retiradas.) */
 .proj-hero .pg-title { margin-bottom: 0; }
 
 .proj-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: clamp(22px, 3vh, 32px); }
@@ -704,4 +932,462 @@ html.is-focus .pg { max-width: 720px; }
   .proj-sec { grid-template-columns: 1fr; gap: 16px; padding: clamp(28px, 5vh, 44px) 0; }
   .proj-sec-h { position: static; }
   .proj-sec-body { grid-column: auto; }
+}
+
+/* =====================================================================
+   FASE 12 — Portada de Tékhne (medio de comunicación)
+   Tres piezas y un solo principio: jerarquía. Cabecero de diario arriba,
+   barra de secciones pegajosa en medio y un río de entradas donde la más
+   nueva ocupa el ancho completo y el resto cae en dos y tres columnas.
+   La jerarquía la reparten las clases —no el orden del HTML—, así que el
+   JS puede volver a repartirla al filtrar sin duplicar ni una entrada.
+   ===================================================================== */
+/* Un solo elemento pegado arriba, no dos: la portada no lleva barra de
+   breadcrumb (su único padre es el home, y a eso ya lleva la marca de la
+   cabecera), así que el hueco bajo el menú lo ocupa la barra de secciones,
+   que es la que de verdad se usa mientras se recorre la página. */
+/* Una portada se juzga por lo que se ve sin tocar la rueda, y aquí el aire de
+   .pg (hasta 150px) sumado a mancheta + lema + barra + recuento dejaba la
+   entrada destacada por debajo del pliegue en un portátil: se aterrizaba en
+   Tékhne sin ver una sola pieza de periodismo. Todo el tramo de cabecera se
+   aprieta —aquí y en los márgenes de .tk-lema/.tk-bar/.tk-recuento/.tk-rio—
+   para devolver ~100px y que el titular principal entre en pantalla. */
+.pg--tekhne {
+  --tk-sticky: var(--pg-top-h, 72px);
+  padding-top: clamp(92px, 10vh, 118px);
+}
+
+/* ---------- Cabecero (mancheta + filiación + fecha) ---------- */
+.tk-flag {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  gap: clamp(10px, 2.4vw, 34px);
+  padding-bottom: clamp(12px, 1.6vh, 16px);
+  border-bottom: 2px solid var(--fg);
+  position: relative;
+}
+/* El doble filete del cabecero de un diario: el grueso cierra la mancheta,
+   el fino separa del contenido. Va como pseudoelemento para no meter un
+   div vacío en el documento. */
+.tk-flag::after { content: ''; position: absolute; left: 0; right: 0; bottom: -5px; height: 1px; background: var(--line); }
+
+/* La mancheta NO brilla. .tk-wordmark trae de la Fase 9 un degradado recortado
+   sobre el texto con `animation: tk-shimmer ... infinite`: en una página que
+   quiere leerse como un medio, el logotipo barriéndose en bucle es justo el
+   tic que la delata como plantilla —y encima repinta el elemento tipográfico
+   más grande de la página cada fotograma, para siempre. Aquí va macizo, que es
+   de donde un cabecero saca su autoridad. El acento sigue vivo donde significa
+   algo: el subrayado de la sección activa, el rótulo de la destacada y la
+   llamada a leer. (Revertir = borrar estas cuatro líneas.) */
+.tk-flag .tk-wordmark {
+  margin: 0; font-size: clamp(2.6rem, 8.4vw, 5.6rem);
+  background: none; -webkit-background-clip: border-box; background-clip: border-box;
+  color: var(--fg); animation: none;
+}
+
+.tk-flag-rail {
+  display: flex; flex-direction: column; gap: 6px; min-width: 0;
+  /* 11px y no 10.5: en el raíl derecho va la fecha, que es el dato que de
+     verdad se lee de un cabecero. Por debajo de 11px, en versalitas y con
+     .15em de tracking, deja de leerse y pasa a ser textura. */
+  font-family: 'Space Mono', monospace; font-size: 11px; line-height: 1.45;
+  letter-spacing: .15em; text-transform: uppercase; color: var(--muted);
+}
+.tk-flag-rail--fin { text-align: right; align-items: flex-end; }
+
+/* La segunda línea de cada raíl —el recuento a la izquierda, la plaza a la
+   derecha— va un punto por debajo de la primera. Son el pie de la filiación,
+   no otro titular: sin este escalón los cuatro datos del cabecero pesaban
+   igual y la mancheta quedaba flanqueada por dos bloques de ruido. */
+.tk-flag-rail > span + span { color: color-mix(in srgb, var(--muted) 72%, transparent); }
+
+.tk-lema {
+  max-width: 62ch; margin: clamp(14px, 2.2vh, 20px) auto 0; text-align: center;
+  color: var(--muted); font-size: clamp(.95rem, .9rem + .3vw, 1.08rem); line-height: 1.6;
+  text-wrap: pretty;
+}
+/* «Τέχνη» en serif A PROPÓSITO, no por descuido: ninguna de las tres fuentes
+   del sitio trae alfabeto griego —Clash Display mapea 380 glifos y ni uno de
+   Τ/έ/χ/ν/η, y los subconjuntos `latin` de Space Grotesk y Space Mono tampoco—,
+   así que pedir aquí 'Clash Display' caía en la fuente del sistema con peso
+   600: otra letra en cada equipo, y distinta de la que se creía estar usando.
+   Se pide serif explícito y la etimología se lee como lo que es, una glosa de
+   diccionario, igual en Windows, macOS y Android. */
+.tk-lema em {
+  font-style: normal; color: var(--fg);
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+  font-size: 1.16em; letter-spacing: .005em;
+}
+
+@media (max-width: 760px) {
+  .tk-flag { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 14px; }
+  .tk-flag-rail, .tk-flag-rail--fin { align-items: center; text-align: center; }
+  /* Orden de lectura en vertical: mancheta primero, credenciales después. */
+  .tk-flag .tk-wordmark { order: -1; }
+}
+
+/* ---------- Barra de secciones (pegajosa bajo la cabecera) ----------
+   El filtro tiene que estar donde se usa: leyendo la portada, no arriba del
+   todo. Se pega bajo la barra fija y sangra hasta los bordes del contenedor
+   para que nada pase por fuera del velo al desplazarse. */
+.tk-bar {
+  position: sticky; top: var(--tk-sticky, 62px); z-index: 40;
+  display: flex; align-items: center; gap: clamp(8px, 1.6vw, 20px);
+  margin: clamp(20px, 3.4vh, 32px) calc(-1 * clamp(20px, 5vw, 28px)) 0;
+  padding: 8px clamp(20px, 5vw, 28px);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(12px) saturate(1.3); -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  border-bottom: 1px solid var(--line);
+}
+
+.tk-tabs {
+  display: flex; align-items: center; gap: 2px; flex: 1; min-width: 0;
+  overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+  /* Con muchas secciones la fila se corre en horizontal; el difuminado del
+     borde avisa de que sigue en vez de cortar una palabra a hueso.
+     El difuminado va SOLO a la derecha: una máscara recorta también el anillo
+     de foco, y con los 14px de fundido que había a la izquierda la pestaña
+     activa —«Portada», que empieza en x=0— salía a media opacidad y su
+     indicador de teclado con ella. A la izquierda no hay nada que anunciar:
+     la fila arranca siempre en scrollLeft 0. */
+  mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 22px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 22px), transparent 100%);
+}
+.tk-tabs::-webkit-scrollbar { display: none; }
+
+.tk-tab {
+  position: relative; flex: none; text-decoration: none;
+  padding: 12px 13px 13px;
+  font-family: 'Space Mono', monospace; font-size: 11.5px;
+  letter-spacing: .13em; text-transform: uppercase; white-space: nowrap;
+  color: var(--muted); transition: color .22s;
+}
+/* El subrayado es el estado: un filete que crece desde la izquierda, como el
+   corondel de una sección impresa. Nada de píldoras rellenas: en una barra de
+   medio pesarían más que los titulares que hay debajo. */
+.tk-tab::after {
+  content: ''; position: absolute; left: 13px; right: 13px; bottom: 5px; height: 2px;
+  background: var(--accent); border-radius: 2px;
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .34s cubic-bezier(.16, 1, .3, 1);
+}
+.tk-tab:hover { color: var(--fg); }
+.tk-tab:hover::after { transform: scaleX(.34); }
+.tk-tab.is-on { color: var(--fg); }
+.tk-tab.is-on::after { transform: scaleX(1); }
+.tk-tab:focus-visible { outline-offset: -2px; border-radius: 8px; }
+
+/* Buscador embebido en la barra (el molde .tk-search-box, en versión compacta) */
+.tk-bar-search { flex: none; width: clamp(180px, 26vw, 300px); padding: 3px 5px 3px 14px; }
+.tk-search-box input {
+  flex: 1; min-width: 0; background: none; border: 0; outline: none;
+  color: var(--fg); font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: .94rem; padding: 10px 0;
+}
+.tk-search-box input::placeholder { color: var(--muted); }
+.tk-search-box input::-webkit-search-cancel-button { display: none; }
+.tk-bar-search .tk-search-clear { width: 30px; height: 30px; font-size: 18px; }
+
+@media (max-width: 820px) {
+  .tk-bar { flex-wrap: wrap; gap: 6px; padding-bottom: 10px; }
+  .tk-tabs { order: 2; flex: 1 1 100%; }
+  .tk-bar-search { order: 1; flex: 1 1 100%; width: auto; }
+  /* 41px de alto no es un objetivo táctil: en una fila que además se desplaza
+     en horizontal, fallar la pestaña significa arrastrar la fila sin querer.
+     Con este relleno la caja llega a 45px sin mover el filete del subrayado. */
+  .tk-tab { padding: 14px 14px 15px; }
+  .tk-tab::after { left: 14px; right: 14px; }
+}
+
+/* ---------- Recuento vivo ---------- */
+.tk-recuento {
+  display: flex; align-items: baseline; gap: 9px; margin: clamp(13px, 1.8vh, 18px) 0 0;
+  font-family: 'Space Mono', monospace; font-size: 11px;
+  letter-spacing: .15em; text-transform: uppercase; color: var(--muted);
+}
+.tk-recuento-n {
+  font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 1.05rem;
+  letter-spacing: -.01em; color: var(--fg); font-variant-numeric: tabular-nums;
+}
+
+/* ---------- El río de entradas ---------- */
+.tk-rio {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(26px, 3vw, 44px) clamp(18px, 2.2vw, 30px);
+  margin-top: clamp(14px, 2vh, 20px); align-items: start;
+}
+
+.tk-art {
+  grid-column: span 4; position: relative;
+  display: flex; flex-direction: column;
+  /* El filete de arriba es lo que convierte una rejilla de tarjetas en una
+     plana compuesta: es el corondel. Con --line (fg al 14 %) se insinuaba y no
+     se veía, y sin retícula visible esto se lee como un blog. Al 26 % la
+     retícula existe y sigue muy por debajo del texto en peso. */
+  padding-top: 16px; border-top: 1px solid color-mix(in srgb, var(--fg) 26%, transparent);
+  text-decoration: none; color: var(--fg);
+  transition: border-color .35s;
+  /* Tabulando, el navegador lleva la tarjeta al borde superior del viewport,
+     donde la tapan la cabecera fija (72px) y la barra de secciones pegajosa.
+     Sin esto, el foco de teclado existe pero no se ve. */
+  scroll-margin-top: calc(var(--pg-top-h, 72px) + 76px);
+}
+.tk-art:hover { border-top-color: var(--accent); }
+.tk-art:focus-visible { outline-offset: 6px; border-radius: 4px; }
+
+.tk-art-media {
+  position: relative; overflow: hidden; border-radius: 12px;
+  aspect-ratio: 16 / 10; background-color: #1a1a1e;
+}
+/* La portada se pinta en un pseudoelemento que HEREDA el fondo del padre
+   (la vista lo escribe en línea): así se puede escalar con transform —lo
+   único que la GPU compone gratis— sin tocar background-size, que obliga a
+   repintar la imagen entera en cada fotograma. */
+.tk-art-media::before {
+  content: ''; position: absolute; inset: 0; z-index: 0; background: inherit;
+  transform: scale(1); transition: transform .7s cubic-bezier(.16, 1, .3, 1);
+}
+.tk-art:hover .tk-art-media::before { transform: scale(1.055); }
+.tk-art-media .ao-gas { z-index: 1; }
+
+/* La etiqueta vive sobre material que no controlamos (una foto subida desde
+   el panel puede ser blanca): fondo propio y no confianza en el contraste. */
+.tk-art-cat {
+  position: absolute; z-index: 2; top: 12px; left: 12px;
+  font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: .14em;
+  text-transform: uppercase; color: #fff; background: rgba(8, 8, 9, .68);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  padding: 6px 11px; border-radius: 30px;
+}
+
+/* Ritmo interno: la firma y el titular son UN bloque (4px), el sumario respira
+   (10px) y la llamada a leer se separa (14px). Con los 9px planos de antes, las
+   cuatro líneas pesaban lo mismo y el titular no mandaba dentro de su tarjeta. */
+.tk-art-body { display: flex; flex-direction: column; gap: 10px; padding-top: 15px; }
+/* La fecha como taco de calendario.
+   Antes era «1 JUN 2025 — 10 min de lectura»: una tira de mono gris donde el
+   día, el mes, el año y el minutaje pesaban exactamente lo mismo, y para saber
+   cuándo se publicó algo había que LEER la línea entera. Un taco de calendario
+   se reconoce sin leerse: el mes es la etiqueta de color, el día es la cifra
+   grande, y el año y el tiempo de lectura bajan al papel de nota. Tres niveles
+   hechos con forma, color y cuerpo a la vez, no con un gris más claro.
+
+   El troceado es solo visual: el dato sigue siendo un único <time datetime>
+   con la fecha completa, así que para un lector de pantalla o un rastreador no
+   cambia nada. */
+.tk-art-firma { display: flex; align-items: center; gap: 11px; margin-bottom: -2px; }
+
+.tk-cal {
+  flex: none; display: grid; width: 44px; overflow: hidden; line-height: 1;
+  border: 1px solid var(--line); border-radius: 9px; text-align: center;
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
+  transition: border-color .3s;
+}
+/* El mes NO va en acento puro: a 9.5px sobre su propio campo teñido se queda en
+   4,7:1, al filo de AA. Mezclado con el color de texto sube a 5,3:1 y sigue
+   leyéndose rojo, que es lo único que tenía que hacer. */
+.tk-cal-mes {
+  padding: 4px 0 3px;
+  font-family: 'Space Mono', monospace; font-size: 9.5px;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 70%, var(--fg));
+  background: color-mix(in srgb, var(--accent) 17%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.tk-cal-dia {
+  padding: 6px 0 7px;
+  font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: 1.15rem;
+  letter-spacing: -.02em; color: var(--fg); font-variant-numeric: tabular-nums;
+}
+.tk-art:hover .tk-cal { border-color: color-mix(in srgb, var(--accent) 38%, var(--line)); }
+
+/* Año y minutaje: la nota al pie del taco. Cifras tabulares en el año para que
+   la columna de tarjetas alinee y no baile de una fila a otra. */
+.tk-art-datos { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.tk-art-anio {
+  font-family: 'Space Mono', monospace; font-weight: 700; font-size: 11px;
+  letter-spacing: .14em; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--fg) 80%, transparent);
+}
+.tk-art-min {
+  font-family: 'Space Mono', monospace; font-size: 10.5px; letter-spacing: .04em;
+  color: color-mix(in srgb, var(--muted) 82%, transparent);
+}
+
+/* En la destacada el taco sube de escala con el resto del bloque: era el único
+   dato a cuerpo de tarjeta pequeña bajo un titular de 3rem. */
+.tk-art--lead .tk-art-firma { gap: 13px; }
+.tk-art--lead .tk-cal { width: 54px; border-radius: 11px; }
+.tk-art--lead .tk-cal-mes { font-size: 10.5px; padding: 5px 0 4px; }
+.tk-art--lead .tk-cal-dia { font-size: 1.5rem; padding: 8px 0 9px; }
+.tk-art--lead .tk-art-anio { font-size: 12px; }
+.tk-art--lead .tk-art-min { font-size: 11.5px; }
+.tk-art-tit {
+  margin: 0; font-family: 'Clash Display', sans-serif; font-weight: 700;
+  font-size: 1.2rem; line-height: 1.16; letter-spacing: -.015em;
+  text-wrap: balance; transition: color .25s;
+}
+.tk-art:hover .tk-art-tit { color: var(--accent); }
+.tk-art-desc {
+  margin: 0; color: var(--muted); font-size: .93rem; line-height: 1.55;
+  text-wrap: pretty;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.tk-art-leer {
+  margin-top: 4px; font-family: 'Space Mono', monospace; font-size: 11px;
+  letter-spacing: .08em; color: var(--accent); display: inline-flex; align-items: center; gap: 7px;
+}
+/* La flecha se DIBUJA, no se escribe. U+2192 no está en el subconjunto `latin`
+   que Google sirve para Space Mono (solo lleva ↑ y ↓), así que `content: '→'`
+   caía en la monoespaciada del sistema: otro grosor y otra caja pegados al
+   texto, distintos en cada equipo. Esta es la misma geometría de icono('derecha')
+   pintada con máscara, así que hereda currentColor y la lengua de iconos del
+   sitio, y se traslada con transform como antes. */
+.tk-art-leer::after {
+  content: ''; width: 13px; height: 13px; flex: none;
+  transition: transform .25s ease;
+}
+/* Estado base sin pintar: sin soporte de máscara, `background: currentColor`
+   dejaría un cuadrado rojo de 13px pegado al texto. Sin flecha se entiende
+   igual —el enlace ya dice «Leer la entrada»— así que solo se pinta donde de
+   verdad se puede recortar. */
+@supports ((-webkit-mask-image: url('')) or (mask-image: url(''))) {
+  .tk-art-leer::after {
+    background: currentColor;
+    --tk-flecha: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='M12 5l7 7-7 7'/%3E%3C/svg%3E");
+    -webkit-mask: var(--tk-flecha) center / contain no-repeat;
+    mask: var(--tk-flecha) center / contain no-repeat;
+  }
+}
+.tk-art:hover .tk-art-leer::after { transform: translateX(4px); }
+
+/* ---------- La entrada más nueva: portada del día ---------- */
+.tk-art--lead {
+  grid-column: 1 / -1;
+  padding-top: 22px; border-top-width: 2px; border-top-color: var(--fg);
+}
+/* El rótulo es un pseudoelemento a propósito: la jerarquía la conmuta el JS
+   con una clase, y así aparece y desaparece con ella sin tocar el DOM.
+   El filete de acento delante no es adorno: sin él, «Última entrada» y la
+   fecha que va justo debajo son dos líneas de mono de 10,5px una encima de
+   otra, indistinguibles. Con el corondel, la primera lee como bandera de
+   sección —que es lo que es— y la segunda como firma. */
+.tk-art--lead .tk-art-body::before {
+  content: 'Última entrada';
+  display: inline-flex; align-items: center; gap: 8px; align-self: flex-start;
+  font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--accent);
+  padding-left: 26px; margin-bottom: 2px;
+  background: linear-gradient(var(--accent), var(--accent)) left center / 18px 2px no-repeat;
+}
+.tk-art--lead .tk-art-media { border-radius: 16px; }
+.tk-art--lead .tk-art-tit { font-size: clamp(1.85rem, 3.4vw, 3rem); line-height: 1.02; letter-spacing: -.03em; }
+/* El sumario de la destacada es la entradilla del día: a 1.04rem contra los
+   .93rem del resto la diferencia no se percibía y la pieza principal parecía
+   una tarjeta grande en vez de la apertura. */
+.tk-art--lead .tk-art-desc { font-size: 1.12rem; line-height: 1.55; -webkit-line-clamp: 4; }
+.tk-art--lead .tk-art-cat { top: 16px; left: 16px; font-size: 11px; }
+
+@media (min-width: 900px) {
+  .tk-art--lead {
+    display: grid; grid-template-columns: minmax(0, 1.22fr) minmax(0, .88fr);
+    gap: clamp(24px, 3.4vw, 52px); align-items: center;
+  }
+  .tk-art--lead .tk-art-body { padding-top: 0; gap: 13px; }
+}
+
+/* ---------- Segundo nivel: las dos que siguen ---------- */
+.tk-art--sub { grid-column: span 6; }
+.tk-art--sub .tk-art-tit { font-size: clamp(1.28rem, 1.9vw, 1.62rem); line-height: 1.1; }
+.tk-art--sub .tk-art-desc { -webkit-line-clamp: 3; }
+
+/* Cuentos y otras rejillas sin cabeza de portada: todo al mismo peso. */
+.tk-rio--parejo .tk-art,
+.tk-rio--parejo .tk-art--lead,
+.tk-rio--parejo .tk-art--sub { grid-column: span 4; display: flex; }
+/* Dentro de «Cuentos» todas las piezas son cuentos: la chapa de categoría
+   sobre cada portada repetía la palabra tres veces bajo un titular que ya la
+   dice. Se retira y la imagen queda limpia. */
+.tk-rio--parejo .tk-art-cat { display: none; }
+
+@media (max-width: 1080px) {
+  .tk-art, .tk-rio--parejo .tk-art { grid-column: span 6; }
+}
+@media (max-width: 700px) {
+  .tk-rio { gap: 26px 16px; }
+  .tk-art, .tk-art--sub, .tk-rio--parejo .tk-art { grid-column: 1 / -1; }
+  .tk-art--lead .tk-art-tit { font-size: clamp(1.7rem, 7vw, 2.2rem); }
+  /* En una sola columna la ÚNICA señal de jerarquía es el cuerpo del titular,
+     y ahí las clamps de escritorio colapsaban: --sub caía a 1.28rem contra los
+     1.2rem del resto (ratio 1.07, invisible). Se separan a mano para que los
+     tres niveles se sigan distinguiendo en móvil, que es donde más se lee. */
+  .tk-art-tit { font-size: 1.12rem; }
+  .tk-art--sub .tk-art-tit { font-size: 1.44rem; line-height: 1.08; }
+  .tk-art--lead .tk-art-desc { font-size: 1.04rem; }
+}
+
+/* ---------- Cabecera de sección (Cuentos) ---------- */
+.tk-seccion {
+  margin-top: clamp(56px, 8vh, 84px); padding-top: clamp(26px, 4vh, 34px);
+  border-top: 2px solid var(--fg);
+  scroll-margin-top: calc(var(--pg-top-h, 72px) + 76px);
+}
+.tk-seccion-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-bottom: 4px; }
+.tk-seccion-kicker { font-family: 'Space Mono', monospace; font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
+.tk-seccion-title { font-family: 'Clash Display', sans-serif; font-weight: 700; font-size: clamp(1.7rem, 3.4vw, 2.5rem); letter-spacing: -.025em; line-height: 1.05; margin: 9px 0 0; }
+.tk-seccion-sub { margin: 0 0 4px; color: var(--muted); font-size: .95rem; max-width: 46ch; }
+
+/* ---------- Estantes: mandos y marca de privado ---------- */
+.sel-head-acc { display: flex; align-items: center; gap: 12px; flex: none; flex-wrap: wrap; }
+.sel-ctrl { display: inline-flex; gap: 6px; }
+.sel-ctrl[hidden] { display: none; }
+.sel-nav {
+  width: 38px; height: 38px; flex: none; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 50%; cursor: pointer;
+  background: color-mix(in srgb, var(--fg) 5%, transparent); color: var(--fg);
+  transition: border-color .2s, background .2s, opacity .2s, transform .2s;
+}
+.sel-nav:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); background: color-mix(in srgb, var(--accent) 12%, transparent); transform: translateY(-1px); }
+/* .28 era un botón apagado del todo; a .34 se sigue leyendo «no hay más por
+   aquí» sin que el mando desaparezca del grupo. */
+.sel-nav:disabled { opacity: .34; cursor: default; }
+.sel-nav .ico { width: 16px; height: 16px; }
+
+.sel-privado {
+  display: inline-flex; align-items: center; gap: 5px; margin-left: 8px;
+  padding: 3px 9px 3px 7px; border-radius: 30px;
+  border: 1px solid color-mix(in srgb, var(--fg) 22%, transparent);
+  /* 10.5px: por debajo de 10, en versalitas y con tracking, «Solo admin» deja
+     de ser una etiqueta y pasa a ser una mancha. */
+  color: var(--muted); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+}
+.sel-privado .ico { width: 11px; height: 11px; stroke-width: 2.2; }
+/* El catálogo no es una sección del medio: se marca como panel de trabajo con
+   trama diagonal en vez del degradado de acento de la watchlist. */
+.sel-autor--privado {
+  background:
+    repeating-linear-gradient(135deg, color-mix(in srgb, var(--fg) 3%, transparent) 0 1px, transparent 1px 9px),
+    var(--surface);
+  border-style: dashed;
+}
+
+/* Marca de «solo admin» en el kicker de una página interna */
+.pg-privado { display: inline-flex; align-items: center; gap: 6px; }
+.pg-privado .ico { width: 12px; height: 12px; stroke-width: 2.2; }
+
+@media (max-width: 620px) {
+  .sel-head-acc { width: 100%; justify-content: space-between; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tk-art-media::before, .tk-art:hover .tk-art-media::before { transition: none; transform: none; }
+  /* Reducido no es inmóvil: el estado sigue existiendo (el subrayado de la
+     sección activa, la flecha desplazada, el filete en acento), solo deja de
+     interpolarse. Lo que se quita es el recorrido, no la señal. */
+  .tk-tab::after, .tk-art-leer::after, .sel-nav,
+  .sel-vertodas, .sel-vertodas span, .sel-vertodas .ico,
+  .sel-poster, .sel-poster img { transition: none; }
+  .sel-nav:hover:not(:disabled) { transform: none; }
+  .sel-vertodas:hover { transform: none; }
+  /* El póster deja de levantarse y de acercarse, pero conserva el halo de
+     acento: la señal de «esta es la que estás señalando» sigue ahí. */
+  .sel-card:hover .sel-poster, .sel-card:hover .sel-poster img { transform: none; }
 }
